@@ -1,0 +1,18 @@
+vkmark is Vulkan benchmark licensed under the GPLv3 (see COPYING).
+
+To build vkmark you need:
+
+ * the meson build system
+ * a C++14 compiler
+ * libvulkan and development files
+
+for the X11 backend:
+
+ * libxcb and development files
+ * libxcb-icccm and development files
+
+for the wayland backend:
+
+ * libwayland-client and development files
+
+Read the INSTALL file for building/installation instructions,

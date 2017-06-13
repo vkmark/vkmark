@@ -1,0 +1,23 @@
+vkmark uses the meson build system.
+
+To configure vkmark use:
+
+$ meson build
+
+This will create a vkmark build configuration in the 'build' directory.
+
+To see/set the full list of available options use:
+
+$ mesonconf [-Dopt=val] build
+
+To build use:
+
+$ ninja -C build
+
+To install use:
+
+$ [DESTDIR=...] ninja -C build install
+
+You can run vkmark without installing with:
+
+$ build/src/vkmark --window-system-dir=build/src
