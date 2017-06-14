@@ -25,7 +25,7 @@ vkmark = executable(
     )
 
 if build_xcb_ws
-    xcb_ws = shared_module(
+    xcb_ws = shared_library(
         'xcb',
         'xcb_window_system.cpp',
         dependencies : [vulkan_dep, xcb_dep, xcb_icccm_dep],
@@ -36,7 +36,7 @@ if build_xcb_ws
 endif
 
 if build_wayland_ws
-    wayland_ws = shared_module(
+    wayland_ws = shared_library(
         'wayland',
         'wayland_window_system.cpp',
         dependencies : [vulkan_dep, wayland_client_dep],
