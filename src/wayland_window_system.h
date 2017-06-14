@@ -49,12 +49,16 @@ public:
 private:
     void create_native_window();
     void create_swapchain();
+    bool fullscreen_requested();
 
     static void handle_registry_global(
         void* data, wl_registry* registry, uint32_t id,
         char const* interface, uint32_t version);
     static void handle_seat_capabilities(
         void* data, wl_seat* seat, uint32_t capabilities);
+    static void handle_output_mode(
+        void* data, wl_output* output,
+        uint32_t flags, int32_t width, int32_t height, int32_t refresh);
     static void handle_keyboard_key(
         void* data, wl_keyboard* wl_keyboard,
         uint32_t serial, uint32_t time,
@@ -62,20 +66,27 @@ private:
 
     static wl_seat_listener const seat_listener;
     static wl_keyboard_listener const keyboard_listener;
+    static wl_output_listener const output_listener;
 
-    int const width;
-    int const height;
+    struct Size { int width; int height; };
+
+    Size const requested_size;
     vk::PresentModeKHR const vk_present_mode;
     bool should_quit_;
+    Size size;
 
     ManagedResource<wl_display*> display;
     ManagedResource<wl_compositor*> compositor;
     ManagedResource<wl_shell*> shell;
     ManagedResource<wl_seat*> seat;
+    ManagedResource<wl_output*> output;
     ManagedResource<wl_keyboard*> keyboard;
     ManagedResource<wl_surface*> surface;
     ManagedResource<wl_shell_surface*> shell_surface;
     int display_fd;
+    int32_t output_width;
+    int32_t output_height;
+    int32_t output_refresh;
 
     VulkanState* vulkan;
     ManagedResource<vk::SurfaceKHR> vk_surface;

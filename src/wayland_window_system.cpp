@@ -38,6 +38,23 @@ void handle_registry_global_remove(
 {
 }
 
+void handle_output_geometry(
+    void* /*data*/, wl_output* /*wl_output*/, int32_t /*x*/, int32_t /*y*/,
+    int32_t /*physical_width*/, int32_t /*physical_height*/,
+    int32_t /*subpixel*/, char const* /*make*/, char const* /*model*/,
+    int32_t /*transform*/)
+{
+}
+
+void handle_output_done(void* /*data*/, wl_output* /*wl_output*/)
+{
+}
+
+void handle_output_scale(
+    void* /*data*/, wl_output* /*wl_output*/, int32_t /*factor*/)
+{
+}
+
 void handle_keyboard_keymap(
     void* /*data*/, wl_keyboard* /*wl_keyboard*/, uint32_t /*format*/,
     int32_t /*fd*/, uint32_t /*size*/)
@@ -75,6 +92,13 @@ wl_seat_listener const WaylandWindowSystem::seat_listener{
     WaylandWindowSystem::handle_seat_capabilities
 };
 
+wl_output_listener const WaylandWindowSystem::output_listener{
+    handle_output_geometry,
+    handle_output_mode,
+    handle_output_done,
+    handle_output_scale
+};
+
 wl_keyboard_listener const WaylandWindowSystem::keyboard_listener{
     handle_keyboard_keymap,
     handle_keyboard_enter,
@@ -86,10 +110,10 @@ wl_keyboard_listener const WaylandWindowSystem::keyboard_listener{
 
 WaylandWindowSystem::WaylandWindowSystem(
     int width, int height, vk::PresentModeKHR present_mode)
-    : width{width},
-      height{height},
+    : requested_size{width, height},
       vk_present_mode{present_mode},
       should_quit_{false},
+      size{width, height},
       vulkan{nullptr}
 {
     create_native_window();
@@ -214,7 +238,21 @@ void WaylandWindowSystem::create_native_window()
         throw std::runtime_error("Failed to create Wayland shell surface");
 
     wl_shell_surface_set_title(shell_surface, "vkmark " VKMARK_VERSION_STR);
-    wl_shell_surface_set_toplevel(shell_surface);
+
+    if (fullscreen_requested())
+    {
+        wl_shell_surface_set_fullscreen(
+            shell_surface,
+            WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER,
+            output_refresh,
+            output);
+        size = {static_cast<int>(output_width), static_cast<int>(output_height)};
+    }
+    else
+    {
+        wl_shell_surface_set_toplevel(shell_surface);
+        size = requested_size;
+    }
 }
 
 void WaylandWindowSystem::create_swapchain()
@@ -247,7 +285,7 @@ void WaylandWindowSystem::create_swapchain()
         .setSurface(vk_surface)
         .setMinImageCount(2)
         .setImageFormat(vk_image_format)
-        .setImageExtent({static_cast<uint32_t>(width), static_cast<uint32_t>(height)})
+        .setImageExtent({static_cast<uint32_t>(size.width), static_cast<uint32_t>(size.height)})
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
@@ -260,6 +298,11 @@ void WaylandWindowSystem::create_swapchain()
         [this] (auto& s) { vulkan->device().destroySwapchainKHR(s); }};
 
     vk_images = vulkan->device().getSwapchainImagesKHR(vk_swapchain);
+}
+
+bool WaylandWindowSystem::fullscreen_requested()
+{
+    return requested_size.width == -1 && requested_size.height == -1;
 }
 
 void WaylandWindowSystem::handle_registry_global(
@@ -292,6 +335,19 @@ void WaylandWindowSystem::handle_registry_global(
 
         wl_seat_add_listener(wws->seat, &seat_listener, wws);
     }
+    else if (interface == "wl_output")
+    {
+        if (!wws->output)
+        {
+            auto output_raw = static_cast<wl_output*>(
+                wl_registry_bind(registry, id, &wl_output_interface, 1));
+            wws->output = ManagedResource<wl_output*>{
+                std::move(output_raw), wl_output_destroy};
+
+            wl_output_add_listener(wws->output, &output_listener, wws);
+            wl_display_roundtrip(wws->display);
+        }
+    }
 }
 
 void WaylandWindowSystem::handle_seat_capabilities(
@@ -311,6 +367,19 @@ void WaylandWindowSystem::handle_seat_capabilities(
     else if (!(capabilities & WL_SEAT_CAPABILITY_KEYBOARD) && wws->keyboard)
     {
         wws->keyboard = {};
+    }
+}
+
+void WaylandWindowSystem::handle_output_mode(
+    void* data, wl_output* output,
+    uint32_t flags, int32_t width, int32_t height, int32_t refresh)
+{
+    if (flags & WL_OUTPUT_MODE_CURRENT)
+    {
+        auto const wws = static_cast<WaylandWindowSystem*>(data);
+        wws->output_width = width;
+        wws->output_height = height;
+        wws->output_refresh = refresh;
     }
 }
 

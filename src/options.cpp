@@ -33,6 +33,7 @@ namespace
 struct option long_options[] = {
     {"benchmark", 1, 0, 0},
     {"size", 1, 0, 0},
+    {"fullscreen", 0, 0, 0},
     {"present-mode", 1, 0, 0},
     {"list-scenes", 0, 0, 0},
     {"show-all-options", 0, 0, 0},
@@ -96,6 +97,7 @@ void Options::print_help()
            "  -b, --benchmark BENCH       A benchmark to run: 'scene(:opt1=val1)*'\n"
            "                              (the option can be used multiple times)\n"
            "  -s, --size WxH              Size of the output window (default: 800x600)\n"
+           "      --fullscreen            Run fullscreen (equivalent to --size -1x-1)\n"
            "  -p, --present-mode PM       Vulkan present mode (default: mailbox)\n"
            "                              [immediate, mailbox, fifo, fiforelaxed]\n"
            "  -l, --list-scenes           Display information about the available scenes\n"
@@ -130,6 +132,8 @@ bool Options::parse_args(int argc, char **argv)
             benchmarks.push_back(optarg);
         else if (c == 's' || optname == "size")
             size = parse_size(optarg);
+        else if (optname == "fullscreen")
+            size = {-1, -1};
         else if (c == 'p' || optname == "present-mode")
             present_mode = parse_present_mode(optarg);
         else if (c == 'l' || optname == "list-scenes")

@@ -51,10 +51,14 @@ private:
     void create_native_window();
     void create_swapchain();
     xcb_atom_t atom(std::string const& name);
+    bool fullscreen_requested();
 
-    int const width;
-    int const height;
+    struct Size { int width; int height; };
+
+    Size const requested_size;
     vk::PresentModeKHR const vk_present_mode;
+
+    Size size;
 
     xcb_connection_t* connection;
     xcb_window_t window;

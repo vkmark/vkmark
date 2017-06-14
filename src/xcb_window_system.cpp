@@ -31,9 +31,9 @@
 
 XcbWindowSystem::XcbWindowSystem(
     int width, int height, vk::PresentModeKHR present_mode)
-    : width{width},
-      height{height},
+    : requested_size{width, height},
       vk_present_mode{present_mode},
+      size{width, height},
       connection{nullptr},
       window{XCB_NONE},
       root_visual{XCB_NONE},
@@ -149,7 +149,6 @@ bool XcbWindowSystem::should_quit()
 
 void XcbWindowSystem::create_native_window()
 {
-    xcb_screen_iterator_t iter;
     static std::string const title{"vkmark " VKMARK_VERSION_STR};
 
     connection = xcb_connect(nullptr, nullptr);
@@ -160,8 +159,19 @@ void XcbWindowSystem::create_native_window()
 
     uint32_t const window_values[] = { XCB_EVENT_MASK_KEY_PRESS };
 
-    iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
-    root_visual = iter.data->root_visual;
+    auto const iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
+    auto const screen = iter.data;
+    root_visual = screen->root_visual;
+
+    if (fullscreen_requested())
+    {
+        size = {static_cast<int>(screen->width_in_pixels),
+                static_cast<int>(screen->height_in_pixels)};
+    }
+    else
+    {
+        size = requested_size;
+    }
 
     xcb_create_window(
         connection,
@@ -169,8 +179,8 @@ void XcbWindowSystem::create_native_window()
         window,
         iter.data->root,
         0, 0,
-        width,
-        height,
+        size.width,
+        size.height,
         0,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         iter.data->root_visual,
@@ -180,11 +190,22 @@ void XcbWindowSystem::create_native_window()
     xcb_icccm_set_wm_name(
         connection, window, atom("UTF8_STRING"), 8, title.size(), title.c_str());
 
-    // Make window non-resizable
-    xcb_size_hints_t size_hints;
-    xcb_icccm_size_hints_set_min_size(&size_hints, width, height);
-    xcb_icccm_size_hints_set_max_size(&size_hints, width, height);
-    xcb_icccm_set_wm_normal_hints(connection, window, &size_hints);
+    if (fullscreen_requested())
+    {
+        // Make window fullscreen
+        auto const atom_fs = atom("_NET_WM_STATE_FULLSCREEN");
+        xcb_change_property(
+            connection, XCB_PROP_MODE_REPLACE, window,
+            atom("_NET_WM_STATE"), XCB_ATOM_ATOM, 32, 1, &atom_fs);
+    }
+    else
+    {
+        // Make window non-resizable
+        xcb_size_hints_t size_hints;
+        xcb_icccm_size_hints_set_min_size(&size_hints, size.width, size.height);
+        xcb_icccm_size_hints_set_max_size(&size_hints, size.width, size.height);
+        xcb_icccm_set_wm_normal_hints(connection, window, &size_hints);
+    }
 
     // Set up window delete handling
     atom_wm_protocols = atom("WM_PROTOCOLS");
@@ -227,7 +248,7 @@ void XcbWindowSystem::create_swapchain()
         .setSurface(vk_surface)
         .setMinImageCount(2)
         .setImageFormat(vk_image_format)
-        .setImageExtent({static_cast<uint32_t>(width), static_cast<uint32_t>(height)})
+        .setImageExtent({static_cast<uint32_t>(size.width), static_cast<uint32_t>(size.height)})
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
@@ -251,6 +272,11 @@ xcb_atom_t XcbWindowSystem::atom(std::string const& name)
     free(reply);
 
     return ret;
+}
+
+bool XcbWindowSystem::fullscreen_requested()
+{
+    return requested_size.width == -1 && requested_size.height == -1;
 }
 
 extern "C" int vkmark_window_system_probe()
