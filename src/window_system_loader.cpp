@@ -23,6 +23,8 @@
 #include "window_system_loader.h"
 #include "window_system.h"
 #include "options.h"
+#include "log.h"
+
 #include <dlfcn.h>
 #include <vector>
 #include <string>
@@ -41,6 +43,14 @@ void close_lib(void* handle)
     if (handle) dlclose(handle);
 }
 
+bool has_shared_object_extension(std::string const& name)
+{
+    static std::string const so{".so"};
+
+    return name.size() > so.size() &&
+           std::equal(so.rbegin(), so.rend(), name.rbegin());
+}
+
 std::vector<std::string> files_in_dir(std::string dir)
 {
     std::vector<std::string> files;
@@ -52,7 +62,10 @@ std::vector<std::string> files_in_dir(std::string dir)
         dirent const* ent;
 
         while ((ent = readdir(dirp)) != nullptr)
-            files.push_back(dir + "/" + ent->d_name);
+        {
+            if (has_shared_object_extension(ent->d_name))
+                files.push_back(dir + "/" + ent->d_name);
+        }
 
         closedir(dirp);
     }
@@ -94,23 +107,42 @@ WindowSystem& WindowSystemLoader::load_window_system()
 std::string WindowSystemLoader::probe_for_best_window_system()
 {
     std::vector<int> priorities;
+
+    Log::debug("WindowSystemLoader: Looking in %s for window system modules\n",
+               options.window_system_dir.c_str());
+
     auto const candidates = files_in_dir(options.window_system_dir);
 
     for (auto const& c : candidates)
     {
+        Log::debug("WindowSystemLoader: Probing %s... ", c.c_str());
+
         auto const handle = LibHandle{dlopen(c.c_str(), RTLD_LAZY), close_lib};
         if (handle.get())
         {
             auto ws_probe = reinterpret_cast<WindowSystemProbeFunc>(
                 dlsym(handle.get(), "vkmark_window_system_probe"));
             if (ws_probe)
+            {
                 priorities.push_back(ws_probe());
+
+                auto const fmt = Log::continuation_prefix + "succeeded with priority %d\n";
+                Log::debug(fmt.c_str(), priorities.back());
+            }
             else
+            {
                 priorities.push_back(0);
+
+                auto const fmt = Log::continuation_prefix + "failed to find probe function: %s\n";
+                Log::debug(fmt.c_str(), dlerror());
+            }
         }
         else
         {
             priorities.push_back(0);
+
+            auto const fmt = Log::continuation_prefix + "failed to load file: %s\n";
+            Log::debug(fmt.c_str(), dlerror());
         }
     }
 
@@ -118,6 +150,8 @@ std::string WindowSystemLoader::probe_for_best_window_system()
     if (iter != priorities.end() && *iter > 0)
     {
         auto const index = std::distance(priorities.begin(), iter);
+        Log::debug("WindowSystemLoader: Selected window system module %s\n",
+                   candidates[index].c_str());
         return candidates[index];
     }
 
