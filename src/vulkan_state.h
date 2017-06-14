@@ -32,7 +32,6 @@ public:
     VulkanState(std::vector<char const*> required_extensions);
 
     void log_info();
-    void set_surface(vk::SurfaceKHR surface);
 
     vk::Instance const& instance() const
     {
