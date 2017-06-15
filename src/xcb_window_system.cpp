@@ -31,9 +31,9 @@
 
 XcbWindowSystem::XcbWindowSystem(
     int width, int height, vk::PresentModeKHR present_mode)
-    : requested_size{width, height},
+    : requested_width{width},
+      requested_height{height},
       vk_present_mode{present_mode},
-      size{width, height},
       connection{nullptr},
       window{XCB_NONE},
       root_visual{XCB_NONE},
@@ -96,7 +96,7 @@ VulkanImage XcbWindowSystem::next_vulkan_image()
     auto const image_index = vulkan->device().acquireNextImageKHR(
         vk_swapchain, UINT64_MAX, vk_acquire_semaphore, nullptr).value;
     
-    return {image_index, vk_images[image_index], vk_image_format, vk_acquire_semaphore};
+    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphore};
 }
 
 void XcbWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
@@ -116,7 +116,7 @@ std::vector<VulkanImage> XcbWindowSystem::vulkan_images()
     std::vector<VulkanImage> vulkan_images;
 
     for (uint32_t i = 0; i < vk_images.size(); ++i)
-        vulkan_images.push_back({i, vk_images[i], vk_image_format, {}});
+        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk_extent, {}});
 
     return vulkan_images;
 }
@@ -175,12 +175,15 @@ void XcbWindowSystem::create_native_window()
 
     if (fullscreen_requested())
     {
-        size = {static_cast<int>(screen->width_in_pixels),
-                static_cast<int>(screen->height_in_pixels)};
+        vk_extent = vk::Extent2D{
+            static_cast<uint32_t>(screen->width_in_pixels),
+            static_cast<uint32_t>(screen->height_in_pixels)};
     }
     else
     {
-        size = requested_size;
+        vk_extent = vk::Extent2D{
+            static_cast<uint32_t>(requested_width),
+            static_cast<uint32_t>(requested_height)};
     }
 
     xcb_create_window(
@@ -189,8 +192,8 @@ void XcbWindowSystem::create_native_window()
         window,
         iter.data->root,
         0, 0,
-        size.width,
-        size.height,
+        vk_extent.width,
+        vk_extent.height,
         0,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         iter.data->root_visual,
@@ -212,8 +215,8 @@ void XcbWindowSystem::create_native_window()
     {
         // Make window non-resizable
         xcb_size_hints_t size_hints;
-        xcb_icccm_size_hints_set_min_size(&size_hints, size.width, size.height);
-        xcb_icccm_size_hints_set_max_size(&size_hints, size.width, size.height);
+        xcb_icccm_size_hints_set_min_size(&size_hints, vk_extent.width, vk_extent.height);
+        xcb_icccm_size_hints_set_max_size(&size_hints, vk_extent.width, vk_extent.height);
         xcb_icccm_set_wm_normal_hints(connection, window, &size_hints);
     }
 
@@ -258,7 +261,7 @@ void XcbWindowSystem::create_swapchain()
         .setSurface(vk_surface)
         .setMinImageCount(2)
         .setImageFormat(vk_image_format)
-        .setImageExtent({static_cast<uint32_t>(size.width), static_cast<uint32_t>(size.height)})
+        .setImageExtent(vk_extent)
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
@@ -286,7 +289,7 @@ xcb_atom_t XcbWindowSystem::atom(std::string const& name)
 
 bool XcbWindowSystem::fullscreen_requested()
 {
-    return requested_size.width == -1 && requested_size.height == -1;
+    return requested_width == -1 && requested_height == -1;
 }
 
 extern "C" int vkmark_window_system_probe()

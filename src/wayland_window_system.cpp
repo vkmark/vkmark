@@ -110,10 +110,10 @@ wl_keyboard_listener const WaylandWindowSystem::keyboard_listener{
 
 WaylandWindowSystem::WaylandWindowSystem(
     int width, int height, vk::PresentModeKHR present_mode)
-    : requested_size{width, height},
+    : requested_width{width},
+      requested_height{height},
       vk_present_mode{present_mode},
       should_quit_{false},
-      size{width, height},
       vulkan{nullptr}
 {
     create_native_window();
@@ -164,7 +164,7 @@ VulkanImage WaylandWindowSystem::next_vulkan_image()
     auto const image_index = vulkan->device().acquireNextImageKHR(
         vk_swapchain, UINT64_MAX, vk_acquire_semaphore, nullptr).value;
     
-    return {image_index, vk_images[image_index], vk_image_format, vk_acquire_semaphore};
+    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphore};
 }
 
 void WaylandWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
@@ -184,7 +184,7 @@ std::vector<VulkanImage> WaylandWindowSystem::vulkan_images()
     std::vector<VulkanImage> vulkan_images;
 
     for (uint32_t i = 0; i < vk_images.size(); ++i)
-        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk::Semaphore{}});
+        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk_extent, vk::Semaphore{}});
 
     return vulkan_images;
 }
@@ -256,12 +256,16 @@ void WaylandWindowSystem::create_native_window()
             WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER,
             output_refresh,
             output);
-        size = {static_cast<int>(output_width), static_cast<int>(output_height)};
+        vk_extent = vk::Extent2D{
+            static_cast<uint32_t>(output_width),
+            static_cast<uint32_t>(output_height)};
     }
     else
     {
         wl_shell_surface_set_toplevel(shell_surface);
-        size = requested_size;
+        vk_extent = vk::Extent2D{
+            static_cast<uint32_t>(requested_width),
+            static_cast<uint32_t>(requested_height)};
     }
 }
 
@@ -295,7 +299,7 @@ void WaylandWindowSystem::create_swapchain()
         .setSurface(vk_surface)
         .setMinImageCount(2)
         .setImageFormat(vk_image_format)
-        .setImageExtent({static_cast<uint32_t>(size.width), static_cast<uint32_t>(size.height)})
+        .setImageExtent(vk_extent)
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
         .setImageSharingMode(vk::SharingMode::eExclusive)
@@ -312,7 +316,7 @@ void WaylandWindowSystem::create_swapchain()
 
 bool WaylandWindowSystem::fullscreen_requested()
 {
-    return requested_size.width == -1 && requested_size.height == -1;
+    return requested_width == -1 && requested_height == -1;
 }
 
 void WaylandWindowSystem::handle_registry_global(

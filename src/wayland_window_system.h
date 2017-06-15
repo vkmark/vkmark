@@ -69,12 +69,10 @@ private:
     static wl_keyboard_listener const keyboard_listener;
     static wl_output_listener const output_listener;
 
-    struct Size { int width; int height; };
-
-    Size const requested_size;
+    int const requested_width;
+    int const requested_height;
     vk::PresentModeKHR const vk_present_mode;
     bool should_quit_;
-    Size size;
 
     ManagedResource<wl_display*> display;
     ManagedResource<wl_compositor*> compositor;
@@ -95,6 +93,7 @@ private:
     ManagedResource<vk::Semaphore> vk_acquire_semaphore;
     std::vector<vk::Image> vk_images;
     vk::Format vk_image_format;
+    vk::Extent2D vk_extent;
 };
 
 extern "C" int vkmark_window_system_probe();

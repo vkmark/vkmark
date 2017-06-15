@@ -53,6 +53,8 @@ bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
 
 void ClearScene::teardown()
 {
+    vulkan->device().waitIdle();
+
     vulkan->device().destroyFence(submit_fence);
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
 
@@ -99,7 +101,7 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
     vulkan->device().waitForFences(submit_fence, true, INT64_MAX);
     vulkan->device().resetFences(submit_fence);
 
-    return {image.index, image.image, image.format, {}};
+    return image.copy_with_semaphore({});
 }
 
 void ClearScene::update()

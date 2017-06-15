@@ -54,12 +54,9 @@ private:
     xcb_atom_t atom(std::string const& name);
     bool fullscreen_requested();
 
-    struct Size { int width; int height; };
-
-    Size const requested_size;
+    int const requested_width;
+    int const requested_height;
     vk::PresentModeKHR const vk_present_mode;
-
-    Size size;
 
     xcb_connection_t* connection;
     xcb_window_t window;
@@ -73,6 +70,7 @@ private:
     ManagedResource<vk::Semaphore> vk_acquire_semaphore;
     std::vector<vk::Image> vk_images;
     vk::Format vk_image_format;
+    vk::Extent2D vk_extent;
 };
 
 extern "C" int vkmark_window_system_probe();

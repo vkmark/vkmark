@@ -72,7 +72,7 @@ void Scene::teardown()
 
 VulkanImage Scene::draw(VulkanImage const& image)
 {
-    return {image.index, image.image, image.format, {}};
+    return image.copy_with_semaphore({});
 }
 
 void Scene::update()
