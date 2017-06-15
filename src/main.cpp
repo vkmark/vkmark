@@ -95,6 +95,15 @@ try
         return 0;
     }
 
+    SceneCollection sc;
+    BenchmarkCollection bc{sc};
+
+    if (options.list_scenes)
+    {
+        sc.log_scene_info();
+        return 0;
+    }
+
     WindowSystemLoader ws_loader{options};
     auto& ws = ws_loader.load_window_system();
 
@@ -108,15 +117,6 @@ try
     vulkan.log_info();
     Log::info("=======================================================\n");
 
-    SceneCollection sc{vulkan};
-    BenchmarkCollection bc{sc};
-
-    if (options.list_scenes)
-    {
-        sc.log_scene_info();
-        return 0;
-    }
-
     if (!options.benchmarks.empty())
         bc.add(options.benchmarks);
     else
@@ -128,10 +128,12 @@ try
     for (auto const& benchmark : bc.benchmarks())
     try
     {
-        auto& scene = benchmark->setup_scene();
+        auto& scene = benchmark->prepare_scene();
 
         if (scene.name().empty())
             continue;
+
+        scene.setup(vulkan, ws.vulkan_images());
 
         log_scene_info(scene, options.show_all_options);
 
@@ -157,7 +159,7 @@ try
         total_fps += scene_fps;
         ++total_benchmarks;
 
-        benchmark->teardown_scene();
+        scene.teardown();
 
         if (should_quit)
             break;

@@ -27,9 +27,9 @@
 class ClearScene : public Scene
 {
 public:
-    ClearScene(VulkanState& vulkan);
+    ClearScene();
 
-    bool setup() override;
+    bool setup(VulkanState&, std::vector<VulkanImage> const&) override;
     void teardown() override;
 
     VulkanImage draw(VulkanImage const&) override;
@@ -38,6 +38,7 @@ public:
 private:
     void prepare_command_buffer(VulkanImage const& image);
 
+    VulkanState* vulkan;
     std::vector<vk::CommandBuffer> command_buffers;
     vk::Semaphore submit_semaphore;
     vk::Fence submit_fence;

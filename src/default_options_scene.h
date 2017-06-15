@@ -27,9 +27,9 @@ class SceneCollection;
 class DefaultOptionsScene : public Scene
 {
 public:
-    DefaultOptionsScene(VulkanState& vulkan, SceneCollection& scene_collection);
+    DefaultOptionsScene(SceneCollection& scene_collection);
 
-    bool setup() override;
+    bool setup(VulkanState&, std::vector<VulkanImage> const&) override;
 
 private:
     SceneCollection& scene_collection;

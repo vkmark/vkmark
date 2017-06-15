@@ -34,9 +34,7 @@ public:
 
     Benchmark(Scene &scene, const std::vector<OptionPair> &options);
 
-    Scene& scene() const;
-    Scene& setup_scene();
-    void teardown_scene();
+    Scene& prepare_scene();
 
 private:
     void load_options();

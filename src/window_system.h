@@ -38,6 +38,7 @@ public:
 
     virtual VulkanImage next_vulkan_image() = 0;
     virtual void present_vulkan_image(VulkanImage const&) = 0;
+    virtual std::vector<VulkanImage> vulkan_images() = 0;
 
     virtual bool should_quit() = 0;
 

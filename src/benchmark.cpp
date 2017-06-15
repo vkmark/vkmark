@@ -31,24 +31,12 @@ Benchmark::Benchmark(Scene& scene, std::vector<OptionPair> const& options)
 {
 }
 
-Scene& Benchmark::scene() const
-{
-    return scene_;
-}
-
-Scene& Benchmark::setup_scene()
+Scene& Benchmark::prepare_scene()
 {
     scene_.reset_options();
     load_options();
 
-    scene_.setup();
-
     return scene_;
-}
-
-void Benchmark::teardown_scene()
-{
-    scene_.teardown();
 }
 
 void Benchmark::load_options()

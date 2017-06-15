@@ -24,14 +24,13 @@
 
 #include "scene_collection.h"
 
-DefaultOptionsScene::DefaultOptionsScene(
-    VulkanState& vulkan, SceneCollection& scene_collection)
-    : Scene{vulkan, ""},
+DefaultOptionsScene::DefaultOptionsScene(SceneCollection& scene_collection)
+    : Scene{""},
       scene_collection{scene_collection}
 {
 }
 
-bool DefaultOptionsScene::setup()
+bool DefaultOptionsScene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     for (auto const& kv : options_)
     {

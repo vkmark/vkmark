@@ -32,16 +32,16 @@ namespace
 class DummyScene : public Scene
 {
 public:
-    DummyScene(VulkanState& vulkan) : Scene{vulkan, "dummy"} {}
+    DummyScene() : Scene{"dummy"} {}
 };
 
 }
 
-SceneCollection::SceneCollection(VulkanState& vulkan)
-    : dummy_scene{std::make_unique<DummyScene>(vulkan)}
+SceneCollection::SceneCollection()
+    : dummy_scene{std::make_unique<DummyScene>()}
 {
-    register_scene(std::make_unique<ClearScene>(vulkan));
-    register_scene(std::make_unique<DefaultOptionsScene>(vulkan, *this));
+    register_scene(std::make_unique<ClearScene>());
+    register_scene(std::make_unique<DefaultOptionsScene>(*this));
 }
 
 Scene& SceneCollection::get_scene_by_name(std::string const& name)

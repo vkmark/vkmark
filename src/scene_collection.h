@@ -27,12 +27,11 @@
 #include <unordered_map>
 
 class Scene;
-class VulkanState;
 
 class SceneCollection
 {
 public:
-    SceneCollection(VulkanState& vulkan);
+    SceneCollection();
 
     Scene& get_scene_by_name(std::string const& name);
 

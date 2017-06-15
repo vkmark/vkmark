@@ -28,22 +28,23 @@
 
 #include <cmath>
 
-ClearScene::ClearScene(VulkanState& vulkan)
-    : Scene{vulkan, "clear"}
+ClearScene::ClearScene() : Scene{"clear"}
 {
 }
 
-bool ClearScene::setup()
+bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& images)
 {
-    Scene::setup();
+    Scene::setup(vulkan_, images);
+
+    vulkan = &vulkan_;
 
     auto const command_buffer_allocate_info = vk::CommandBufferAllocateInfo{}
-        .setCommandPool(vulkan.command_pool())
+        .setCommandPool(vulkan->command_pool())
         .setCommandBufferCount(1)
         .setLevel(vk::CommandBufferLevel::ePrimary);
 
-    command_buffers = vulkan.device().allocateCommandBuffers(command_buffer_allocate_info);
-    submit_fence = vulkan.device().createFence(vk::FenceCreateInfo());
+    command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
+    submit_fence = vulkan->device().createFence(vk::FenceCreateInfo());
 
     running = true;
 
@@ -52,8 +53,8 @@ bool ClearScene::setup()
 
 void ClearScene::teardown()
 {
-    vulkan.device().destroyFence(submit_fence);
-    vulkan.device().freeCommandBuffers(vulkan.command_pool(), command_buffers);
+    vulkan->device().destroyFence(submit_fence);
+    vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
 
     Scene::teardown();
 }
@@ -93,12 +94,12 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
-    vulkan.graphics_queue().submit(submit_info, submit_fence);    
+    vulkan->graphics_queue().submit(submit_info, submit_fence);
 
-    vulkan.device().waitForFences(submit_fence, true, INT64_MAX);
-    vulkan.device().resetFences(submit_fence);
+    vulkan->device().waitForFences(submit_fence, true, INT64_MAX);
+    vulkan->device().resetFences(submit_fence);
 
-    return {image.index, image.image, nullptr};
+    return {image.index, image.image, image.format, {}};
 }
 
 void ClearScene::update()

@@ -45,9 +45,8 @@ bool SceneOption::accepts_value(std::string const& val)
                acceptable_values.end();
 }
 
-Scene::Scene(VulkanState& vulkan, std::string const& name)
-    : vulkan{vulkan},
-      name_{name},
+Scene::Scene(std::string const& name)
+    : name_{name},
       start_time{0}, last_update_time{0}, current_frame{0},
       running{false}, duration{0}
 {
@@ -55,7 +54,7 @@ Scene::Scene(VulkanState& vulkan, std::string const& name)
                                       "The duration of each benchmark in seconds");
 }
 
-bool Scene::setup()
+bool Scene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     duration = 1000000.0 * Util::from_string<double>(options_["duration"].value);
 
@@ -73,7 +72,7 @@ void Scene::teardown()
 
 VulkanImage Scene::draw(VulkanImage const& image)
 {
-    return {image.index, image.image, nullptr};
+    return {image.index, image.image, image.format, {}};
 }
 
 void Scene::update()

@@ -44,6 +44,7 @@ public:
 
     VulkanImage next_vulkan_image() override;
     void present_vulkan_image(VulkanImage const&) override;
+    std::vector<VulkanImage> vulkan_images() override;
 
     bool should_quit() override;
 

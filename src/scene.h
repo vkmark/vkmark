@@ -53,7 +53,7 @@ class Scene
 public:
     virtual ~Scene() = default;
 
-    virtual bool setup();
+    virtual bool setup(VulkanState&, std::vector<VulkanImage> const&);
     virtual void teardown();
 
     virtual VulkanImage draw(VulkanImage const&);
@@ -70,9 +70,8 @@ public:
     std::unordered_map<std::string, SceneOption> const& options();
 
 protected:
-    Scene(VulkanState& vulkan, std::string const& name);
+    Scene(std::string const& name);
 
-    VulkanState& vulkan;
     std::string const name_;
     std::unordered_map<std::string,SceneOption> options_;
     uint64_t start_time;

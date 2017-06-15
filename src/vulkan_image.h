@@ -28,5 +28,6 @@ struct VulkanImage
 {
     uint32_t index;
     vk::Image image;
+    vk::Format format;
     vk::Semaphore semaphore;
 };

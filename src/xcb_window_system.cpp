@@ -96,7 +96,7 @@ VulkanImage XcbWindowSystem::next_vulkan_image()
     auto const image_index = vulkan->device().acquireNextImageKHR(
         vk_swapchain, UINT64_MAX, vk_acquire_semaphore, nullptr).value;
     
-    return {image_index, vk_images[image_index], vk_acquire_semaphore};
+    return {image_index, vk_images[image_index], vk_image_format, vk_acquire_semaphore};
 }
 
 void XcbWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
@@ -109,6 +109,16 @@ void XcbWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
         .setPWaitSemaphores(&vulkan_image.semaphore);
 
     vulkan->graphics_queue().presentKHR(present_info);
+}
+
+std::vector<VulkanImage> XcbWindowSystem::vulkan_images()
+{
+    std::vector<VulkanImage> vulkan_images;
+
+    for (uint32_t i = 0; i < vk_images.size(); ++i)
+        vulkan_images.push_back({i, vk_images[i], vk_image_format, {}});
+
+    return vulkan_images;
 }
 
 bool XcbWindowSystem::should_quit()
