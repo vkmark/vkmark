@@ -31,6 +31,7 @@
 #include "default_benchmarks.h"
 #include "options.h"
 #include "log.h"
+#include "util.h"
 
 #include <stdexcept>
 
@@ -64,19 +65,6 @@ void log_scene_fps(unsigned int fps)
     Log::flush();
 }
 
-struct WindowSystemVulkanInit
-{
-    WindowSystemVulkanInit(WindowSystem& ws, VulkanState& vulkan) : ws{ws}
-    {
-        ws.init_vulkan(vulkan);
-    }
-    ~WindowSystemVulkanInit()
-    {
-        ws.deinit_vulkan();
-    }
-    WindowSystem& ws;
-};
-
 }
 
 int main(int argc, char **argv)
@@ -109,7 +97,9 @@ try
 
     VulkanState vulkan{ws.vulkan_extensions()};
 
-    WindowSystemVulkanInit ws_vulkan_init{ws, vulkan};
+    auto const ws_vulkan_init = Util::make_raii(
+        [&] { ws.init_vulkan(vulkan); },
+        [&] { ws.deinit_vulkan(); });
 
     Log::info("=======================================================\n");
     Log::info("    vkmark %s\n", VKMARK_VERSION_STR);
@@ -133,7 +123,9 @@ try
         if (scene.name().empty())
             continue;
 
-        scene.setup(vulkan, ws.vulkan_images());
+        auto const scene_setup = Util::make_raii(
+            [&] { scene.setup(vulkan, ws.vulkan_images()); },
+            [&] { scene.teardown(); });
 
         log_scene_info(scene, options.show_all_options);
 
@@ -158,8 +150,6 @@ try
 
         total_fps += scene_fps;
         ++total_benchmarks;
-
-        scene.teardown();
 
         if (should_quit)
             break;

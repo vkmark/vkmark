@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <cstdint>
 
 namespace Util
 {
@@ -40,6 +41,21 @@ T from_string(std::string const& str)
     T ret{};
     ss >> ret;
     return ret;
+}
+
+template <typename Init, typename Deinit>
+struct RAIIHelper
+{
+    RAIIHelper(Init&& init, Deinit&& deinit) : deinit{deinit} { init(); }
+    ~RAIIHelper() { deinit(); }
+
+    Deinit deinit;
+};
+
+template <typename Init, typename Deinit>
+RAIIHelper<Init,Deinit> make_raii(Init&& init, Deinit&& deinit)
+{
+    return {std::move(init), std::move(deinit)};
 }
 
 }
