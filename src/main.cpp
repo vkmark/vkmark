@@ -46,7 +46,7 @@ void log_scene_info(Scene& scene, bool show_all_options)
 
 void log_scene_setup_failure()
 {
-    auto const fmt = Log::continuation_prefix + " Setup failed";
+    auto const fmt = Log::continuation_prefix + " Setup failed\n";
     Log::info(fmt.c_str());
     Log::flush();
 }
@@ -82,6 +82,8 @@ try
         options.print_help();
         return 0;
     }
+
+    Util::set_data_dir(options.data_dir);
 
     SceneCollection sc;
     BenchmarkCollection bc{sc};
@@ -123,11 +125,11 @@ try
         if (scene.name().empty())
             continue;
 
+        log_scene_info(scene, options.show_all_options);
+
         auto const scene_setup = Util::make_raii(
             [&] { scene.setup(vulkan, ws.vulkan_images()); },
             [&] { scene.teardown(); });
-
-        log_scene_info(scene, options.show_all_options);
 
         if (!scene.is_running())
         {

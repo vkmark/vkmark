@@ -24,5 +24,8 @@
 
 std::vector<std::string> DefaultBenchmarks::get()
 {
-    return std::vector<std::string>{"clear"};
+    return std::vector<std::string>{
+        "cube",
+        "clear"
+    };
 }

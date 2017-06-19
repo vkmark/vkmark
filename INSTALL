@@ -20,4 +20,4 @@ $ [DESTDIR=...] ninja -C build install
 
 You can run vkmark without installing with:
 
-$ build/src/vkmark --window-system-dir=build/src
+$ build/src/vkmark --window-system-dir=build/src --data-dir=data

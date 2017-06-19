@@ -21,9 +21,16 @@
  */
 
 #include <sstream>
+#include <fstream>
 #include <sys/time.h>
 
 #include "util.h"
+#include <stdexcept>
+
+namespace
+{
+std::string data_dir;
+}
 
 std::vector<std::string> Util::split(std::string const& src, char delim)
 {
@@ -44,4 +51,29 @@ uint64_t Util::get_timestamp_us()
     uint64_t const now = static_cast<uint64_t>(ts.tv_sec) * 1000000 +
                          static_cast<uint64_t>(ts.tv_nsec) / 1000;
     return now;
+}
+
+void Util::set_data_dir(std::string const& dir)
+{
+    data_dir = dir;
+}
+
+std::vector<char> Util::read_data_file(std::string const& rel_path)
+{
+    if (data_dir.empty())
+        throw std::logic_error("Data directory not set!");
+
+    auto const path = data_dir + "/" + rel_path;
+    std::ifstream ifs{path, std::ios::ate | std::ios::binary};
+
+    if (!ifs)
+        throw std::runtime_error{"Failed to open file " + path};
+
+    auto const file_size = ifs.tellg();
+    std::vector<char> buffer(file_size);
+
+    ifs.seekg(0);
+    ifs.read(buffer.data(), file_size);
+
+    return buffer;
 }

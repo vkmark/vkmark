@@ -6,14 +6,17 @@ project(
     )
 
 ws_dir = join_paths([get_option('prefix'), get_option('libdir'), 'vkmark'])
+data_dir = join_paths([get_option('prefix'), get_option('datadir'), 'vkmark'])
 
 add_global_arguments('-DVKMARK_WINDOW_SYSTEM_DIR="@0@"'.format(ws_dir), language : 'cpp')
+add_global_arguments('-DVKMARK_DATA_DIR="@0@"'.format(data_dir), language : 'cpp')
 add_global_arguments('-DVKMARK_VERSION_STR="@0@"'.format(meson.project_version()), language : 'cpp')
 
 cpp = meson.get_compiler('cpp')
 
 vulkan_dep = cpp.find_library('vulkan')
 dl_dep = cpp.find_library('dl')
+glm_dep = dependency('glm')
 
 xcb_dep = dependency('xcb', required : get_option('xcb') == 'true')
 xcb_icccm_dep = dependency('xcb-icccm', required : get_option('xcb') == 'true')
@@ -23,6 +26,7 @@ build_xcb_ws = xcb_dep.found() and xcb_icccm_dep.found() and get_option('xcb') !
 build_wayland_ws = wayland_client_dep.found() and get_option('wayland') != 'false'
 
 subdir('src')
+subdir('data')
 
 msg = 'Building with support for the following window systems: '
 

@@ -41,6 +41,7 @@ struct Options
     bool list_scenes;
     bool show_all_options;
     std::string window_system_dir;
+    std::string data_dir;
     bool show_debug;
     bool show_help;
 };

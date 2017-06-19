@@ -31,9 +31,9 @@ struct ManagedResource
 
     ManagedResource() = default;
 
-    ManagedResource(T&& raw, Destructor const& destructor)
+    ManagedResource(T&& raw, Destructor&& destructor)
         : raw{raw},
-          destructor{destructor}
+          destructor{std::move(destructor)}
     {
     }
 
@@ -66,6 +66,14 @@ struct ManagedResource
 
     operator T const& () const { return raw; }
     operator T&() { return raw; }
+
+    T steal()
+    {
+        auto ret = raw;
+        raw = T{};
+        destructor = [](T&){};
+        return ret;
+    }
 
     T raw = T{};
     std::function<void(T&)> destructor = [](T&){};

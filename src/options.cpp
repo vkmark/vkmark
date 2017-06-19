@@ -38,6 +38,7 @@ struct option long_options[] = {
     {"list-scenes", 0, 0, 0},
     {"show-all-options", 0, 0, 0},
     {"window-system-dir", 1, 0, 0},
+    {"data-dir", 1, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
     {0, 0, 0, 0}
@@ -84,6 +85,7 @@ Options::Options()
       list_scenes{false},
       show_all_options{false},
       window_system_dir{VKMARK_WINDOW_SYSTEM_DIR},
+      data_dir{VKMARK_DATA_DIR},
       show_debug{false},
       show_help{false}
 {
@@ -105,7 +107,7 @@ void Options::print_help()
            "      --show-all-options      Show all scene option values used for benchmarks\n"
            "                              (only explicitly set options are shown by default)\n"
            "      --window-system-dir DIR Directory to search in for window system modules\n"
-           "                              (only explicitly set options are shown by default)\n"
+           "      --data-dir DIR          Directory to search in for scene data files\n"
            "  -d, --debug                 Display debug messages\n"
            "  -h, --help                  Display help\n");
 }
@@ -142,6 +144,8 @@ bool Options::parse_args(int argc, char **argv)
             show_all_options = true;
         else if (optname == "window-system-dir")
             window_system_dir = optarg;
+        else if (optname == "data-dir")
+            data_dir = optarg;
         else if (c == 'd' || optname == "debug")
             show_debug = true;
         else if (c == 'h' || optname == "help")

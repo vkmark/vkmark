@@ -34,6 +34,9 @@ std::vector<std::string> split(std::string const& src, char delim);
 
 uint64_t get_timestamp_us();
 
+void set_data_dir(std::string const& path);
+std::vector<char> read_data_file(std::string const& rel_path);
+
 template<typename T>
 T from_string(std::string const& str)
 {

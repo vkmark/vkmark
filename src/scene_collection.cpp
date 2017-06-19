@@ -23,6 +23,7 @@
 #include "scene_collection.h"
 
 #include "clear_scene.h"
+#include "cube_scene.h"
 #include "default_options_scene.h"
 #include "log.h"
 
@@ -41,6 +42,7 @@ SceneCollection::SceneCollection()
     : dummy_scene{std::make_unique<DummyScene>()}
 {
     register_scene(std::make_unique<ClearScene>());
+    register_scene(std::make_unique<CubeScene>());
     register_scene(std::make_unique<DefaultOptionsScene>(*this));
 }
 

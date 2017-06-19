@@ -8,19 +8,21 @@ core_sources = files(
     'scene.cpp',
     'scene_collection.cpp',
     'util.cpp',
+    'vkutil.cpp',
     'vulkan_state.cpp',
     'window_system_loader.cpp'
     )
 
 scene_sources = files(
     'clear_scene.cpp',
-    'default_options_scene.cpp'
+    'cube_scene.cpp',
+    'default_options_scene.cpp',
     )
 
 vkmark = executable(
     'vkmark',
     core_sources + scene_sources,
-    dependencies : [vulkan_dep, dl_dep],
+    dependencies : [vulkan_dep, glm_dep, dl_dep],
     install : true
     )
 
