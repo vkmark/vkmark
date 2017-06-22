@@ -28,8 +28,10 @@
 
 #include <cmath>
 
-ClearScene::ClearScene() : Scene{"clear"}
+ClearScene::ClearScene() : Scene{"clear"}, cycle{true}
 {
+    options_["color"] = SceneOption("color", "cycle",
+                                    "The \"r,g,b,a\" color to use or \"cycle\" to cycle");
 }
 
 bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& images)
@@ -45,6 +47,25 @@ bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
 
     command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
     submit_fence = vulkan->device().createFence(vk::FenceCreateInfo());
+
+    if (options_["color"].value == "cycle")
+    {
+        cycle = true;
+    }
+    else
+    {
+        cycle = false;
+        auto const components = Util::split(options_["color"].value, ',');
+        std::array<float,4> color_value{{0.0f,0.0f,0.0f,0.0f}};
+
+        if (components.size() > color_value.size())
+            throw std::runtime_error("too many components in \"color\" option");
+
+        for (size_t i = 0; i < components.size(); ++i)
+            color_value[i] = std::stof(components[i]);
+
+        clear_color = vk::ClearColorValue{color_value};
+    }
 
     running = true;
 
@@ -108,27 +129,30 @@ void ClearScene::update()
 {
     auto const elapsed = Util::get_timestamp_us() - start_time;
 
-    // HSV to RGB conversion for S=V=1 and H completeling a cycle every 5sec
-    double const period = 5000000.0;
-    float const c = 1.0;
-    float const h = (360 / 60) * std::fmod(elapsed, period) / period;
-    float const x = c * (1 - std::fabs(std::fmod(h, 2.0) - 1));
-    float r = 0.0f;
-    float g = 0.0f;
-    float b = 0.0f;
-
-    switch (static_cast<int>(h))
+    if (cycle)
     {
-        case 0: r = c; g = x; b = 0; break;
-        case 1: r = x; g = c; b = 0; break;
-        case 2: r = 0; g = c; b = x; break;
-        case 3: r = 0; g = x; b = c; break;
-        case 4: r = x; g = 0; b = c; break;
-        case 5: r = c; g = 0; b = x; break;
-        default: r = g = b = 0; break;
-    };
+        // HSV to RGB conversion for S=V=1 and H completeling a cycle every 5sec
+        double const period = 5000000.0;
+        float const c = 1.0;
+        float const h = (360 / 60) * std::fmod(elapsed, period) / period;
+        float const x = c * (1 - std::fabs(std::fmod(h, 2.0) - 1));
+        float r = 0.0f;
+        float g = 0.0f;
+        float b = 0.0f;
 
-    clear_color = vk::ClearColorValue{std::array<float,4>{{r, g, b, 1.0f}}};
+        switch (static_cast<int>(h))
+        {
+            case 0: r = c; g = x; b = 0; break;
+            case 1: r = x; g = c; b = 0; break;
+            case 2: r = 0; g = c; b = x; break;
+            case 3: r = 0; g = x; b = c; break;
+            case 4: r = x; g = 0; b = c; break;
+            case 5: r = c; g = 0; b = x; break;
+            default: r = g = b = 0; break;
+        };
+
+        clear_color = vk::ClearColorValue{std::array<float,4>{{r, g, b, 1.0f}}};
+    }
 
     Scene::update();
 }

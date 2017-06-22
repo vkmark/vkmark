@@ -43,4 +43,5 @@ private:
     vk::Semaphore submit_semaphore;
     vk::Fence submit_fence;
     vk::ClearColorValue clear_color;
+    bool cycle;
 };
