@@ -22,6 +22,7 @@
 
 #include "window_system_loader.h"
 #include "window_system.h"
+#include "window_system_plugin.h"
 #include "options.h"
 #include "log.h"
 
@@ -34,9 +35,6 @@
 
 namespace
 {
-
-using WindowSystemCreateFunc = std::unique_ptr<WindowSystem>(*)(Options const&);
-using WindowSystemProbeFunc = int(*)();
 
 void close_lib(void* handle)
 {
@@ -90,7 +88,7 @@ WindowSystem& WindowSystemLoader::load_window_system()
 
     lib_handle = LibHandle{dlopen(lib.c_str(), RTLD_LAZY), close_lib};
 
-    auto const ws_create = reinterpret_cast<WindowSystemCreateFunc>(
+    auto const ws_create = reinterpret_cast<VkMarkWindowSystemCreateFunc>(
         dlsym(lib_handle.get(), "vkmark_window_system_create"));
 
     if (!ws_create)
@@ -120,7 +118,7 @@ std::string WindowSystemLoader::probe_for_best_window_system()
         auto const handle = LibHandle{dlopen(c.c_str(), RTLD_LAZY), close_lib};
         if (handle.get())
         {
-            auto ws_probe = reinterpret_cast<WindowSystemProbeFunc>(
+            auto ws_probe = reinterpret_cast<VkMarkWindowSystemProbeFunc>(
                 dlsym(handle.get(), "vkmark_window_system_probe"));
             if (ws_probe)
             {

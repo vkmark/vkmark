@@ -21,6 +21,7 @@
  */
 
 #include "xcb_window_system.h"
+#include "window_system_plugin.h"
 #include "options.h"
 
 #include "vulkan_state.h"
@@ -292,7 +293,11 @@ bool XcbWindowSystem::fullscreen_requested()
     return requested_width == -1 && requested_height == -1;
 }
 
-extern "C" int vkmark_window_system_probe()
+/********************
+ * Plugin functions *
+ ********************/
+
+int vkmark_window_system_probe()
 {
     auto const connection = xcb_connect(nullptr, nullptr);
     auto const has_error = xcb_connection_has_error(connection);
@@ -301,7 +306,7 @@ extern "C" int vkmark_window_system_probe()
     return has_error ? 0 : 127;
 }
 
-extern "C" std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
+std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
 {
     return std::make_unique<XcbWindowSystem>(
         options.size.first,

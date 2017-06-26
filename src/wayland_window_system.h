@@ -97,6 +97,3 @@ private:
     vk::Format vk_image_format;
     vk::Extent2D vk_extent;
 };
-
-extern "C" int vkmark_window_system_probe();
-extern "C" std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options);

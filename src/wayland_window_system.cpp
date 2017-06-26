@@ -21,6 +21,7 @@
  */
 
 #include "wayland_window_system.h"
+#include "window_system_plugin.h"
 #include "options.h"
 
 #include "vulkan_state.h"
@@ -409,7 +410,11 @@ void WaylandWindowSystem::handle_keyboard_key(
     }
 }
 
-extern "C" int vkmark_window_system_probe()
+/********************
+ * Plugin functions *
+ ********************/
+
+int vkmark_window_system_probe()
 {
     auto const display = wl_display_connect(nullptr);
     auto const connected = display != nullptr;
@@ -419,7 +424,7 @@ extern "C" int vkmark_window_system_probe()
     return connected ? 255 : 0;
 }
 
-extern "C" std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
+std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
 {
     return std::make_unique<WaylandWindowSystem>(
         options.size.first,
