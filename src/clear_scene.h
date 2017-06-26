@@ -20,6 +20,8 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
+#pragma once
+
 #include "scene.h"
 
 #include <vulkan/vulkan.hpp>

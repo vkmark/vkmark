@@ -20,6 +20,8 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
+#pragma once
+
 #include "window_system.h"
 
 #define VK_USE_PLATFORM_WAYLAND_KHR
