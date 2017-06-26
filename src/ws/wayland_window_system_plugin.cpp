@@ -42,6 +42,7 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
 {
     return std::make_unique<SwapchainWindowSystem>(
         std::make_unique<WaylandNativeSystem>(options.size.first, options.size.second),
-        options.present_mode);
+        options.present_mode,
+        options.pixel_format);
 }
 

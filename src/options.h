@@ -38,6 +38,7 @@ struct Options
     std::vector<std::string> benchmarks;
     std::pair<int,int> size;
     vk::PresentModeKHR present_mode;
+    vk::Format pixel_format;
     bool list_scenes;
     bool show_all_options;
     std::string window_system_dir;

@@ -23,6 +23,8 @@
 
 #include <cstdio>
 #include <getopt.h>
+#include <algorithm>
+#include <cctype>
 
 #include "options.h"
 #include "util.h"
@@ -35,6 +37,7 @@ struct option long_options[] = {
     {"size", 1, 0, 0},
     {"fullscreen", 0, 0, 0},
     {"present-mode", 1, 0, 0},
+    {"pixel-format", 1, 0, 0},
     {"list-scenes", 0, 0, 0},
     {"show-all-options", 0, 0, 0},
     {"window-system-dir", 1, 0, 0},
@@ -77,11 +80,34 @@ vk::PresentModeKHR parse_present_mode(std::string const& str)
         return vk::PresentModeKHR::eMailbox;
 }
 
+std::string normalize_pixel_format(std::string str)
+{
+    str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+    std::transform(str.begin(), str.end(), str.begin(),
+                   [](auto c) { return std::toupper(c); });
+    return str;
+}
+
+vk::Format parse_pixel_format(std::string const& str)
+{
+    for (auto e = static_cast<vk::Format>(VK_FORMAT_BEGIN_RANGE);
+         e < static_cast<vk::Format>(VK_FORMAT_END_RANGE);
+         e = static_cast<vk::Format>(static_cast<int>(e) + 1))
+    {
+        if (normalize_pixel_format(to_string(e)) == normalize_pixel_format(str))
+            return e;
+    }
+
+    return vk::Format::eUndefined;
+}
+
+
 }
 
 Options::Options()
     : size{800, 600},
       present_mode{vk::PresentModeKHR::eMailbox},
+      pixel_format{vk::Format::eUndefined},
       list_scenes{false},
       show_all_options{false},
       window_system_dir{VKMARK_WINDOW_SYSTEM_DIR},
@@ -102,6 +128,7 @@ void Options::print_help()
            "      --fullscreen            Run fullscreen (equivalent to --size -1x-1)\n"
            "  -p, --present-mode PM       Vulkan present mode (default: mailbox)\n"
            "                              [immediate, mailbox, fifo, fiforelaxed]\n"
+           "      --pixel-format PF       Vulkan pixel format (default: first reported)\n"
            "  -l, --list-scenes           Display information about the available scenes\n"
            "                              and their options\n"
            "      --show-all-options      Show all scene option values used for benchmarks\n"
@@ -138,6 +165,8 @@ bool Options::parse_args(int argc, char **argv)
             size = {-1, -1};
         else if (c == 'p' || optname == "present-mode")
             present_mode = parse_present_mode(optarg);
+        else if (optname == "pixel-format")
+            pixel_format = parse_pixel_format(optarg);
         else if (c == 'l' || optname == "list-scenes")
             list_scenes = true;
         else if (optname == "show-all-options")

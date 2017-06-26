@@ -34,7 +34,8 @@ class SwapchainWindowSystem : public WindowSystem
 public:
     SwapchainWindowSystem(
         std::unique_ptr<NativeSystem> native,
-        vk::PresentModeKHR present_mode);
+        vk::PresentModeKHR present_mode,
+        vk::Format pixel_format);
 
     std::vector<char const*> vulkan_extensions() override;
     void init_vulkan(VulkanState& vulkan) override;
@@ -51,6 +52,7 @@ private:
 
     std::unique_ptr<NativeSystem> const native;
     vk::PresentModeKHR const vk_present_mode;
+    vk::Format const vk_pixel_format;
 
     VulkanState* vulkan;
     ManagedResource<vk::SurfaceKHR> vk_surface;

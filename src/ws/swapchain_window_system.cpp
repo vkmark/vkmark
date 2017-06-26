@@ -25,14 +25,17 @@
 
 #include "vulkan_state.h"
 #include "vulkan_image.h"
+#include "log.h"
 
 #include <stdexcept>
 
 SwapchainWindowSystem::SwapchainWindowSystem(
     std::unique_ptr<NativeSystem> native,
-    vk::PresentModeKHR present_mode)
+    vk::PresentModeKHR present_mode,
+    vk::Format pixel_format)
     : native{std::move(native)},
       vk_present_mode{present_mode},
+      vk_pixel_format{pixel_format},
       vulkan{nullptr}
 {
 }
@@ -117,14 +120,20 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
     }
 
     auto const surface_formats = vulkan->physical_device().getSurfaceFormatsKHR(vk_surface);
+
+    if (vk_pixel_format != vk::Format::eUndefined)
+        vk_image_format = vk_pixel_format;
+    else
+        vk_image_format = surface_formats[0].format;
+
     for (auto const& format : surface_formats)
     {
-        if (format.format == vk::Format::eR8G8B8A8Srgb ||
-            format.format == vk::Format::eB8G8R8A8Srgb)
-        {
-            vk_image_format = format.format;
-        }
+        Log::debug("SwapchainWindowSystem: Avalaible surface format %s\n",
+                   to_string(format.format).c_str());
     }
+
+    Log::debug("SwapchainWindowSystem: Selected swapchain format %s\n",
+               to_string(vk_image_format).c_str());
 
     auto const swapchain_create_info = vk::SwapchainCreateInfoKHR{}
         .setSurface(vk_surface)
