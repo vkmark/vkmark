@@ -23,11 +23,12 @@ vkmark = executable(
     'vkmark',
     core_sources + scene_sources,
     dependencies : [vulkan_dep, glm_dep, dl_dep],
+    link_args: ['-Wl,--dynamic-list=' + join_paths([meson.current_source_dir(), 'dynamic.list'])],
     install : true
     )
 
 if build_xcb_ws
-    xcb_ws = shared_library(
+    xcb_ws = shared_module(
         'xcb',
         'xcb_window_system.cpp',
         dependencies : [vulkan_dep, xcb_dep, xcb_icccm_dep],
@@ -38,7 +39,7 @@ if build_xcb_ws
 endif
 
 if build_wayland_ws
-    wayland_ws = shared_library(
+    wayland_ws = shared_module(
         'wayland',
         'wayland_window_system.cpp',
         dependencies : [vulkan_dep, wayland_client_dep],
