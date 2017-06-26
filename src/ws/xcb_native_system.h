@@ -22,55 +22,36 @@
 
 #pragma once
 
-#include "window_system.h"
-
 #define VK_USE_PLATFORM_XCB_KHR
-#include "vulkan/vulkan.hpp"
+#include "native_system.h"
 
-#include "managed_resource.h"
-
-#include <memory>
 #include <xcb/xcb.h>
 
 struct Options;
 
-class XcbWindowSystem : public WindowSystem
+class XcbNativeSystem : public NativeSystem
 {
 public:
-    XcbWindowSystem(int width, int height, vk::PresentModeKHR present_mode);
-    ~XcbWindowSystem();
+    XcbNativeSystem(int width, int height);
+    ~XcbNativeSystem();
 
     std::vector<char const*> vulkan_extensions() override;
-    void init_vulkan(VulkanState& vulkan) override;
-    void deinit_vulkan() override;
-
-    VulkanImage next_vulkan_image() override;
-    void present_vulkan_image(VulkanImage const&) override;
-    std::vector<VulkanImage> vulkan_images() override;
-
     bool should_quit() override;
+    vk::Extent2D get_vk_extent() override;
+    ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) override;
 
 private:
     void create_native_window();
-    void create_swapchain();
     xcb_atom_t atom(std::string const& name);
     bool fullscreen_requested();
 
     int const requested_width;
     int const requested_height;
-    vk::PresentModeKHR const vk_present_mode;
 
     xcb_connection_t* connection;
     xcb_window_t window;
     xcb_visualid_t root_visual;
     xcb_atom_t atom_wm_protocols;
     xcb_atom_t atom_wm_delete_window;
-
-    VulkanState* vulkan;
-    ManagedResource<vk::SurfaceKHR> vk_surface;
-    ManagedResource<vk::SwapchainKHR> vk_swapchain;
-    ManagedResource<vk::Semaphore> vk_acquire_semaphore;
-    std::vector<vk::Image> vk_images;
-    vk::Format vk_image_format;
     vk::Extent2D vk_extent;
 };

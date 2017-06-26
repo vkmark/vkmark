@@ -20,12 +20,9 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#include "wayland_window_system.h"
-#include "window_system_plugin.h"
-#include "options.h"
+#include "wayland_native_system.h"
 
 #include "vulkan_state.h"
-#include "vulkan_image.h"
 
 #include <stdexcept>
 #include <linux/input.h>
@@ -89,108 +86,40 @@ void handle_keyboard_repeat_info(
 
 }
 
-wl_seat_listener const WaylandWindowSystem::seat_listener{
-    WaylandWindowSystem::handle_seat_capabilities
+wl_seat_listener const WaylandNativeSystem::seat_listener{
+    WaylandNativeSystem::handle_seat_capabilities
 };
 
-wl_output_listener const WaylandWindowSystem::output_listener{
+wl_output_listener const WaylandNativeSystem::output_listener{
     handle_output_geometry,
     handle_output_mode,
     handle_output_done,
     handle_output_scale
 };
 
-wl_keyboard_listener const WaylandWindowSystem::keyboard_listener{
+wl_keyboard_listener const WaylandNativeSystem::keyboard_listener{
     handle_keyboard_keymap,
     handle_keyboard_enter,
     handle_keyboard_leave,
-    WaylandWindowSystem::handle_keyboard_key,
+    WaylandNativeSystem::handle_keyboard_key,
     handle_keyboard_modifiers,
     handle_keyboard_repeat_info
 };
 
-WaylandWindowSystem::WaylandWindowSystem(
-    int width, int height, vk::PresentModeKHR present_mode)
+WaylandNativeSystem::WaylandNativeSystem(int width, int height)
     : requested_width{width},
       requested_height{height},
-      vk_present_mode{present_mode},
-      should_quit_{false},
-      vulkan{nullptr}
+      should_quit_{false}
 {
     create_native_window();
 }
 
-std::vector<char const*> WaylandWindowSystem::vulkan_extensions()
+std::vector<char const*> WaylandNativeSystem::vulkan_extensions()
 {
     return {VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
 }
 
-void WaylandWindowSystem::init_vulkan(VulkanState& vulkan_)
-{
-    vulkan = &vulkan_;
-
-    auto const vk_supported = vulkan->physical_device().getWaylandPresentationSupportKHR(
-        vulkan->graphics_queue_family_index(),
-        display);
-
-    if (!vk_supported)
-        throw std::runtime_error{"Queue family does not support presentation on Wayland"};
-
-    auto const wayland_surface_create_info = vk::WaylandSurfaceCreateInfoKHR{}
-        .setDisplay(display)
-        .setSurface(surface);
-
-    vk_surface = ManagedResource<vk::SurfaceKHR>{
-        vulkan->instance().createWaylandSurfaceKHR(wayland_surface_create_info),
-        [this] (vk::SurfaceKHR& s) { vulkan->instance().destroySurfaceKHR(s); }};
-
-    create_swapchain();
-
-    vk_acquire_semaphore = ManagedResource<vk::Semaphore>{
-        vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
-        [this] (auto& s) { vulkan->device().destroySemaphore(s); }};
-
-}
-
-void WaylandWindowSystem::deinit_vulkan()
-{
-    vulkan->device().waitIdle();
-    vk_acquire_semaphore = {};
-    vk_swapchain = {};
-    vk_surface = {};
-}
-
-VulkanImage WaylandWindowSystem::next_vulkan_image()
-{
-    auto const image_index = vulkan->device().acquireNextImageKHR(
-        vk_swapchain, UINT64_MAX, vk_acquire_semaphore, nullptr).value;
-    
-    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphore};
-}
-
-void WaylandWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
-{
-    auto const present_info = vk::PresentInfoKHR{}
-        .setSwapchainCount(1)
-        .setPSwapchains(&vk_swapchain.raw)
-        .setPImageIndices(&vulkan_image.index)
-        .setWaitSemaphoreCount(vulkan_image.semaphore ? 1 : 0)
-        .setPWaitSemaphores(&vulkan_image.semaphore);
-
-    vulkan->graphics_queue().presentKHR(present_info);
-}
-
-std::vector<VulkanImage> WaylandWindowSystem::vulkan_images()
-{
-    std::vector<VulkanImage> vulkan_images;
-
-    for (uint32_t i = 0; i < vk_images.size(); ++i)
-        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk_extent, vk::Semaphore{}});
-
-    return vulkan_images;
-}
-
-bool WaylandWindowSystem::should_quit()
+bool WaylandNativeSystem::should_quit()
 {
     while (wl_display_prepare_read(display) != 0)
         wl_display_dispatch_pending(display);
@@ -216,7 +145,30 @@ bool WaylandWindowSystem::should_quit()
     return should_quit_;
 }
 
-void WaylandWindowSystem::create_native_window()
+vk::Extent2D WaylandNativeSystem::get_vk_extent()
+{
+    return vk_extent;
+}
+
+ManagedResource<vk::SurfaceKHR> WaylandNativeSystem::create_vk_surface(VulkanState& vulkan)
+{
+    auto const vk_supported = vulkan.physical_device().getWaylandPresentationSupportKHR(
+        vulkan.graphics_queue_family_index(),
+        display);
+
+    if (!vk_supported)
+        throw std::runtime_error{"Queue family does not support presentation on Wayland"};
+
+    auto const wayland_surface_create_info = vk::WaylandSurfaceCreateInfoKHR{}
+        .setDisplay(display)
+        .setSurface(surface);
+
+    return ManagedResource<vk::SurfaceKHR>{
+        vulkan.instance().createWaylandSurfaceKHR(wayland_surface_create_info),
+        [vptr=&vulkan] (vk::SurfaceKHR& s) { vptr->instance().destroySurfaceKHR(s); }};
+}
+
+void WaylandNativeSystem::create_native_window()
 {
     display = ManagedResource<wl_display*>{
         wl_display_connect(nullptr),
@@ -227,7 +179,7 @@ void WaylandWindowSystem::create_native_window()
     display_fd = wl_display_get_fd(display);
 
     wl_registry_listener const registry_listener = {
-        WaylandWindowSystem::handle_registry_global,
+        WaylandNativeSystem::handle_registry_global,
         handle_registry_global_remove
     };
 
@@ -270,61 +222,16 @@ void WaylandWindowSystem::create_native_window()
     }
 }
 
-void WaylandWindowSystem::create_swapchain()
-{
-    auto const surface_caps = vulkan->physical_device().getSurfaceCapabilitiesKHR(vk_surface);
-    if (!(surface_caps.supportedCompositeAlpha &
-          vk::CompositeAlphaFlagBitsKHR::eOpaque))
-    {
-        throw std::runtime_error("Opaque not supported");
-    }
-
-    if (!vulkan->physical_device().getSurfaceSupportKHR(
-            vulkan->graphics_queue_family_index(),
-            vk_surface))
-    {
-        throw std::runtime_error("Surface not supported");
-    }
-
-    auto const surface_formats = vulkan->physical_device().getSurfaceFormatsKHR(vk_surface);
-    for (auto const& format : surface_formats)
-    {
-        if (format.format == vk::Format::eR8G8B8A8Srgb ||
-            format.format == vk::Format::eB8G8R8A8Srgb)
-        {
-            vk_image_format = format.format;
-        }
-    }
-
-    auto const swapchain_create_info = vk::SwapchainCreateInfoKHR{}
-        .setSurface(vk_surface)
-        .setMinImageCount(2)
-        .setImageFormat(vk_image_format)
-        .setImageExtent(vk_extent)
-        .setImageArrayLayers(1)
-        .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-        .setImageSharingMode(vk::SharingMode::eExclusive)
-        .setQueueFamilyIndexCount(1)
-        .setPQueueFamilyIndices(&vulkan->graphics_queue_family_index())
-        .setPresentMode(vk_present_mode);
-
-    vk_swapchain = ManagedResource<vk::SwapchainKHR>{
-        vulkan->device().createSwapchainKHR(swapchain_create_info),
-        [this] (auto& s) { vulkan->device().destroySwapchainKHR(s); }};
-
-    vk_images = vulkan->device().getSwapchainImagesKHR(vk_swapchain);
-}
-
-bool WaylandWindowSystem::fullscreen_requested()
+bool WaylandNativeSystem::fullscreen_requested()
 {
     return requested_width == -1 && requested_height == -1;
 }
 
-void WaylandWindowSystem::handle_registry_global(
+void WaylandNativeSystem::handle_registry_global(
     void* data, wl_registry* registry, uint32_t id,
     char const* interface_cstr, uint32_t version)
 {
-    auto const wws = static_cast<WaylandWindowSystem*>(data);
+    auto const wws = static_cast<WaylandNativeSystem*>(data);
     auto const interface = std::string{interface_cstr ? interface_cstr : ""};
 
     if (interface == "wl_compositor")
@@ -365,10 +272,10 @@ void WaylandWindowSystem::handle_registry_global(
     }
 }
 
-void WaylandWindowSystem::handle_seat_capabilities(
+void WaylandNativeSystem::handle_seat_capabilities(
     void* data, wl_seat* seat, uint32_t capabilities)
 {
-    auto const wws = static_cast<WaylandWindowSystem*>(data);
+    auto const wws = static_cast<WaylandNativeSystem*>(data);
 
     if ((capabilities & WL_SEAT_CAPABILITY_KEYBOARD) && !wws->keyboard)
     {
@@ -385,49 +292,27 @@ void WaylandWindowSystem::handle_seat_capabilities(
     }
 }
 
-void WaylandWindowSystem::handle_output_mode(
+void WaylandNativeSystem::handle_output_mode(
     void* data, wl_output* output,
     uint32_t flags, int32_t width, int32_t height, int32_t refresh)
 {
     if (flags & WL_OUTPUT_MODE_CURRENT)
     {
-        auto const wws = static_cast<WaylandWindowSystem*>(data);
+        auto const wws = static_cast<WaylandNativeSystem*>(data);
         wws->output_width = width;
         wws->output_height = height;
         wws->output_refresh = refresh;
     }
 }
 
-void WaylandWindowSystem::handle_keyboard_key(
+void WaylandNativeSystem::handle_keyboard_key(
     void* data, wl_keyboard* /*wl_keyboard*/,
     uint32_t /*serial*/, uint32_t /*time*/,
     uint32_t key, uint32_t state)
 {
     if (key == KEY_ESC && state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
-        auto const wws = static_cast<WaylandWindowSystem*>(data);
+        auto const wws = static_cast<WaylandNativeSystem*>(data);
         wws->should_quit_ = true;
     }
-}
-
-/********************
- * Plugin functions *
- ********************/
-
-int vkmark_window_system_probe()
-{
-    auto const display = wl_display_connect(nullptr);
-    auto const connected = display != nullptr;
-
-    if (connected) wl_display_disconnect(display);
-
-    return connected ? 255 : 0;
-}
-
-std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
-{
-    return std::make_unique<WaylandWindowSystem>(
-        options.size.first,
-        options.size.second,
-        options.present_mode);
 }

@@ -30,7 +30,9 @@ vkmark = executable(
 if build_xcb_ws
     xcb_ws = shared_module(
         'xcb',
-        'xcb_window_system.cpp',
+        'ws/xcb_window_system_plugin.cpp',
+        'ws/xcb_native_system.cpp',
+        'ws/swapchain_window_system.cpp',
         dependencies : [vulkan_dep, xcb_dep, xcb_icccm_dep],
         name_prefix : '',
         install : true,
@@ -41,7 +43,9 @@ endif
 if build_wayland_ws
     wayland_ws = shared_module(
         'wayland',
-        'wayland_window_system.cpp',
+        'ws/wayland_window_system_plugin.cpp',
+        'ws/wayland_native_system.cpp',
+        'ws/swapchain_window_system.cpp',
         dependencies : [vulkan_dep, wayland_client_dep],
         name_prefix : '',
         install : true,

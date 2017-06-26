@@ -22,36 +22,25 @@
 
 #pragma once
 
-#include "window_system.h"
-
 #define VK_USE_PLATFORM_WAYLAND_KHR
-#include "vulkan/vulkan.hpp"
+#include "native_system.h"
 
-#include "managed_resource.h"
-
-#include <memory>
 #include <wayland-client.h>
 
 struct Options;
 
-class WaylandWindowSystem : public WindowSystem
+class WaylandNativeSystem : public NativeSystem
 {
 public:
-    WaylandWindowSystem(int width, int height, vk::PresentModeKHR present_mode);
+    WaylandNativeSystem(int width, int height);
 
     std::vector<char const*> vulkan_extensions() override;
-    void init_vulkan(VulkanState& vulkan) override;
-    void deinit_vulkan() override;
-
-    VulkanImage next_vulkan_image() override;
-    void present_vulkan_image(VulkanImage const&) override;
-    std::vector<VulkanImage> vulkan_images() override;
-
     bool should_quit() override;
+    vk::Extent2D get_vk_extent() override;
+    ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) override;
 
 private:
     void create_native_window();
-    void create_swapchain();
     bool fullscreen_requested();
 
     static void handle_registry_global(
@@ -73,7 +62,6 @@ private:
 
     int const requested_width;
     int const requested_height;
-    vk::PresentModeKHR const vk_present_mode;
     bool should_quit_;
 
     ManagedResource<wl_display*> display;
@@ -88,12 +76,5 @@ private:
     int32_t output_width;
     int32_t output_height;
     int32_t output_refresh;
-
-    VulkanState* vulkan;
-    ManagedResource<vk::SurfaceKHR> vk_surface;
-    ManagedResource<vk::SwapchainKHR> vk_swapchain;
-    ManagedResource<vk::Semaphore> vk_acquire_semaphore;
-    std::vector<vk::Image> vk_images;
-    vk::Format vk_image_format;
     vk::Extent2D vk_extent;
 };
