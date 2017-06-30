@@ -52,3 +52,15 @@ if build_wayland_ws
         install_dir : ws_dir
         )
 endif
+
+if build_kms_ws
+    kms_ws = shared_module(
+        'kms',
+        'ws/kms_window_system_plugin.cpp',
+        'ws/kms_window_system.cpp',
+        dependencies : [vulkan_dep, libdrm_dep, gbm_dep],
+        name_prefix : '',
+        install : true,
+        install_dir : ws_dir
+        )
+endif

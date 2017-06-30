@@ -21,9 +21,12 @@ glm_dep = dependency('glm')
 xcb_dep = dependency('xcb', required : get_option('xcb') == 'true')
 xcb_icccm_dep = dependency('xcb-icccm', required : get_option('xcb') == 'true')
 wayland_client_dep = dependency('wayland-client', required : get_option('wayland') == 'true')
+libdrm_dep = dependency('libdrm', required : get_option('kms') == 'true')
+gbm_dep = dependency('gbm', required : get_option('kms') == 'true')
 
 build_xcb_ws = xcb_dep.found() and xcb_icccm_dep.found() and get_option('xcb') != 'false'
 build_wayland_ws = wayland_client_dep.found() and get_option('wayland') != 'false'
+build_kms_ws = libdrm_dep.found() and gbm_dep.found() and get_option('kms') != 'false'
 
 subdir('src')
 subdir('data')
@@ -36,6 +39,10 @@ endif
 
 if build_xcb_ws
     msg += 'xcb '
+endif
+
+if build_kms_ws
+    msg += 'kms '
 endif
 
 message(msg)

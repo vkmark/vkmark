@@ -67,6 +67,10 @@ struct ManagedResource
     operator T const& () const { return raw; }
     operator T&() { return raw; }
 
+    // For pointer types only
+    T const operator->() const { return raw; }
+    T operator->() { return raw; }
+
     T steal()
     {
         auto ret = raw;
