@@ -147,7 +147,7 @@ std::string WindowSystemLoader::probe_for_best_window_system()
     if (!best_candidate.empty())
         return best_candidate;
 
-    throw std::runtime_error{"Failed to find usable window system, try using --window-system-dir"};
+    throw std::runtime_error{"Failed to find usable window system, try using --winsys-dir"};
 }
 
 void WindowSystemLoader::load_window_system_options()

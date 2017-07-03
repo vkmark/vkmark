@@ -40,7 +40,7 @@ struct option long_options[] = {
     {"pixel-format", 1, 0, 0},
     {"list-scenes", 0, 0, 0},
     {"show-all-options", 0, 0, 0},
-    {"window-system-dir", 1, 0, 0},
+    {"winsys-dir", 1, 0, 0},
     {"data-dir", 1, 0, 0},
     {"winsys-options", 1, 0, 0},
     {"debug", 0, 0, 0},
@@ -153,7 +153,7 @@ void Options::print_help()
            "                              and their options\n"
            "      --show-all-options      Show all scene option values used for benchmarks\n"
            "                              (only explicitly set options are shown by default)\n"
-           "      --window-system-dir DIR Directory to search in for window system modules\n"
+           "      --winsys-dir DIR        Directory to search in for window system modules\n"
            "      --data-dir DIR          Directory to search in for scene data files\n"
            "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
            "  -d, --debug                 Display debug messages\n"
@@ -195,7 +195,7 @@ bool Options::parse_args(int argc, char **argv)
             list_scenes = true;
         else if (optname == "show-all-options")
             show_all_options = true;
-        else if (optname == "window-system-dir")
+        else if (optname == "winsys-dir")
             window_system_dir = optarg;
         else if (optname == "data-dir")
             data_dir = optarg;
