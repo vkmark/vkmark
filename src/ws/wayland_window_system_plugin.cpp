@@ -32,7 +32,7 @@ void vkmark_window_system_load_options(Options&)
 {
 }
 
-int vkmark_window_system_probe()
+int vkmark_window_system_probe(Options const&)
 {
     auto const display = wl_display_connect(nullptr);
     auto const connected = display != nullptr;

@@ -29,7 +29,7 @@ class WindowSystem;
 
 using VkMarkWindowSystemLoadOptionsFunc = void(*)(Options&);
 using VkMarkWindowSystemCreateFunc = std::unique_ptr<WindowSystem>(*)(Options const&);
-using VkMarkWindowSystemProbeFunc = int(*)();
+using VkMarkWindowSystemProbeFunc = int(*)(Options const&);
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -40,7 +40,7 @@ extern "C"
 {
 
 void vkmark_window_system_load_options(Options& options);
-int vkmark_window_system_probe();
+int vkmark_window_system_probe(Options const&);
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options);
 
 }

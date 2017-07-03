@@ -44,7 +44,7 @@ void vkmark_window_system_load_options(Options& options)
         );
 }
 
-int vkmark_window_system_probe()
+int vkmark_window_system_probe(Options const&)
 {
     auto const connection = xcb_connect(nullptr, nullptr);
     auto const has_error = xcb_connection_has_error(connection);

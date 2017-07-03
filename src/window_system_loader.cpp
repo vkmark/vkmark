@@ -120,7 +120,7 @@ std::string WindowSystemLoader::probe_for_best_window_system()
                     dlsym(handle, "vkmark_window_system_probe"));
                 if (ws_probe)
                 {
-                    auto priority = ws_probe();
+                    auto priority = ws_probe(options);
                     if (priority > best_priority)
                     {
                         best_candidate = name;
