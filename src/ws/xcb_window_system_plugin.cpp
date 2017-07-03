@@ -25,11 +25,23 @@
 #include "xcb_native_system.h"
 
 #include "options.h"
+#include "log.h"
 
 #include <xcb/xcb.h>
 
-void vkmark_window_system_load_options(Options&)
+namespace
 {
+
+std::string const visual_id_opt{"xcb-visual-id"};
+
+}
+
+void vkmark_window_system_load_options(Options& options)
+{
+    options.add_window_system_help(
+        "XCB window system options (pass in --winsys-options)\n"
+        "  xcb-visual-id=ID            The X11 visual to use in hex (default: root)\n"
+        );
 }
 
 int vkmark_window_system_probe()
@@ -43,8 +55,27 @@ int vkmark_window_system_probe()
 
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
 {
+    auto const& winsys_options = options.window_system_options;
+    xcb_visualid_t visual_id = XCB_NONE;
+
+    for (auto const& opt : winsys_options)
+    {
+        if (opt.name == visual_id_opt)
+        {
+            visual_id = !opt.value.empty() ?
+                        std::stoul(opt.value, nullptr, 16) :
+                        XCB_NONE;
+        }
+        else
+        {
+            Log::info("XcbWindowSystemPlugin: Ignoring unknown window system option '%s'\n",
+                      opt.name.c_str());
+        }
+    }
+
     return std::make_unique<SwapchainWindowSystem>(
-        std::make_unique<XcbNativeSystem>(options.size.first, options.size.second),
+        std::make_unique<XcbNativeSystem>(
+            options.size.first, options.size.second, visual_id),
         options.present_mode,
         options.pixel_format);
 }

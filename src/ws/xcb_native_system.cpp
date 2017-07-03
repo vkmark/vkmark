@@ -23,16 +23,18 @@
 #include "xcb_native_system.h"
 
 #include "vulkan_state.h"
+#include "log.h"
 
 #include <xcb/xcb_icccm.h>
 #include <stdexcept>
 
-XcbNativeSystem::XcbNativeSystem(int width, int height)
+XcbNativeSystem::XcbNativeSystem(
+    int width, int height, xcb_visualid_t visual_id)
     : requested_width{width},
       requested_height{height},
       connection{nullptr},
       window{XCB_NONE},
-      root_visual{XCB_NONE},
+      visual_id{visual_id},
       atom_wm_protocols{XCB_NONE},
       atom_wm_delete_window{XCB_NONE}
 {
@@ -96,7 +98,7 @@ ManagedResource<vk::SurfaceKHR> XcbNativeSystem::create_vk_surface(VulkanState& 
     auto const vk_supported = vulkan.physical_device().getXcbPresentationSupportKHR(
         vulkan.graphics_queue_family_index(),
         connection,
-        root_visual);
+        visual_id);
 
     if (!vk_supported)
         throw std::runtime_error{"Queue family does not support presentation on XCB"};
@@ -125,7 +127,18 @@ void XcbNativeSystem::create_native_window()
 
     auto const iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
     auto const screen = iter.data;
-    root_visual = screen->root_visual;
+
+    if (visual_id == XCB_NONE)
+    {
+        visual_id = screen->root_visual;
+        Log::debug("XcbNativeSystem: Using root visual 0x%x for window\n",
+                   visual_id);
+    }
+    else
+    {
+        Log::debug("XcbNativeSystem: Using user-specified visual 0x%x for window\n",
+                   visual_id);
+    }
 
     if (fullscreen_requested())
     {
@@ -150,7 +163,7 @@ void XcbNativeSystem::create_native_window()
         vk_extent.height,
         0,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
-        iter.data->root_visual,
+        visual_id,
         XCB_CW_EVENT_MASK, window_values);
 
     // Set window name

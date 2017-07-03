@@ -32,7 +32,7 @@ struct Options;
 class XcbNativeSystem : public NativeSystem
 {
 public:
-    XcbNativeSystem(int width, int height);
+    XcbNativeSystem(int width, int height, xcb_visualid_t visual_id);
     ~XcbNativeSystem();
 
     std::vector<char const*> vulkan_extensions() override;
@@ -50,7 +50,7 @@ private:
 
     xcb_connection_t* connection;
     xcb_window_t window;
-    xcb_visualid_t root_visual;
+    xcb_visualid_t visual_id;
     xcb_atom_t atom_wm_protocols;
     xcb_atom_t atom_wm_delete_window;
     vk::Extent2D vk_extent;
