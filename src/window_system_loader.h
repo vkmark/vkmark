@@ -30,16 +30,19 @@ class WindowSystem;
 class WindowSystemLoader
 {
 public:
-    WindowSystemLoader(Options const& options);
+    WindowSystemLoader(Options& options);
 
+    void load_window_system_options();
     WindowSystem& load_window_system();
 
 private:
     using LibHandle = std::unique_ptr<void,void(*)(void*)>;
+    using ForeachCallback = std::function<void(std::string const&,void*)>;
 
     std::string probe_for_best_window_system();
+    void for_each_window_system(ForeachCallback const& callback);
 
-    Options const& options;
+    Options& options;
     LibHandle lib_handle;
     std::unique_ptr<WindowSystem> window_system;
 };

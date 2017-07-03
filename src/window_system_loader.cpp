@@ -73,10 +73,12 @@ std::vector<std::string> files_in_dir(std::string dir)
 
 }
 
-WindowSystemLoader::WindowSystemLoader(Options const& options)
+WindowSystemLoader::WindowSystemLoader(Options& options)
     : options{options},
       lib_handle{nullptr, close_lib}
 {
+    Log::debug("WindowSystemLoader: Looking in %s for window system modules\n",
+               options.window_system_dir.c_str());
 }
 
 WindowSystem& WindowSystemLoader::load_window_system()
@@ -104,54 +106,88 @@ WindowSystem& WindowSystemLoader::load_window_system()
 
 std::string WindowSystemLoader::probe_for_best_window_system()
 {
-    std::vector<int> priorities;
+    std::string best_candidate;
+    int best_priority = 0;;
 
-    Log::debug("WindowSystemLoader: Looking in %s for window system modules\n",
-               options.window_system_dir.c_str());
+    for_each_window_system(
+        [&] (std::string const& name, void* handle)
+        {
+            Log::debug("WindowSystemLoader: Probing %s... ", name.c_str());
 
+            if (handle)
+            {
+                auto ws_probe = reinterpret_cast<VkMarkWindowSystemProbeFunc>(
+                    dlsym(handle, "vkmark_window_system_probe"));
+                if (ws_probe)
+                {
+                    auto priority = ws_probe();
+                    if (priority > best_priority)
+                    {
+                        best_candidate = name;
+                        best_priority = priority;
+                    }
+
+                    auto const fmt = Log::continuation_prefix + "succeeded with priority %d\n";
+                    Log::debug(fmt.c_str(), priority);
+                }
+                else
+                {
+                    auto const fmt = Log::continuation_prefix + "failed to find probe function: %s\n";
+                    Log::debug(fmt.c_str(), dlerror());
+                }
+            }
+            else
+            {
+                auto const fmt = Log::continuation_prefix + "failed to load file: %s\n";
+                Log::debug(fmt.c_str(), dlerror());
+            }
+        });
+
+
+    if (!best_candidate.empty())
+        return best_candidate;
+
+    throw std::runtime_error{"Failed to find usable window system, try using --window-system-dir"};
+}
+
+void WindowSystemLoader::load_window_system_options()
+{
+    for_each_window_system(
+        [&] (std::string const& name, void* handle)
+        {
+            Log::debug("WindowSystemLoader: Loading options from %s... ", name.c_str());
+
+            if (handle)
+            {
+                auto add_options = reinterpret_cast<VkMarkWindowSystemLoadOptionsFunc>(
+                    dlsym(handle, "vkmark_window_system_load_options"));
+                if (add_options)
+                {
+                    add_options(options);
+                    auto const fmt = Log::continuation_prefix + "ok\n";
+                    Log::debug(fmt.c_str());
+                }
+                else
+                {
+                    auto const fmt = Log::continuation_prefix + "failed to find load options function: %s\n";
+                    Log::debug(fmt.c_str(), dlerror());
+                }
+            }
+            else
+            {
+                auto const fmt = Log::continuation_prefix + "failed to load file: %s\n";
+                Log::debug(fmt.c_str(), dlerror());
+            }
+        });
+}
+
+void WindowSystemLoader::for_each_window_system(ForeachCallback const& callback)
+{
     auto const candidates = files_in_dir(options.window_system_dir);
 
     for (auto const& c : candidates)
     {
-        Log::debug("WindowSystemLoader: Probing %s... ", c.c_str());
-
         auto const handle = LibHandle{dlopen(c.c_str(), RTLD_LAZY), close_lib};
-        if (handle.get())
-        {
-            auto ws_probe = reinterpret_cast<VkMarkWindowSystemProbeFunc>(
-                dlsym(handle.get(), "vkmark_window_system_probe"));
-            if (ws_probe)
-            {
-                priorities.push_back(ws_probe());
-
-                auto const fmt = Log::continuation_prefix + "succeeded with priority %d\n";
-                Log::debug(fmt.c_str(), priorities.back());
-            }
-            else
-            {
-                priorities.push_back(0);
-
-                auto const fmt = Log::continuation_prefix + "failed to find probe function: %s\n";
-                Log::debug(fmt.c_str(), dlerror());
-            }
-        }
-        else
-        {
-            priorities.push_back(0);
-
-            auto const fmt = Log::continuation_prefix + "failed to load file: %s\n";
-            Log::debug(fmt.c_str(), dlerror());
-        }
+        callback(c, handle.get());
     }
-
-    auto const iter = std::max_element(priorities.begin(), priorities.end());
-    if (iter != priorities.end() && *iter > 0)
-    {
-        auto const index = std::distance(priorities.begin(), iter);
-        Log::debug("WindowSystemLoader: Selected window system module %s\n",
-                   candidates[index].c_str());
-        return candidates[index];
-    }
-
-    throw std::runtime_error{"Failed to find usable window system, try using --window-system-dir"};
 }

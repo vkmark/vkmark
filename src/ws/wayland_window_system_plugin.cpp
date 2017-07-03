@@ -28,6 +28,10 @@
 
 #include <wayland-client.h>
 
+void vkmark_window_system_load_options(Options&)
+{
+}
+
 int vkmark_window_system_probe()
 {
     auto const display = wl_display_connect(nullptr);
@@ -45,4 +49,3 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         options.present_mode,
         options.pixel_format);
 }
-

@@ -1,5 +1,6 @@
 {
   extern "C++" {
     Log::*;
+    Options::*;
   };
 };

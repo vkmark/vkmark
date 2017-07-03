@@ -28,6 +28,10 @@
 
 #include <xcb/xcb.h>
 
+void vkmark_window_system_load_options(Options&)
+{
+}
+
 int vkmark_window_system_probe()
 {
     auto const connection = xcb_connect(nullptr, nullptr);

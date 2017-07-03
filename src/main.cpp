@@ -77,6 +77,9 @@ try
 
     Log::init(argv[0], options.show_debug);
 
+    WindowSystemLoader ws_loader{options};
+    ws_loader.load_window_system_options();
+
     if (options.show_help)
     {
         options.print_help();
@@ -94,9 +97,7 @@ try
         return 0;
     }
 
-    WindowSystemLoader ws_loader{options};
     auto& ws = ws_loader.load_window_system();
-
     VulkanState vulkan{ws.vulkan_extensions()};
 
     auto const ws_vulkan_init = Util::make_raii(

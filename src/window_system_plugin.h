@@ -27,6 +27,7 @@
 struct Options;
 class WindowSystem;
 
+using VkMarkWindowSystemLoadOptionsFunc = void(*)(Options&);
 using VkMarkWindowSystemCreateFunc = std::unique_ptr<WindowSystem>(*)(Options const&);
 using VkMarkWindowSystemProbeFunc = int(*)();
 
@@ -38,6 +39,7 @@ using VkMarkWindowSystemProbeFunc = int(*)();
 extern "C"
 {
 
+void vkmark_window_system_load_options(Options& options);
 int vkmark_window_system_probe();
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options);
 

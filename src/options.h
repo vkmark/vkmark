@@ -31,9 +31,17 @@
 
 struct Options
 {
+    struct WindowSystemOption
+    {
+        std::string name;
+        std::string value;
+    };
+
     Options();
     bool parse_args(int argc, char **argv);
     void print_help();
+
+    void add_window_system_help(std::string const& help);
 
     std::vector<std::string> benchmarks;
     std::pair<int,int> size;
@@ -43,6 +51,10 @@ struct Options
     bool show_all_options;
     std::string window_system_dir;
     std::string data_dir;
+    std::vector<WindowSystemOption> window_system_options;
     bool show_debug;
     bool show_help;
+
+private:
+    std::vector<std::string> window_system_help;
 };

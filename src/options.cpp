@@ -42,6 +42,7 @@ struct option long_options[] = {
     {"show-all-options", 0, 0, 0},
     {"window-system-dir", 1, 0, 0},
     {"data-dir", 1, 0, 0},
+    {"winsys-options", 1, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
     {0, 0, 0, 0}
@@ -102,6 +103,25 @@ vk::Format parse_pixel_format(std::string const& str)
 }
 
 
+std::vector<Options::WindowSystemOption> parse_window_system_options(
+    std::string const& options_str)
+{
+    std::vector<Options::WindowSystemOption> ret;
+
+    auto const opts = Util::split(options_str, ':');
+
+    for (auto const& opt : opts)
+    {
+        auto const kv = Util::split(opt, '=');
+        if (kv.size() == 2)
+            ret.push_back({kv[0], kv[1]});
+        else
+            throw std::runtime_error{"Invalid window system option '" + opt + "'"};
+    }
+
+    return ret;
+}
+
 }
 
 Options::Options()
@@ -135,8 +155,12 @@ void Options::print_help()
            "                              (only explicitly set options are shown by default)\n"
            "      --window-system-dir DIR Directory to search in for window system modules\n"
            "      --data-dir DIR          Directory to search in for scene data files\n"
+           "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
            "  -d, --debug                 Display debug messages\n"
            "  -h, --help                  Display help\n");
+
+    for (auto const& help : window_system_help)
+        printf(help.c_str());
 }
 
 bool Options::parse_args(int argc, char **argv)
@@ -175,6 +199,8 @@ bool Options::parse_args(int argc, char **argv)
             window_system_dir = optarg;
         else if (optname == "data-dir")
             data_dir = optarg;
+        else if (optname == "winsys-options")
+            window_system_options = parse_window_system_options(optarg);
         else if (c == 'd' || optname == "debug")
             show_debug = true;
         else if (c == 'h' || optname == "help")
@@ -182,4 +208,9 @@ bool Options::parse_args(int argc, char **argv)
     }
 
     return true;
+}
+
+void Options::add_window_system_help(std::string const& help)
+{
+    window_system_help.push_back(help);
 }
