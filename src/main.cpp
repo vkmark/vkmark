@@ -34,9 +34,27 @@
 #include "util.h"
 
 #include <stdexcept>
+#include <csignal>
+#include <atomic>
 
 namespace
 {
+
+std::atomic<bool> should_quit_sig{false};
+
+void sighandler(int)
+{
+    should_quit_sig = true;
+}
+
+void set_up_sighandler()
+{
+    struct sigaction sa{};
+    sa.sa_handler = sighandler;
+
+    sigaction(SIGTERM, &sa, nullptr);
+    sigaction(SIGINT, &sa, nullptr);
+}
 
 void log_scene_info(Scene& scene, bool show_all_options)
 {
@@ -115,6 +133,8 @@ try
     else
         bc.add(DefaultBenchmarks::get());
 
+    set_up_sighandler();
+
     unsigned int total_fps = 0;
     unsigned int total_benchmarks = 0;
 
@@ -140,7 +160,9 @@ try
 
         bool should_quit = false;
 
-        while (scene.is_running() && !(should_quit = ws.should_quit()))
+        while (scene.is_running() &&
+               !(should_quit = ws.should_quit()) &&
+               !should_quit_sig)
         {
             ws.present_vulkan_image(
                 scene.draw(ws.next_vulkan_image()));
@@ -154,7 +176,7 @@ try
         total_fps += scene_fps;
         ++total_benchmarks;
 
-        if (should_quit)
+        if (should_quit || should_quit_sig)
             break;
     }
     catch (std::exception const& e)
