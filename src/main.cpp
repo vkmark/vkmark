@@ -33,9 +33,14 @@
 #include "log.h"
 #include "util.h"
 
+#include "clear_scene.h"
+#include "cube_scene.h"
+#include "default_options_scene.h"
+
 #include <stdexcept>
 #include <csignal>
 #include <atomic>
+#include <memory>
 
 namespace
 {
@@ -83,6 +88,13 @@ void log_scene_fps(unsigned int fps)
     Log::flush();
 }
 
+void populate_scene_collection(SceneCollection& sc)
+{
+    sc.register_scene(std::make_unique<ClearScene>());
+    sc.register_scene(std::make_unique<CubeScene>());
+    sc.register_scene(std::make_unique<DefaultOptionsScene>(sc));
+}
+
 }
 
 int main(int argc, char **argv)
@@ -107,6 +119,8 @@ try
     Util::set_data_dir(options.data_dir);
 
     SceneCollection sc;
+    populate_scene_collection(sc);
+
     BenchmarkCollection bc{sc};
 
     if (options.list_scenes)

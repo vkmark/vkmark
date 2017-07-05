@@ -21,10 +21,8 @@
  */
 
 #include "scene_collection.h"
+#include "scene.h"
 
-#include "clear_scene.h"
-#include "cube_scene.h"
-#include "default_options_scene.h"
 #include "log.h"
 
 namespace
@@ -41,9 +39,11 @@ public:
 SceneCollection::SceneCollection()
     : dummy_scene{std::make_unique<DummyScene>()}
 {
-    register_scene(std::make_unique<ClearScene>());
-    register_scene(std::make_unique<CubeScene>());
-    register_scene(std::make_unique<DefaultOptionsScene>(*this));
+}
+
+void SceneCollection::register_scene(std::unique_ptr<Scene> scene)
+{
+    scene_map[scene->name()] = std::move(scene);
 }
 
 Scene& SceneCollection::get_scene_by_name(std::string const& name)
@@ -54,11 +54,6 @@ Scene& SceneCollection::get_scene_by_name(std::string const& name)
         return *(iter->second);
     else
         return *dummy_scene;
-}
-
-void SceneCollection::register_scene(std::unique_ptr<Scene> scene)
-{
-    scene_map[scene->name()] = std::move(scene);
 }
 
 void SceneCollection::set_option_default(std::string const& name, std::string const& value)

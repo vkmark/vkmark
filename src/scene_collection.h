@@ -33,14 +33,14 @@ class SceneCollection
 public:
     SceneCollection();
 
+    void register_scene(std::unique_ptr<Scene> scene);
+
     Scene& get_scene_by_name(std::string const& name);
 
     void set_option_default(std::string const& name, std::string const& value);
     void log_scene_info();
 
 private:
-    void register_scene(std::unique_ptr<Scene> scene);
-
     std::unique_ptr<Scene> dummy_scene;
     std::unordered_map<std::string,std::unique_ptr<Scene>> scene_map;
 };
