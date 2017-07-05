@@ -39,7 +39,7 @@ struct Options
 
     Options();
     bool parse_args(int argc, char **argv);
-    void print_help();
+    std::string help_string();
 
     void add_window_system_help(std::string const& help);
 

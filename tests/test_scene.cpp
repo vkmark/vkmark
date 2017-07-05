@@ -20,30 +20,23 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#pragma once
+#include "test_scene.h"
 
-#include <memory>
-
-struct Options;
-class WindowSystem;
-
-class WindowSystemLoader
+TestScene::TestScene(std::string const& name)
+    : TestScene{name, {}}
 {
-public:
-    WindowSystemLoader(Options& options);
-    ~WindowSystemLoader();
+}
 
-    void load_window_system_options();
-    WindowSystem& load_window_system();
+TestScene::TestScene(
+    std::string const& name,
+    std::vector<SceneOption> const& options)
+    : Scene{name}
+{
+    for (auto const& opt : options)
+        options_[opt.name] = opt;
+}
 
-private:
-    using LibHandle = std::unique_ptr<void,void(*)(void*)>;
-    using ForeachCallback = std::function<void(std::string const&,void*)>;
-
-    std::string probe_for_best_window_system();
-    void for_each_window_system(ForeachCallback const& callback);
-
-    Options& options;
-    LibHandle lib_handle;
-    std::unique_ptr<WindowSystem> window_system;
-};
+std::string TestScene::name(int i)
+{
+    return "test_scene_" + std::to_string(i);
+}

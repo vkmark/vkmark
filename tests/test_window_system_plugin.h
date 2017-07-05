@@ -22,28 +22,21 @@
 
 #pragma once
 
-#include <memory>
+using VkMarkTestWindowSystemConfigureProbeFunc = void(*)(int);
 
-struct Options;
-class WindowSystem;
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
+#endif
 
-class WindowSystemLoader
+extern "C"
 {
-public:
-    WindowSystemLoader(Options& options);
-    ~WindowSystemLoader();
 
-    void load_window_system_options();
-    WindowSystem& load_window_system();
+void vkmark_test_window_system_configure_probe(int probe);
 
-private:
-    using LibHandle = std::unique_ptr<void,void(*)(void*)>;
-    using ForeachCallback = std::function<void(std::string const&,void*)>;
+}
 
-    std::string probe_for_best_window_system();
-    void for_each_window_system(ForeachCallback const& callback);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
-    Options& options;
-    LibHandle lib_handle;
-    std::unique_ptr<WindowSystem> window_system;
-};

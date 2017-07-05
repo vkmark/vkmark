@@ -3,7 +3,6 @@ core_sources = files(
     'benchmark_collection.cpp',
     'default_benchmarks.cpp',
     'log.cpp',
-    'main.cpp',
     'options.cpp',
     'scene.cpp',
     'scene_collection.cpp',
@@ -19,9 +18,16 @@ scene_sources = files(
     'default_options_scene.cpp',
     )
 
+vkmark_core = static_library(
+    'vkmark-core',
+    core_sources,
+    dependencies : [vulkan_dep, dl_dep]
+    )
+
 vkmark = executable(
     'vkmark',
-    core_sources + scene_sources,
+    files('main.cpp') + scene_sources,
+    link_with: vkmark_core,
     dependencies : [vulkan_dep, glm_dep, dl_dep],
     link_args: ['-Wl,--dynamic-list=' + join_paths([meson.current_source_dir(), 'dynamic.list'])],
     install : true

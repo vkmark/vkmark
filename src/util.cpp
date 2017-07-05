@@ -35,7 +35,13 @@ std::string data_dir;
 std::vector<std::string> Util::split(std::string const& src, char delim)
 {
     std::vector<std::string> elements;
-    std::stringstream ss{src};
+    std::stringstream ss{src, std::ios_base::ate | std::ios_base::in | std::ios_base::out};
+
+    // std::getline() doesn't deal with trailing delimiters in the
+    // way we want it to (i.e. "a:b:" => {"a","b",""}), so fix this
+    // by appending an extra delimiter in such cases.
+    if (!src.empty() && src.back() == delim)
+        ss.put(delim);
 
     std::string item;
     while(std::getline(ss, item, delim))

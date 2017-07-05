@@ -59,15 +59,15 @@ public:
     virtual VulkanImage draw(VulkanImage const&);
     virtual void update();
 
-    std::string name();
-    std::string info_string(bool show_all_options);
-    unsigned int average_fps();
-    bool is_running();
+    std::string name() const;
+    std::string info_string(bool show_all_options) const;
+    unsigned int average_fps() const;
+    bool is_running() const;
 
     bool set_option(std::string const& opt, std::string const& val);
     void reset_options();
     bool set_option_default(std::string const& opt, std::string const& val);
-    std::unordered_map<std::string, SceneOption> const& options();
+    std::unordered_map<std::string, SceneOption> const& options() const;
 
 protected:
     Scene(std::string const& name);

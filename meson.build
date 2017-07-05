@@ -5,6 +5,7 @@ project(
     version : '2017.06'
     )
 
+root_incdir = include_directories('.')
 ws_dir = join_paths([get_option('prefix'), get_option('libdir'), 'vkmark'])
 data_dir = join_paths([get_option('prefix'), get_option('datadir'), 'vkmark'])
 
@@ -30,6 +31,7 @@ build_kms_ws = libdrm_dep.found() and gbm_dep.found() and get_option('kms') != '
 
 subdir('src')
 subdir('data')
+subdir('tests')
 
 msg = 'Building with support for the following window systems: '
 

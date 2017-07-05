@@ -20,30 +20,5 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#pragma once
-
-#include <memory>
-
-struct Options;
-class WindowSystem;
-
-class WindowSystemLoader
-{
-public:
-    WindowSystemLoader(Options& options);
-    ~WindowSystemLoader();
-
-    void load_window_system_options();
-    WindowSystem& load_window_system();
-
-private:
-    using LibHandle = std::unique_ptr<void,void(*)(void*)>;
-    using ForeachCallback = std::function<void(std::string const&,void*)>;
-
-    std::string probe_for_best_window_system();
-    void for_each_window_system(ForeachCallback const& callback);
-
-    Options& options;
-    LibHandle lib_handle;
-    std::unique_ptr<WindowSystem> window_system;
-};
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"

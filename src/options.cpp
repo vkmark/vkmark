@@ -137,34 +137,40 @@ Options::Options()
 {
 }
 
-void Options::print_help()
+std::string Options::help_string()
 {
-    printf("A benchmark for Vulkan\n"
-           "\n"
-           "Options:\n"
-           "  -b, --benchmark BENCH       A benchmark to run: 'scene(:opt1=val1)*'\n"
-           "                              (the option can be used multiple times)\n"
-           "  -s, --size WxH              Size of the output window (default: 800x600)\n"
-           "      --fullscreen            Run fullscreen (equivalent to --size -1x-1)\n"
-           "  -p, --present-mode PM       Vulkan present mode (default: mailbox)\n"
-           "                              [immediate, mailbox, fifo, fiforelaxed]\n"
-           "      --pixel-format PF       Vulkan pixel format (default: first reported)\n"
-           "  -l, --list-scenes           Display information about the available scenes\n"
-           "                              and their options\n"
-           "      --show-all-options      Show all scene option values used for benchmarks\n"
-           "                              (only explicitly set options are shown by default)\n"
-           "      --winsys-dir DIR        Directory to search in for window system modules\n"
-           "      --data-dir DIR          Directory to search in for scene data files\n"
-           "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
-           "  -d, --debug                 Display debug messages\n"
-           "  -h, --help                  Display help\n");
+    std::string help =
+        "A benchmark for Vulkan\n"
+        "\n"
+        "Options:\n"
+        "  -b, --benchmark BENCH       A benchmark to run: 'scene(:opt1=val1)*'\n"
+        "                              (the option can be used multiple times)\n"
+        "  -s, --size WxH              Size of the output window (default: 800x600)\n"
+        "      --fullscreen            Run fullscreen (equivalent to --size -1x-1)\n"
+        "  -p, --present-mode PM       Vulkan present mode (default: mailbox)\n"
+        "                              [immediate, mailbox, fifo, fiforelaxed]\n"
+        "      --pixel-format PF       Vulkan pixel format (default: first reported)\n"
+        "  -l, --list-scenes           Display information about the available scenes\n"
+        "                              and their options\n"
+        "      --show-all-options      Show all scene option values used for benchmarks\n"
+        "                              (only explicitly set options are shown by default)\n"
+        "      --winsys-dir DIR        Directory to search in for window system modules\n"
+        "      --data-dir DIR          Directory to search in for scene data files\n"
+        "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
+        "  -d, --debug                 Display debug messages\n"
+        "  -h, --help                  Display help\n";
 
-    for (auto const& help : window_system_help)
-        printf(help.c_str());
+    for (auto const& wsh : window_system_help)
+        help += wsh;
+
+    return help;
 }
 
 bool Options::parse_args(int argc, char **argv)
 {
+    // Reset optind to allow multiple invocations of parse_args
+    optind = 0;
+
     while (true)
     {
         int option_index = -1;

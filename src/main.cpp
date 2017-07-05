@@ -41,6 +41,7 @@
 #include <csignal>
 #include <atomic>
 #include <memory>
+#include <iostream>
 
 namespace
 {
@@ -112,7 +113,7 @@ try
 
     if (options.show_help)
     {
-        options.print_help();
+        std::cout << options.help_string();
         return 0;
     }
 

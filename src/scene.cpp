@@ -88,12 +88,12 @@ void Scene::update()
         running = false;
 }
 
-std::string Scene::name()
+std::string Scene::name() const
 {
     return name_;
 }
 
-std::string Scene::info_string(bool show_all_options)
+std::string Scene::info_string(bool show_all_options) const
 {
     std::stringstream ss;
 
@@ -116,13 +116,13 @@ std::string Scene::info_string(bool show_all_options)
     return ss.str();
 }
 
-unsigned int Scene::average_fps()
+unsigned int Scene::average_fps() const
 {
     double const elapsed_time_sec = (last_update_time - start_time) / 1000000.0;
     return current_frame / elapsed_time_sec;
 }
 
-bool Scene::is_running()
+bool Scene::is_running() const
 {
     return running;
 }
@@ -165,7 +165,7 @@ bool Scene::set_option_default(std::string const& opt, std::string const& val)
     return false;
 }
 
-std::unordered_map<std::string, SceneOption> const& Scene::options()
+std::unordered_map<std::string, SceneOption> const& Scene::options() const
 {
     return options_;
 }

@@ -20,30 +20,16 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#pragma once
+#include "src/scene.h"
+#include <vector>
 
-#include <memory>
-
-struct Options;
-class WindowSystem;
-
-class WindowSystemLoader
+class TestScene: public Scene
 {
 public:
-    WindowSystemLoader(Options& options);
-    ~WindowSystemLoader();
+    TestScene(std::string const& name);
+    TestScene(
+        std::string const& name,
+        std::vector<SceneOption> const& options);
 
-    void load_window_system_options();
-    WindowSystem& load_window_system();
-
-private:
-    using LibHandle = std::unique_ptr<void,void(*)(void*)>;
-    using ForeachCallback = std::function<void(std::string const&,void*)>;
-
-    std::string probe_for_best_window_system();
-    void for_each_window_system(ForeachCallback const& callback);
-
-    Options& options;
-    LibHandle lib_handle;
-    std::unique_ptr<WindowSystem> window_system;
+    static std::string name(int i);
 };

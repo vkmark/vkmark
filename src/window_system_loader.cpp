@@ -81,6 +81,8 @@ WindowSystemLoader::WindowSystemLoader(Options& options)
                options.window_system_dir.c_str());
 }
 
+WindowSystemLoader::~WindowSystemLoader() = default;
+
 WindowSystem& WindowSystemLoader::load_window_system()
 {
     if (window_system)
