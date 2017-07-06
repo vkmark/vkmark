@@ -51,6 +51,7 @@ struct Options
     bool show_all_options;
     std::string window_system_dir;
     std::string data_dir;
+    std::string window_system;
     std::vector<WindowSystemOption> window_system_options;
     bool show_debug;
     bool show_help;

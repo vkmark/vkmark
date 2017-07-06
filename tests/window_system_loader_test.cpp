@@ -58,6 +58,11 @@ public:
         configure_probe(probe);
     }
 
+    static std::string name_from_id(int id)
+    {
+        return "testws" + std::to_string(id);
+    }
+
 private:
     using LibHandle = std::unique_ptr<void, int(*)(void*)>;
 
@@ -65,8 +70,8 @@ private:
 
     LibHandle open_window_system(int id)
     {
-        auto const path = VKMARK_TEST_WINDOW_SYSTEM_DIR +
-                          std::string{"/testws"} + std::to_string(id) + ".so";
+        auto const path = std::string{VKMARK_TEST_WINDOW_SYSTEM_DIR} + "/" +
+                          name_from_id(id) + ".so";
         auto const handle = dlopen(path.c_str(), RTLD_LAZY);
         if (!handle)
             throw std::runtime_error{"Failed to load test window system " + path};
@@ -137,6 +142,64 @@ SCENARIO("window system loader", "")
             {
                 REQUIRE((window_system_id(ws) == 2 ||
                          window_system_id(ws) == 3));
+            }
+        }
+    }
+}
+
+SCENARIO("window system loader with user preference", "")
+{
+    Options options;
+    options.window_system_dir = VKMARK_TEST_WINDOW_SYSTEM_DIR;
+
+    TestWindowSystems tws;
+    tws.configure_probe(1, 127);
+    tws.configure_probe(2, 255);
+    tws.configure_probe(3, 0);
+
+    GIVEN("A user prefers an existing usable window system")
+    {
+        options.window_system = tws.name_from_id(1);
+
+        WHEN("loading a window system")
+        {
+            WindowSystemLoader wsl{options};
+            auto& ws = wsl.load_window_system();
+
+            THEN("the user preferred one is loaded")
+            {
+                REQUIRE(window_system_id(ws) == 1);
+            }
+        }
+    }
+
+    GIVEN("A user prefers an existing unusable window system")
+    {
+        options.window_system = tws.name_from_id(3);
+
+        WHEN("loading a window system")
+        {
+            WindowSystemLoader wsl{options};
+            auto& ws = wsl.load_window_system();
+
+            THEN("the user preferred one is loaded")
+            {
+                REQUIRE(window_system_id(ws) == 3);
+            }
+        }
+    }
+
+    GIVEN("A user prefers a non-existent window system")
+    {
+        options.window_system = "invalid";
+
+        WHEN("loading a window system")
+        {
+            WindowSystemLoader wsl{options};
+
+            THEN("no window system is loaded")
+            {
+                REQUIRE_THROWS(wsl.load_window_system());
             }
         }
     }

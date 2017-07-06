@@ -41,12 +41,15 @@ void close_lib(void* handle)
     if (handle) dlclose(handle);
 }
 
+bool string_ends_with(std::string const& str, std::string const& end)
+{
+    return str.size() > end.size() &&
+           std::equal(end.rbegin(), end.rend(), str.rbegin());
+}
+
 bool has_shared_object_extension(std::string const& name)
 {
-    static std::string const so{".so"};
-
-    return name.size() > so.size() &&
-           std::equal(so.rbegin(), so.rend(), name.rbegin());
+    return string_ends_with(name, ".so");
 }
 
 std::vector<std::string> files_in_dir(std::string dir)
@@ -88,7 +91,9 @@ WindowSystem& WindowSystemLoader::load_window_system()
     if (window_system)
         return *window_system;
 
-    auto const lib = probe_for_best_window_system();
+    auto const lib = options.window_system.empty() ?
+                     probe_for_best_window_system() :
+                     window_system_from_name(options.window_system);
 
     lib_handle = LibHandle{dlopen(lib.c_str(), RTLD_LAZY), close_lib};
 
@@ -192,4 +197,17 @@ void WindowSystemLoader::for_each_window_system(ForeachCallback const& callback)
         auto const handle = LibHandle{dlopen(c.c_str(), RTLD_LAZY), close_lib};
         callback(c, handle.get());
     }
+}
+
+std::string WindowSystemLoader::window_system_from_name(std::string const& name)
+{
+    auto const candidates = files_in_dir(options.window_system_dir);
+
+    for (auto const& c : candidates)
+    {
+        if (string_ends_with(c, name + ".so"))
+            return c;
+    }
+
+    throw std::runtime_error{"Failed to find specified window system '" + name + "'"};
 }

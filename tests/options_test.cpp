@@ -249,6 +249,24 @@ SCENARIO("options parses command line arguments", "")
         }
     }
 
+    GIVEN("A command line with --winsys")
+    {
+        std::string const winsys{"mywinsys"};
+        std::vector<std::string> args{"vkmark", "--winsys", winsys};
+        auto argv = argv_from_vector(args);
+
+        WHEN("parsing the args")
+        {
+            REQUIRE(options.window_system.empty());
+            REQUIRE(options.parse_args(args.size(), argv.get()));
+
+            THEN("the winsys is parsed")
+            {
+                REQUIRE(options.window_system == winsys);
+            }
+        }
+    }
+
     GIVEN("A command line with --winsys-options")
     {
         std::string const winsys_options{"opt1=v1:opt2=v2"};

@@ -42,6 +42,7 @@ private:
 
     std::string probe_for_best_window_system();
     void for_each_window_system(ForeachCallback const& callback);
+    std::string window_system_from_name(std::string const& name);
 
     Options& options;
     LibHandle lib_handle;

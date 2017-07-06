@@ -42,6 +42,7 @@ struct option long_options[] = {
     {"show-all-options", 0, 0, 0},
     {"winsys-dir", 1, 0, 0},
     {"data-dir", 1, 0, 0},
+    {"winsys", 1, 0, 0},
     {"winsys-options", 1, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
@@ -156,6 +157,7 @@ std::string Options::help_string()
         "                              (only explicitly set options are shown by default)\n"
         "      --winsys-dir DIR        Directory to search in for window system modules\n"
         "      --data-dir DIR          Directory to search in for scene data files\n"
+        "      --winsys WS             Window system backend to use (xcb, wayland, kms)\n"
         "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
         "  -d, --debug                 Display debug messages\n"
         "  -h, --help                  Display help\n";
@@ -205,6 +207,8 @@ bool Options::parse_args(int argc, char **argv)
             window_system_dir = optarg;
         else if (optname == "data-dir")
             data_dir = optarg;
+        else if (optname == "winsys")
+            window_system = optarg;
         else if (optname == "winsys-options")
             window_system_options = parse_window_system_options(optarg);
         else if (c == 'd' || optname == "debug")
