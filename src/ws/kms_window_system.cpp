@@ -324,13 +324,8 @@ VTState::~VTState()
     global_vt_state = nullptr;
 }
 
-KMSWindowSystem::KMSWindowSystem(
-    vk::PresentModeKHR present_mode,
-    vk::Format pixel_format,
-    std::string const& drm_device)
-    : vk_present_mode{present_mode},
-      vk_pixel_format{pixel_format},
-      drm_fd{open_drm_device(drm_device)},
+KMSWindowSystem::KMSWindowSystem(std::string const& drm_device)
+    : drm_fd{open_drm_device(drm_device)},
       drm_resources{get_resources_for(drm_fd)},
       drm_connector{get_connected_connector(drm_fd, drm_resources)},
       drm_prev_crtc{get_current_crtc_for_connector(drm_fd, drm_connector)},

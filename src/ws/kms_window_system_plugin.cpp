@@ -95,9 +95,6 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         }
     }
 
-    return std::make_unique<KMSWindowSystem>(
-        options.present_mode,
-        options.pixel_format,
-        drm_device);
+    return std::make_unique<KMSWindowSystem>(drm_device);
 }
 

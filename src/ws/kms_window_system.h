@@ -46,10 +46,7 @@ private:
 class KMSWindowSystem : public WindowSystem
 {
 public:
-    KMSWindowSystem(
-        vk::PresentModeKHR present_mode,
-        vk::Format pixel_format,
-        std::string const& drm_device);
+    KMSWindowSystem(std::string const& drm_device);
     ~KMSWindowSystem();
 
     std::vector<char const*> vulkan_extensions() override;
@@ -67,9 +64,6 @@ private:
     void create_gbm_bos();
     void create_drm_fbs();
     void create_vk_images();
-
-    vk::PresentModeKHR const vk_present_mode;
-    vk::Format const vk_pixel_format;
 
     ManagedResource<int> const drm_fd;
     ManagedResource<drmModeResPtr> const drm_resources;
