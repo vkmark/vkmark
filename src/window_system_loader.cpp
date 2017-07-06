@@ -80,7 +80,7 @@ WindowSystemLoader::WindowSystemLoader(Options& options)
     : options{options},
       lib_handle{nullptr, close_lib}
 {
-    Log::debug("WindowSystemLoader: Looking in %s for window system modules\n",
+    Log::debug("WindowSystemLoader: Looking in %s for window system plugins\n",
                options.window_system_dir.c_str());
 }
 
@@ -95,18 +95,22 @@ WindowSystem& WindowSystemLoader::load_window_system()
                      probe_for_best_window_system() :
                      window_system_from_name(options.window_system);
 
+    Log::debug("WindowSystemLoader: Selected window system plugin %s %s\n",
+               lib.c_str(),
+               !options.window_system.empty() ? "(user selection)" : "(best match)");
+
     lib_handle = LibHandle{dlopen(lib.c_str(), RTLD_LAZY), close_lib};
 
     auto const ws_create = reinterpret_cast<VkMarkWindowSystemCreateFunc>(
         dlsym(lib_handle.get(), "vkmark_window_system_create"));
 
     if (!ws_create)
-        throw std::runtime_error{"Selected window system module doesn't provide a create function"};
+        throw std::runtime_error{"Selected window system plugin doesn't provide a create function"};
     
     window_system = ws_create(options);
 
     if (!window_system)
-        throw std::runtime_error{"Selected window system module failed to create window system"};
+        throw std::runtime_error{"Selected window system plugin failed to create window system"};
 
     return *window_system;
 }
