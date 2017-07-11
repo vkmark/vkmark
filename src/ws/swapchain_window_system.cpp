@@ -28,6 +28,78 @@
 #include "log.h"
 
 #include <stdexcept>
+#include <algorithm>
+#include <cctype>
+
+namespace
+{
+
+bool is_format_srgb(vk::Format f)
+{
+    return to_string(f).find("Srgb") != std::string::npos;
+}
+
+int format_bits(vk::Format f)
+{
+    int total = 0;
+    int current = 0;
+    bool process_digits = false;
+
+    for (auto const c : to_string(f))
+    {
+        if (process_digits && std::isdigit(static_cast<unsigned char>(c)))
+        {
+            current = current * 10 + c - '0';
+        }
+        else
+        {
+            process_digits = (c == 'R' || c == 'G' || c == 'B' || c == 'A');
+            total += current;
+            current = 0;
+        }
+    }
+
+    total += current;
+
+    return total;
+}
+
+struct SurfaceFormatInfo
+{
+    SurfaceFormatInfo(vk::SurfaceFormatKHR f)
+        : format{f},
+          srgb{is_format_srgb(f.format)},
+          bits{format_bits(f.format)}
+    {
+    }
+
+    vk::SurfaceFormatKHR format;
+    bool srgb;
+    int bits;
+};
+
+vk::SurfaceFormatKHR select_surface_format(
+    std::vector<vk::SurfaceFormatKHR> const& formats)
+{
+    if (formats.empty())
+        return {};
+
+    std::vector<SurfaceFormatInfo> format_infos;
+
+    for (auto const& f : formats)
+        format_infos.emplace_back(f);
+
+    std::sort(
+        format_infos.begin(), format_infos.end(),
+        [] (auto const& a, auto const& b)
+        {
+            return (a.srgb && !b.srgb) || a.bits > b.bits;
+        });
+
+    return format_infos[0].format;
+}
+
+}
 
 SwapchainWindowSystem::SwapchainWindowSystem(
     std::unique_ptr<NativeSystem> native,
@@ -124,7 +196,7 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
     if (vk_pixel_format != vk::Format::eUndefined)
         vk_image_format = vk_pixel_format;
     else
-        vk_image_format = surface_formats[0].format;
+        vk_image_format = select_surface_format(surface_formats).format;
 
     for (auto const& format : surface_formats)
     {
