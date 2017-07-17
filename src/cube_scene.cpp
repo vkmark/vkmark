@@ -24,6 +24,8 @@
 
 #include "cube_scene.h"
 
+#include "mesh.h"
+#include "model.h"
 #include "util.h"
 #include "vulkan_state.h"
 #include "vulkan_image.h"
@@ -43,184 +45,13 @@ struct Uniforms
     glm::mat4 normal;
 };
 
-struct VertexData
-{
-    std::vector<vk::VertexInputBindingDescription> binding_descriptions() const
-    {
-        return std::vector<vk::VertexInputBindingDescription>{
-            vk::VertexInputBindingDescription{}
-                .setBinding(0)
-                .setStride(sizeof(glm::vec3))
-                .setInputRate(vk::VertexInputRate::eVertex),
-            vk::VertexInputBindingDescription{}
-                .setBinding(1)
-                .setStride(sizeof(glm::vec3))
-                .setInputRate(vk::VertexInputRate::eVertex),
-            vk::VertexInputBindingDescription{}
-                .setBinding(2)
-                .setStride(sizeof(glm::vec3))
-                .setInputRate(vk::VertexInputRate::eVertex)};
-    }
-
-    std::vector<vk::VertexInputAttributeDescription> attribute_descriptions() const
-    {
-        std::vector<vk::VertexInputAttributeDescription> desc(3);
-        desc[0].binding = 0;
-        desc[0].location = 0;
-        desc[0].format = vk::Format::eR32G32B32Sfloat;
-        desc[0].offset = 0;
-        desc[1].binding = 1;
-        desc[1].location = 1;
-        desc[1].format = vk::Format::eR32G32B32Sfloat;
-        desc[1].offset = 0;
-        desc[2].binding = 2;
-        desc[2].location = 2;
-        desc[2].format = vk::Format::eR32G32B32Sfloat;
-        desc[2].offset = 0;
-        return desc;
-    }
-
-    void copy_to(void* dst) const
-    {
-        auto const dst_c = static_cast<char*>(dst);
-        memcpy(dst_c + positions_offset(), positions.data(), positions_size());
-        memcpy(dst_c + colors_offset(), colors.data(), colors_size());
-        memcpy(dst_c + normals_offset(), normals.data(), normals_size());
-    }
-
-    size_t positions_offset() const
-    {
-        return 0;
-    }
-
-    size_t positions_size() const
-    {
-        return positions.size() * sizeof(positions[0]);
-    }
-
-    size_t colors_offset() const
-    {
-        return positions_offset() + positions_size();
-    }
-
-    size_t colors_size() const
-    {
-        return colors.size() * sizeof(colors[0]);
-    }
-
-    size_t normals_offset() const
-    {
-        return colors_offset() + colors_size();
-    }
-
-    size_t normals_size() const
-    {
-        return normals.size() * sizeof(normals[0]);
-    }
-
-    size_t size() const
-    {
-        return positions_size() + colors_size() + normals_size();
-    }
-
-    std::vector<glm::vec3> const positions = {
-        // front
-        {-1.0f, -1.0f, +1.0f},
-        {+1.0f, -1.0f, +1.0f},
-        {-1.0f, +1.0f, +1.0f},
-        {+1.0f, +1.0f, +1.0f},
-        // back
-        {+1.0f, -1.0f, -1.0f},
-        {-1.0f, -1.0f, -1.0f},
-        {+1.0f, +1.0f, -1.0f},
-        {-1.0f, +1.0f, -1.0f},
-        // right
-        {+1.0f, -1.0f, +1.0f},
-        {+1.0f, -1.0f, -1.0f},
-        {+1.0f, +1.0f, +1.0f},
-        {+1.0f, +1.0f, -1.0f},
-        // left
-        {-1.0f, -1.0f, -1.0f},
-        {-1.0f, -1.0f, +1.0f},
-        {-1.0f, +1.0f, -1.0f},
-        {-1.0f, +1.0f, +1.0f},
-        // top
-        {-1.0f, +1.0f, +1.0f},
-        {+1.0f, +1.0f, +1.0f},
-        {-1.0f, +1.0f, -1.0f},
-        {+1.0f, +1.0f, -1.0f},
-        // bottom
-        {-1.0f, -1.0f, -1.0f},
-        {+1.0f, -1.0f, -1.0f},
-        {-1.0f, -1.0f, +1.0f},
-        {+1.0f, -1.0f, +1.0f}
-    };
-
-    static glm::vec3 constexpr black = {0.0f, 0.0f, 0.0f};
-    static glm::vec3 constexpr blue = {0.0f, 0.0f, 1.0f};
-    static glm::vec3 constexpr cyan = {0.0f, 1.0f, 1.0f};
-    static glm::vec3 constexpr green = {0.0f, 1.0f, 0.0f};
-    static glm::vec3 constexpr magenta = {1.0f, 0.0f, 1.0f};
-    static glm::vec3 constexpr red = {1.0f, 0.0f, 0.0f};
-    static glm::vec3 constexpr white = {1.0f, 1.0f, 1.0f};
-    static glm::vec3 constexpr yellow = {1.0f, 1.0f, 0.0f};
-
-    std::vector<glm::vec3> const colors = {
-        // front
-        blue, magenta, cyan, white,
-        // back
-        red, black, yellow, green,
-        // right
-        magenta, red, white, yellow,
-        // left
-        black, blue, green, cyan,
-        // top
-        cyan, white, green, yellow,
-        // bottom
-        black, red, blue, magenta
-    };
-
-   std::vector<glm::vec3> const normals = {
-       // front
-       {+0.0f, +0.0f, +1.0f},
-       {+0.0f, +0.0f, +1.0f},
-       {+0.0f, +0.0f, +1.0f},
-       {+0.0f, +0.0f, +1.0f},
-       // back
-       {+0.0f, +0.0f, -1.0f},
-       {+0.0f, +0.0f, -1.0f},
-       {+0.0f, +0.0f, -1.0f},
-       {+0.0f, +0.0f, -1.0f},
-       // right
-       {+1.0f, +0.0f, +0.0f},
-       {+1.0f, +0.0f, +0.0f},
-       {+1.0f, +0.0f, +0.0f},
-       {+1.0f, +0.0f, +0.0f},
-       // left
-       {-1.0f, +0.0f, +0.0f},
-       {-1.0f, +0.0f, +0.0f},
-       {-1.0f, +0.0f, +0.0f},
-       {-1.0f, +0.0f, +0.0f},
-       // top
-       {+0.0f, +1.0f, +0.0f},
-       {+0.0f, +1.0f, +0.0f},
-       {+0.0f, +1.0f, +0.0f},
-       {+0.0f, +1.0f, +0.0f},
-       // bottom
-       {+0.0f, -1.0f, +0.0f},
-       {+0.0f, -1.0f, +0.0f},
-       {+0.0f, -1.0f, +0.0f},
-       {+0.0f, -1.0f, +0.0f}
-   };
-};
-
-VertexData const vertex_data{};
-
 }
 
 CubeScene::CubeScene() : Scene{"cube"}
 {
 }
+
+CubeScene::~CubeScene() = default;
 
 bool CubeScene::setup(
     VulkanState& vulkan_,
@@ -232,6 +63,12 @@ bool CubeScene::setup(
     extent = vulkan_images[0].extent;
     format = vulkan_images[0].format;
     aspect = static_cast<float>(extent.height) / extent.width;
+
+    mesh = Model{"kmscube.ply"}.to_mesh(
+        ModelAttribMap{}
+            .with_position(vk::Format::eR32G32B32Sfloat)
+            .with_color(vk::Format::eR32G32B32Sfloat)
+            .with_normal(vk::Format::eR32G32B32Sfloat));
 
     setup_vertex_buffer();
     setup_uniform_buffer();
@@ -300,7 +137,7 @@ void CubeScene::setup_vertex_buffer()
     vk::DeviceMemory vertex_buffer_memory;
 
     vertex_buffer = vkutil::BufferBuilder{*vulkan}
-        .set_size(vertex_data.size())
+        .set_size(mesh->vertex_data_size())
         .set_usage(vk::BufferUsageFlagBits::eVertexBuffer)
         .set_memory_properties(
             vk::MemoryPropertyFlagBits::eHostVisible |
@@ -309,10 +146,9 @@ void CubeScene::setup_vertex_buffer()
         .build();
 
     auto const vertex_buffer_map = vulkan->device().mapMemory(
-        vertex_buffer_memory, 0, vertex_data.size());
-    vertex_data.copy_to(vertex_buffer_map);
+        vertex_buffer_memory, 0, mesh->vertex_data_size());
+    mesh->copy_vertex_data_to(vertex_buffer_map);
     vulkan->device().unmapMemory(vertex_buffer_memory);
-
 }
 
 void CubeScene::setup_uniform_buffer()
@@ -363,7 +199,7 @@ void CubeScene::setup_pipeline()
         .set_render_pass(render_pass)
         .set_vertex_shader(Util::read_data_file("shaders/vkcube.vert.spv"))
         .set_fragment_shader(Util::read_data_file("shaders/vkcube.frag.spv"))
-        .set_vertex_input(vertex_data.binding_descriptions(), vertex_data.attribute_descriptions())
+        .set_vertex_input(mesh->binding_descriptions(), mesh->attribute_descriptions())
         .build();
 }
 
@@ -397,6 +233,7 @@ void CubeScene::setup_command_buffers()
         .setLevel(vk::CommandBufferLevel::ePrimary);
 
     command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
+    auto const binding_offsets = mesh->vertex_data_binding_offsets();
 
     for (size_t i = 0; i < command_buffers.size(); ++i)
     {
@@ -422,19 +259,11 @@ void CubeScene::setup_command_buffers()
             vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set.raw, {});
         command_buffers[i].bindVertexBuffers(
             0,
-            {vertex_buffer.raw, vertex_buffer.raw, vertex_buffer.raw},
-            {
-                vk::DeviceSize{vertex_data.positions_offset()},
-                vk::DeviceSize{vertex_data.colors_offset()},
-                vk::DeviceSize{vertex_data.normals_offset()}
-            });
+            std::vector<vk::Buffer>{binding_offsets.size(), vertex_buffer.raw},
+            binding_offsets
+            );
 
-        command_buffers[i].draw(4, 1, 0, 0);
-        command_buffers[i].draw(4, 1, 4, 0);
-        command_buffers[i].draw(4, 1, 8, 0);
-        command_buffers[i].draw(4, 1, 12, 0);
-        command_buffers[i].draw(4, 1, 16, 0);
-        command_buffers[i].draw(4, 1, 20, 0);
+        command_buffers[i].draw(mesh->num_vertices(), 1, 0, 0);
 
         command_buffers[i].endRenderPass();
         command_buffers[i].end();

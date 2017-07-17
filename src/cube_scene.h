@@ -29,10 +29,13 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
+class Mesh;
+
 class CubeScene : public Scene
 {
 public:
     CubeScene();
+    ~CubeScene();
 
     bool setup(VulkanState&, std::vector<VulkanImage> const&) override;
     void teardown() override;
@@ -54,6 +57,8 @@ private:
     vk::Extent2D extent;
     vk::Format format;
     float aspect;
+
+    std::unique_ptr<Mesh> mesh;
 
     ManagedResource<vk::Buffer> vertex_buffer;
     ManagedResource<vk::Buffer> uniform_buffer;

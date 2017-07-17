@@ -158,7 +158,7 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setPVertexAttributeDescriptions(attribute_descriptions.data());
 
     auto const input_assembly_state_create_info = vk::PipelineInputAssemblyStateCreateInfo{}
-        .setTopology(vk::PrimitiveTopology::eTriangleStrip)
+        .setTopology(vk::PrimitiveTopology::eTriangleList)
         .setPrimitiveRestartEnable(false);
 
     auto const viewport = vk::Viewport{}
@@ -183,7 +183,7 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setPolygonMode(vk::PolygonMode::eFill)
         .setLineWidth(1.0f)
         .setCullMode(vk::CullModeFlagBits::eBack)
-        .setFrontFace(vk::FrontFace::eClockwise)
+        .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(false);
 
     auto const multisample_state_create_info = vk::PipelineMultisampleStateCreateInfo{}
