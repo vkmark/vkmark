@@ -26,9 +26,20 @@
 
 using namespace Catch::Matchers;
 
+namespace
+{
+
+struct TemporarySetDataDir
+{
+    TemporarySetDataDir(std::string const& dir) { Util::set_data_dir(dir); }
+    ~TemporarySetDataDir() { Util::set_data_dir({}); }
+};
+
+}
+
 SCENARIO("util data file", "")
 {
-    Util::set_data_dir(VKMARK_TEST_DATA_DIR);
+    TemporarySetDataDir set_data_dir{VKMARK_TEST_DATA_DIR};
 
     GIVEN("An non-existent file")
     {
@@ -73,6 +84,50 @@ SCENARIO("util data file", "")
                 REQUIRE_THAT(
                     contents,
                     Equals(std::vector<char>{'s','1','2','3','\n'}));
+            }
+        }
+    }
+}
+
+SCENARIO("util data file path", "")
+{
+    GIVEN("A set data dir")
+    {
+        std::string const data_dir = "/my/data/dir";
+        TemporarySetDataDir set_data_dir{data_dir};
+
+        WHEN("getting a data file path")
+        {
+            std::string const data_file = "subdir/bla.txt";
+            auto const path = Util::get_data_file_path(data_file);
+
+            THEN("the correct path is returned")
+            {
+                REQUIRE(path == data_dir + "/" + data_file);
+            }
+        }
+    }
+
+    GIVEN("An unset data dir")
+    {
+        WHEN("getting a data file path")
+        {
+            THEN("an exception is thrown")
+            {
+                REQUIRE_THROWS(Util::get_data_file_path("file"));
+            }
+        }
+    }
+
+    GIVEN("An empty data dir")
+    {
+        TemporarySetDataDir set_data_dir{""};
+
+        WHEN("getting a data file path")
+        {
+            THEN("an exception is thrown")
+            {
+                REQUIRE_THROWS(Util::get_data_file_path("file"));
             }
         }
     }

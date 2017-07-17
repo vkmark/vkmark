@@ -64,12 +64,17 @@ void Util::set_data_dir(std::string const& dir)
     data_dir = dir;
 }
 
-std::vector<char> Util::read_data_file(std::string const& rel_path)
+std::string Util::get_data_file_path(std::string const& rel_path)
 {
     if (data_dir.empty())
         throw std::logic_error("Data directory not set!");
 
-    auto const path = data_dir + "/" + rel_path;
+    return data_dir + "/" + rel_path;
+}
+
+std::vector<char> Util::read_data_file(std::string const& rel_path)
+{
+    auto const path = get_data_file_path(rel_path);
     std::ifstream ifs{path, std::ios::ate | std::ios::binary};
 
     if (!ifs)
