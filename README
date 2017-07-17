@@ -6,6 +6,7 @@ To build vkmark you need:
  * a C++14 compiler
  * libvulkan and development files
  * libglm development files (header only library)
+ * libassimp and development files
 
 for the X11 backend:
 

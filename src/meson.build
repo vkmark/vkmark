@@ -3,6 +3,8 @@ core_sources = files(
     'benchmark_collection.cpp',
     'default_benchmarks.cpp',
     'log.cpp',
+    'mesh.cpp',
+    'model.cpp',
     'options.cpp',
     'scene.cpp',
     'scene_collection.cpp',
@@ -21,7 +23,7 @@ scene_sources = files(
 vkmark_core = static_library(
     'vkmark-core',
     core_sources,
-    dependencies : [vulkan_dep, dl_dep]
+    dependencies : [vulkan_dep, dl_dep, assimp_dep]
     )
 
 vkmark = executable(

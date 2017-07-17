@@ -7,6 +7,8 @@ test_sources = files(
 
     'benchmark_collection_test.cpp',
     'managed_resource_test.cpp',
+    'mesh_test.cpp',
+    'model_test.cpp',
     'options_test.cpp',
     'scene_collection_test.cpp',
     'util_data_file_test.cpp',
