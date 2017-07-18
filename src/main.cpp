@@ -36,6 +36,7 @@
 #include "clear_scene.h"
 #include "cube_scene.h"
 #include "default_options_scene.h"
+#include "vertex_scene.h"
 
 #include <stdexcept>
 #include <csignal>
@@ -94,6 +95,7 @@ void populate_scene_collection(SceneCollection& sc)
     sc.register_scene(std::make_unique<ClearScene>());
     sc.register_scene(std::make_unique<CubeScene>());
     sc.register_scene(std::make_unique<DefaultOptionsScene>(sc));
+    sc.register_scene(std::make_unique<VertexScene>());
 }
 
 }

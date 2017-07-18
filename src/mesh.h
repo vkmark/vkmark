@@ -41,6 +41,9 @@ public:
     void set_attribute(size_t pos, glm::vec3 const& data);
     void set_attribute(size_t pos, glm::vec4 const& data);
 
+    glm::vec3 min_attribute_bound(size_t pos);
+    glm::vec3 max_attribute_bound(size_t pos);
+
     // Vulkan related
     std::vector<vk::VertexInputBindingDescription> binding_descriptions() const;
     std::vector<vk::VertexInputAttributeDescription> attribute_descriptions() const;

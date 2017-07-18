@@ -23,6 +23,7 @@
 #pragma once
 
 #include "buffer_builder.h"
+#include "copy_buffer.h"
 #include "descriptor_set_builder.h"
 #include "find_matching_memory_type.h"
 #include "framebuffer_builder.h"

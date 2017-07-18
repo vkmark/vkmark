@@ -15,6 +15,7 @@ core_sources = files(
 
 vkutil_sources = files(
     'vkutil/buffer_builder.cpp',
+    'vkutil/copy_buffer.cpp',
     'vkutil/descriptor_set_builder.cpp',
     'vkutil/find_matching_memory_type.cpp',
     'vkutil/framebuffer_builder.cpp',
@@ -28,6 +29,7 @@ scene_sources = files(
     'clear_scene.cpp',
     'cube_scene.cpp',
     'default_options_scene.cpp',
+    'vertex_scene.cpp',
     )
 
 vkmark_core = static_library(

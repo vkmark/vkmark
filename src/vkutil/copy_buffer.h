@@ -20,13 +20,19 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#include "default_benchmarks.h"
+#pragma once
 
-std::vector<std::string> DefaultBenchmarks::get()
+#include <vulkan/vulkan.hpp>
+
+class VulkanState;
+
+namespace vkutil
 {
-    return std::vector<std::string>{
-        "vertex",
-        "cube",
-        "clear"
-    };
+
+void copy_buffer(
+    VulkanState& vulkan,
+    vk::Buffer src,
+    vk::Buffer dst,
+    vk::DeviceSize size);
+
 }

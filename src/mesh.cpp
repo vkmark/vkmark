@@ -138,6 +138,54 @@ void Mesh::set_attribute(size_t pos, glm::vec4 const& data)
     vertex[offset + 3] = data.w;
 }
 
+glm::vec3 Mesh::min_attribute_bound(size_t pos)
+{
+    if (formats[pos] != 3)
+        throw std::logic_error{"Trying to get min attribute bound from incorrectly sized data"};
+
+    auto const offset = std::accumulate(formats.begin(), formats.begin() + pos, 0);
+
+    glm::vec3 ret{std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max()};
+
+    for (auto const& v : vertices)
+    {
+        if (v[offset] < ret.x)
+            ret.x = v[offset];
+        if (v[offset + 1] < ret.y)
+            ret.y = v[offset + 1];
+        if (v[offset + 2] < ret.z)
+            ret.z = v[offset + 2];
+    }
+
+    return ret;
+}
+
+glm::vec3 Mesh::max_attribute_bound(size_t pos)
+{
+    if (formats[pos] != 3)
+        throw std::logic_error{"Trying to get max attribute bound from incorrectly sized data"};
+
+    auto const offset = std::accumulate(formats.begin(), formats.begin() + pos, 0);
+
+    glm::vec3 ret{std::numeric_limits<float>::min(),
+                  std::numeric_limits<float>::min(),
+                  std::numeric_limits<float>::min()};
+
+    for (auto const& v : vertices)
+    {
+        if (v[offset] > ret.x)
+            ret.x = v[offset];
+        if (v[offset + 1] > ret.y)
+            ret.y = v[offset + 1];
+        if (v[offset + 2] > ret.z)
+            ret.z = v[offset + 2];
+    }
+
+    return ret;
+}
+
 std::vector<vk::VertexInputBindingDescription>
 Mesh::binding_descriptions() const
 {
