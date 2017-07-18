@@ -23,6 +23,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 struct Options;
 class WindowSystem;
