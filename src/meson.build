@@ -9,9 +9,17 @@ core_sources = files(
     'scene.cpp',
     'scene_collection.cpp',
     'util.cpp',
-    'vkutil.cpp',
     'vulkan_state.cpp',
     'window_system_loader.cpp'
+    )
+
+vkutil_sources = files(
+    'vkutil/buffer_builder.cpp',
+    'vkutil/descriptor_set_builder.cpp',
+    'vkutil/framebuffer_builder.cpp',
+    'vkutil/image_view_builder.cpp',
+    'vkutil/pipeline_builder.cpp',
+    'vkutil/render_pass_builder.cpp'
     )
 
 scene_sources = files(
@@ -28,7 +36,7 @@ vkmark_core = static_library(
 
 vkmark = executable(
     'vkmark',
-    files('main.cpp') + scene_sources,
+    files('main.cpp') + vkutil_sources + scene_sources,
     link_with: vkmark_core,
     dependencies : [vulkan_dep, glm_dep, dl_dep],
     link_args: ['-Wl,--dynamic-list=' + join_paths([meson.current_source_dir(), 'dynamic.list'])],

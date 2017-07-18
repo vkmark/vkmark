@@ -29,7 +29,7 @@
 #include "util.h"
 #include "vulkan_state.h"
 #include "vulkan_image.h"
-#include "vkutil.h"
+#include "vkutil/vkutil.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
