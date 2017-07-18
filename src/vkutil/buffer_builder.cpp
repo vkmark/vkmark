@@ -21,6 +21,7 @@
  */
 
 #include "buffer_builder.h"
+#include "find_matching_memory_type.h"
 
 #include "vulkan_state.h"
 
@@ -69,7 +70,8 @@ ManagedResource<vk::Buffer> vkutil::BufferBuilder::build()
         [vptr=&vulkan] (auto const& b) { vptr->device().destroyBuffer(b); }};
 
     auto const mem_requirements = vulkan.device().getBufferMemoryRequirements(vk_buffer);
-    auto const mem_type = find_matching_memory_type_for(mem_requirements);
+    auto const mem_type = vkutil::find_matching_memory_type(
+        vulkan, mem_requirements, memory_properties);
 
     auto const memory_allocate_info = vk::MemoryAllocateInfo{}
         .setAllocationSize(mem_requirements.size)
@@ -92,21 +94,4 @@ ManagedResource<vk::Buffer> vkutil::BufferBuilder::build()
             vptr->device().freeMemory(mem);
             vptr->device().destroyBuffer(b);
         }};
-}
-
-uint32_t vkutil::BufferBuilder::find_matching_memory_type_for(
-    vk::MemoryRequirements const& requirements)
-{
-    auto const properties = vulkan.physical_device().getMemoryProperties();
-
-    for (uint32_t i = 0; i < properties.memoryTypeCount; i++)
-    {
-        if ((requirements.memoryTypeBits & (1 << i)) &&
-            (properties.memoryTypes[i].propertyFlags & memory_properties) == memory_properties)
-        {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Couldn't find mathcing memory type for buffer");
 }

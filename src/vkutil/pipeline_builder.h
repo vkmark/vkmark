@@ -41,6 +41,7 @@ public:
         std::vector<vk::VertexInputAttributeDescription> const& attribute_descriptions);
     PipelineBuilder& set_vertex_shader(std::vector<char> const& spirv);
     PipelineBuilder& set_fragment_shader(std::vector<char> const& spirv);
+    PipelineBuilder& set_depth_test(bool depth_test);
     PipelineBuilder& set_extent(vk::Extent2D extent);
     PipelineBuilder& set_layout(vk::PipelineLayout layout);
     PipelineBuilder& set_render_pass(vk::RenderPass render_pass);
@@ -53,6 +54,7 @@ private:
     std::vector<vk::VertexInputAttributeDescription> attribute_descriptions;
     std::vector<char> vertex_shader_spirv;
     std::vector<char> fragment_shader_spirv;
+    bool depth_test;
     vk::Extent2D extent;
     vk::PipelineLayout layout;
     vk::RenderPass render_pass;

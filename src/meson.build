@@ -16,7 +16,9 @@ core_sources = files(
 vkutil_sources = files(
     'vkutil/buffer_builder.cpp',
     'vkutil/descriptor_set_builder.cpp',
+    'vkutil/find_matching_memory_type.cpp',
     'vkutil/framebuffer_builder.cpp',
+    'vkutil/image_builder.cpp',
     'vkutil/image_view_builder.cpp',
     'vkutil/pipeline_builder.cpp',
     'vkutil/render_pass_builder.cpp'

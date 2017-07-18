@@ -24,27 +24,14 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "managed_resource.h"
-
 class VulkanState;
 
 namespace vkutil
 {
 
-class RenderPassBuilder
-{
-public:
-    RenderPassBuilder(VulkanState& vulkan);
-
-    RenderPassBuilder& set_format(vk::Format format);
-    RenderPassBuilder& set_depth_format(vk::Format format);
-
-    ManagedResource<vk::RenderPass> build();
-
-private:
-    VulkanState& vulkan;
-    vk::Format format;
-    vk::Format depth_format;
-};
+uint32_t find_matching_memory_type(
+    VulkanState& vulkan,
+    vk::MemoryRequirements const& requirements,
+    vk::MemoryPropertyFlags const& memory_properties);
 
 }

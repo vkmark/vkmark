@@ -72,6 +72,12 @@ vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_fragment_shader(
     return *this;
 }
 
+vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_depth_test(bool depth_test_)
+{
+    depth_test = depth_test_;
+    return *this;
+}
+
 vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_extent(vk::Extent2D extent_)
 {
     extent = extent_;
@@ -160,6 +166,13 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setAttachmentCount(1)
         .setPAttachments(&blend_attach);
 
+    auto const depth_stencil_state_create_info = vk::PipelineDepthStencilStateCreateInfo{}
+        .setDepthTestEnable(depth_test)
+        .setDepthWriteEnable(depth_test)
+        .setDepthCompareOp(vk::CompareOp::eLess)
+        .setDepthBoundsTestEnable(false)
+        .setStencilTestEnable(false);
+
     auto pipeline_create_info = vk::GraphicsPipelineCreateInfo{}
         .setStageCount(2)
         .setPStages(shader_stages)
@@ -169,6 +182,7 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setPRasterizationState(&rasterization_state_create_info)
         .setPMultisampleState(&multisample_state_create_info)
         .setPColorBlendState(&color_blend_state_create_info)
+        .setPDepthStencilState(&depth_stencil_state_create_info)
         .setLayout(layout)
         .setRenderPass(render_pass)
         .setSubpass(0);

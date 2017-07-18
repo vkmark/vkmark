@@ -31,20 +31,27 @@ class VulkanState;
 namespace vkutil
 {
 
-class RenderPassBuilder
+class ImageBuilder
 {
 public:
-    RenderPassBuilder(VulkanState& vulkan);
+    ImageBuilder(VulkanState& vulkan);
 
-    RenderPassBuilder& set_format(vk::Format format);
-    RenderPassBuilder& set_depth_format(vk::Format format);
+    ImageBuilder& set_extent(vk::Extent2D extent);
+    ImageBuilder& set_format(vk::Format format);
+    ImageBuilder& set_tiling(vk::ImageTiling tiling);
+    ImageBuilder& set_usage(vk::ImageUsageFlags usage);
+    ImageBuilder& set_memory_properties(vk::MemoryPropertyFlags memory_properties);
 
-    ManagedResource<vk::RenderPass> build();
+    ManagedResource<vk::Image> build();
 
 private:
     VulkanState& vulkan;
+    vk::Extent2D extent;
     vk::Format format;
-    vk::Format depth_format;
+    vk::ImageTiling tiling;
+    vk::ImageUsageFlags usage;
+    vk::MemoryPropertyFlags memory_properties;
 };
 
 }
+

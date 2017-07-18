@@ -26,6 +26,8 @@
 
 #include "managed_resource.h"
 
+#include <vector>
+
 class VulkanState;
 
 namespace vkutil
@@ -37,7 +39,7 @@ public:
     FramebufferBuilder(VulkanState& vulkan);
 
     FramebufferBuilder& set_render_pass(vk::RenderPass render_pass);
-    FramebufferBuilder& set_image_view(vk::ImageView image_view);
+    FramebufferBuilder& set_image_views(std::vector<vk::ImageView> const& image_view);
     FramebufferBuilder& set_extent(vk::Extent2D extent);
 
     ManagedResource<vk::Framebuffer> build();
@@ -45,7 +47,7 @@ public:
 private:
     VulkanState& vulkan;
     vk::RenderPass render_pass;
-    vk::ImageView image_view;
+    std::vector<vk::ImageView> image_views;
     vk::Extent2D extent;
 };
 

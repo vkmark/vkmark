@@ -26,13 +26,20 @@
 
 vkutil::RenderPassBuilder::RenderPassBuilder(VulkanState& vulkan)
     : vulkan{vulkan},
-      format{vk::Format::eUndefined}
+      format{vk::Format::eUndefined},
+      depth_format{vk::Format::eUndefined}
 {
 }
 
 vkutil::RenderPassBuilder& vkutil::RenderPassBuilder::set_format(vk::Format format_)
 {
     format = format_;
+    return *this;
+}
+
+vkutil::RenderPassBuilder& vkutil::RenderPassBuilder::set_depth_format(vk::Format format_)
+{
+    depth_format = format_;
     return *this;
 }
 
@@ -52,14 +59,35 @@ ManagedResource<vk::RenderPass> vkutil::RenderPassBuilder::build()
         .setAttachment(0)
         .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
+    auto const depth_attachment = vk::AttachmentDescription{}
+        .setFormat(depth_format)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    auto const depth_attachment_ref = vk::AttachmentReference{}
+        .setAttachment(1)
+        .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    bool const use_depth_attachment = depth_format != vk::Format::eUndefined;
+
     auto const subpass = vk::SubpassDescription{}
         .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
         .setColorAttachmentCount(1)
-        .setPColorAttachments(&color_attachment_ref);
+        .setPColorAttachments(&color_attachment_ref)
+        .setPDepthStencilAttachment(use_depth_attachment ? &depth_attachment_ref : nullptr);
+
+    std::vector<vk::AttachmentDescription> attachments{color_attachment};
+    if (use_depth_attachment)
+        attachments.push_back(depth_attachment);
 
     auto const render_pass_create_info = vk::RenderPassCreateInfo{}
-        .setAttachmentCount(1)
-        .setPAttachments(&color_attachment)
+        .setAttachmentCount(attachments.size())
+        .setPAttachments(attachments.data())
         .setSubpassCount(1)
         .setPSubpasses(&subpass);
 

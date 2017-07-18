@@ -20,31 +20,25 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#pragma once
+#include "find_matching_memory_type.h"
 
-#include <vulkan/vulkan.hpp>
+#include "vulkan_state.h"
 
-#include "managed_resource.h"
-
-class VulkanState;
-
-namespace vkutil
+uint32_t vkutil::find_matching_memory_type(
+    VulkanState& vulkan,
+    vk::MemoryRequirements const& requirements,
+    vk::MemoryPropertyFlags const& memory_properties)
 {
+    auto const properties = vulkan.physical_device().getMemoryProperties();
 
-class RenderPassBuilder
-{
-public:
-    RenderPassBuilder(VulkanState& vulkan);
+    for (uint32_t i = 0; i < properties.memoryTypeCount; i++)
+    {
+        if ((requirements.memoryTypeBits & (1 << i)) &&
+            (properties.memoryTypes[i].propertyFlags & memory_properties) == memory_properties)
+        {
+            return i;
+        }
+    }
 
-    RenderPassBuilder& set_format(vk::Format format);
-    RenderPassBuilder& set_depth_format(vk::Format format);
-
-    ManagedResource<vk::RenderPass> build();
-
-private:
-    VulkanState& vulkan;
-    vk::Format format;
-    vk::Format depth_format;
-};
-
+    throw std::runtime_error("Couldn't find matching memory type");
 }

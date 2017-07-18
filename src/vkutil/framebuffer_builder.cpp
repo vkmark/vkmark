@@ -36,10 +36,10 @@ vkutil::FramebufferBuilder& vkutil::FramebufferBuilder::set_render_pass(
     return *this;
 }
 
-vkutil::FramebufferBuilder& vkutil::FramebufferBuilder::set_image_view(
-    vk::ImageView image_view_)
+vkutil::FramebufferBuilder& vkutil::FramebufferBuilder::set_image_views(
+    std::vector<vk::ImageView> const& image_views_)
 {
-    image_view = image_view_;
+    image_views = image_views_;
     return *this;
 }
 
@@ -54,8 +54,8 @@ ManagedResource<vk::Framebuffer> vkutil::FramebufferBuilder::build()
 {
     auto const framebuffer_create_info = vk::FramebufferCreateInfo{}
         .setRenderPass(render_pass)
-        .setAttachmentCount(1)
-        .setPAttachments(&image_view)
+        .setAttachmentCount(image_views.size())
+        .setPAttachments(image_views.data())
         .setWidth(extent.width)
         .setHeight(extent.height)
         .setLayers(1);

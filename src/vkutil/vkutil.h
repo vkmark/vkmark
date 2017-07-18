@@ -24,7 +24,9 @@
 
 #include "buffer_builder.h"
 #include "descriptor_set_builder.h"
+#include "find_matching_memory_type.h"
 #include "framebuffer_builder.h"
+#include "image_builder.h"
 #include "image_view_builder.h"
 #include "pipeline_builder.h"
 #include "render_pass_builder.h"

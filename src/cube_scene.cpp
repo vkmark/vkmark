@@ -211,6 +211,7 @@ void CubeScene::setup_framebuffers(std::vector<VulkanImage> const& vulkan_images
             vkutil::ImageViewBuilder{*vulkan}
                 .set_image(vulkan_image.image)
                 .set_format(vulkan_image.format)
+                .set_aspect_mask(vk::ImageAspectFlagBits::eColor)
                 .build());
     }
 
@@ -219,7 +220,7 @@ void CubeScene::setup_framebuffers(std::vector<VulkanImage> const& vulkan_images
         framebuffers.push_back(
             vkutil::FramebufferBuilder{*vulkan}
                 .set_render_pass(render_pass)
-                .set_image_view(image_view)
+                .set_image_views({image_view})
                 .set_extent(extent)
                 .build());
     }

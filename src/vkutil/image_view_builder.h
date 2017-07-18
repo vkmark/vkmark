@@ -38,6 +38,7 @@ public:
 
     ImageViewBuilder& set_image(vk::Image image);
     ImageViewBuilder& set_format(vk::Format format);
+    ImageViewBuilder& set_aspect_mask(vk::ImageAspectFlags mask);
 
     ManagedResource<vk::ImageView> build();
 
@@ -45,6 +46,7 @@ private:
     VulkanState& vulkan;
     vk::Image image;
     vk::Format format;
+    vk::ImageAspectFlags aspect_mask;
 };
 
 }

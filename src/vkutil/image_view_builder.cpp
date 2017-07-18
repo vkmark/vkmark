@@ -41,10 +41,17 @@ vkutil::ImageViewBuilder& vkutil::ImageViewBuilder::set_format(vk::Format format
     return *this;
 }
 
+vkutil::ImageViewBuilder& vkutil::ImageViewBuilder::set_aspect_mask(
+    vk::ImageAspectFlags mask)
+{
+    aspect_mask = mask;
+    return *this;
+}
+
 ManagedResource<vk::ImageView> vkutil::ImageViewBuilder::build()
 {
     auto const image_subresource_range = vk::ImageSubresourceRange{}
-        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+        .setAspectMask(aspect_mask)
         .setBaseMipLevel(0)
         .setLevelCount(1)
         .setBaseArrayLayer(0)
