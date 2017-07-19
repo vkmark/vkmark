@@ -379,8 +379,10 @@ VulkanImage KMSWindowSystem::next_vulkan_image()
 
 void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
 {
+    static int constexpr drm_event_context_version = 2;
+
     static drmEventContext event_context = {
-        DRM_EVENT_CONTEXT_VERSION,
+        drm_event_context_version,
         nullptr,
         page_flip_handler};
 
