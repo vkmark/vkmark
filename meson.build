@@ -33,6 +33,7 @@ build_kms_ws = libdrm_dep.found() and gbm_dep.found() and get_option('kms') != '
 subdir('src')
 subdir('data')
 subdir('tests')
+subdir('doc')
 
 msg = 'Building with support for the following window systems: '
 

@@ -1,0 +1,102 @@
+.TH vkmark "1" "July 2017" "vkmark 2017.07"
+.SH NAME
+vkmark \- Vulkan benchmark suite
+.SH SYNOPSIS
+.B vkmark [options]
+.SH DESCRIPTION
+\fBvkmark\fP is an extensible Vulkan benchmarking suite with targeted,
+configurable scenes.
+.SH OPTIONS
+.TP
+\fB\-b\fR, \fB\-\-benchmark\fR BENCH
+A benchmark to run: 'scene(:opt1=val1)*'
+(the option can be used multiple times)
+.TP
+\fB\-s\fR, \fB\-\-size\fR WxH
+Size of the output window (default: 800x600)
+.TP
+\fB\-\-fullscreen\fR
+Run in fullscreen mode (equivalent to --size -1x-1)
+.TP
+\fB\-p\fR, \fB\-\-present-mode\fR PM
+Vulkan present mode (default: mailbox)
+[immediate, mailbox, fifo, fiforelaxed]
+.TP
+\fB\-\-pixel-format\fR PF
+Vulkan pixel format (default: choose best)
+.TP
+\fB\-l\fR, \fB\-\-list\-scenes\fR
+Display information about the available scenes
+and their options
+.TP
+\fB\-\-show-all-options\fR
+Show all scene option values used for benchmarks
+(only explicitly set options are shown by default)
+.TP
+\fB\-\-winsys-dir\fR DIR
+Directory to search in for window system plugins
+.TP
+\fB\-\-data-dir\fR DIR
+Directory to search in for scene data files
+.TP
+\fB\-\-winsys\fR WS
+Window system plugin to use (default: choose best)
+[xcb, wayland, kms]
+.TP
+\fB\-\-winsys-options\fR OPTS
+Window system options as 'opt1=val1(:opt2=val2)*'
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Display debug messages
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help
+.SH BENCHMARKS
+vkmark offers a suite of scenes that can be used to measure various aspects
+of Vulkan performance. The way in which each scene is rendered is
+configurable through a set of options. To get the available scenes and their
+acceptable options you can use the \fB\-l\fR, \fB\-\-list\-scenes\fR command
+line option.
+
+In vkmark, a benchmark is defined as a scene plus a set of option values.
+You can specify the list and order of the benchmarks to run by using the
+\fB\-b\fR, \fB\-\-benchmark\fR command line option (possibly multiple times).
+If no benchmarks are specified, a default set of benchmarks is used. If a
+benchmark option is not specified it assumes its default value (listed with
+\fB\-l\fR, \fB\-\-list\-scenes\fR).
+
+As a special case, a benchmark description string is allowed to not contain a
+scene name (i.e. to start with ':'). In this case, any specified option values
+are used as the default values for benchmarks following this description
+string.
+
+.SH EXAMPLES
+To run the default benchmarks:
+.PP
+.RS
+\fBvkmark\fR
+.RE
+.PP
+To run a benchmark using scene 'vertex' with a 'duration' of '5.0' seconds
+and 'interleave' set to 'false':
+.PP
+.RS
+\fBvkmark -b vertex:duration=5.0:interleave=false\fR
+.RE
+.PP
+To run a series of benchmarks use the \fB\-b\fR, \fB\-\-benchmark\fR command
+line option multiple times:
+.PP
+.RS
+\fBvkmark -b vertex:duration=5.0 -b clear:color=255,0,0 -b cube\fR
+.RE
+.PP
+To set default option values for benchmarks:
+.PP
+.RS
+\fBvkmark -b :duration=2.0 -b vertex -b clear -b :duration=5.0 -b cube\fR
+.RE
+.PP
+
+.SH AUTHOR
+vkmark was written by Alexandros Frantzis
