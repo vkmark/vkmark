@@ -40,6 +40,7 @@ struct Uniforms
 {
     glm::mat4 modelviewprojection;
     glm::mat4 normal;
+    glm::vec4 material_diffuse;
 };
 
 }
@@ -338,6 +339,7 @@ void VertexScene::update_uniforms()
 
     ubo.modelviewprojection = projection * modelview;
     ubo.normal = glm::inverseTranspose(modelview);
+    ubo.material_diffuse = glm::vec4{0.7f, 0.7f, 0.7f, 1.0};
 
     memcpy(uniform_buffer_map, &ubo, sizeof(ubo));
 }
