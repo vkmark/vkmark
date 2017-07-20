@@ -26,6 +26,9 @@ std::vector<std::string> DefaultBenchmarks::get()
 {
     return std::vector<std::string>{
         "vertex",
+        "shading:shading=gouraud",
+        "shading:shading=blinn-phong-inf",
+        "shading:shading=phong",
         "cube",
         "clear"
     };
