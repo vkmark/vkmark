@@ -1,4 +1,4 @@
-vkmark is an extensible extensible Vulkan benchmarking suite with targeted,
+vkmark is an extensible Vulkan benchmarking suite with targeted,
 configurable scenes.
 
 # Building requirements
