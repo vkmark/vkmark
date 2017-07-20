@@ -31,7 +31,7 @@
 ClearScene::ClearScene() : Scene{"clear"}, cycle{true}
 {
     options_["color"] = SceneOption("color", "cycle",
-                                    "The \"r,g,b,a\" color to use or \"cycle\" to cycle");
+                                    "The normalized (0.0-1.0) \"r,g,b,a\" color to use or \"cycle\" to cycle");
 }
 
 bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& images)

@@ -92,7 +92,7 @@ To run a benchmark using scene 'vertex' with a 'duration' of '5.0' seconds and
 
 To run a series of benchmarks use the `-b, --benchmark` command line option multiple times:
 
-`$ vkmark -b vertex:duration=5.0 -b clear:color=255,0,0 -b cube`
+`$ vkmark -b vertex:duration=5.0 -b clear:color=1.0,0.5,0 -b cube`
 
 To set default option values for benchmarks:
 
