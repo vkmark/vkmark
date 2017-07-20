@@ -153,8 +153,13 @@ try
     {
         auto& scene = benchmark->prepare_scene();
 
+        // Scenes with empty names are option-setting scenes.
+        // Just set them up and continue.
         if (scene.name().empty())
+        {
+            scene.setup(vulkan, ws.vulkan_images());
             continue;
+        }
 
         log_scene_info(scene, options.show_all_options);
 
