@@ -33,10 +33,10 @@
 #include "log.h"
 #include "util.h"
 
-#include "clear_scene.h"
-#include "cube_scene.h"
-#include "default_options_scene.h"
-#include "vertex_scene.h"
+#include "scenes/clear_scene.h"
+#include "scenes/cube_scene.h"
+#include "scenes/default_options_scene.h"
+#include "scenes/vertex_scene.h"
 
 #include <stdexcept>
 #include <csignal>

@@ -26,10 +26,10 @@ vkutil_sources = files(
     )
 
 scene_sources = files(
-    'clear_scene.cpp',
-    'cube_scene.cpp',
-    'default_options_scene.cpp',
-    'vertex_scene.cpp',
+    'scenes/clear_scene.cpp',
+    'scenes/cube_scene.cpp',
+    'scenes/default_options_scene.cpp',
+    'scenes/vertex_scene.cpp',
     )
 
 vkmark_core = static_library(
