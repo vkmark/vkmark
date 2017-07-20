@@ -56,7 +56,7 @@ VertexScene::VertexScene() : Scene{"vertex"}
 
 VertexScene::~VertexScene() = default;
 
-bool VertexScene::setup(
+void VertexScene::setup(
     VulkanState& vulkan_,
     std::vector<VulkanImage> const& vulkan_images)
 {
@@ -95,10 +95,6 @@ bool VertexScene::setup(
     setup_command_buffers();
 
     submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
-
-    running = true;
-
-    return true;
 }
 
 void VertexScene::teardown()

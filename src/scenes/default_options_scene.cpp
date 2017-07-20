@@ -30,13 +30,11 @@ DefaultOptionsScene::DefaultOptionsScene(SceneCollection& scene_collection)
 {
 }
 
-bool DefaultOptionsScene::setup(VulkanState&, std::vector<VulkanImage> const&)
+void DefaultOptionsScene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     for (auto const& kv : options_)
     {
         if (kv.second.set)
             scene_collection.set_option_default(kv.first, kv.second.value);
     }
-
-    return true;
 }

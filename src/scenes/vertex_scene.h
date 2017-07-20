@@ -37,7 +37,7 @@ public:
     VertexScene();
     ~VertexScene();
 
-    bool setup(VulkanState&, std::vector<VulkanImage> const&) override;
+    void setup(VulkanState&, std::vector<VulkanImage> const&) override;
     void teardown() override;
 
     VulkanImage draw(VulkanImage const&) override;

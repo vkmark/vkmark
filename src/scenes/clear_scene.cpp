@@ -34,7 +34,7 @@ ClearScene::ClearScene() : Scene{"clear"}, cycle{true}
                                     "The normalized (0.0-1.0) \"r,g,b,a\" color to use or \"cycle\" to cycle");
 }
 
-bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& images)
+void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& images)
 {
     Scene::setup(vulkan_, images);
 
@@ -66,10 +66,6 @@ bool ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
 
         clear_color = vk::ClearColorValue{color_value};
     }
-
-    running = true;
-
-    return true;
 }
 
 void ClearScene::teardown()

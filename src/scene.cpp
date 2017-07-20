@@ -54,16 +54,14 @@ Scene::Scene(std::string const& name)
                                       "The duration of each benchmark in seconds");
 }
 
-bool Scene::setup(VulkanState&, std::vector<VulkanImage> const&)
+void Scene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     duration = 1000000.0 * Util::from_string<double>(options_["duration"].value);
 
     current_frame = 0;
-    running = false;
+    running = true;
     start_time = Util::get_timestamp_us();
     last_update_time = start_time;
-
-    return true;
 }
 
 void Scene::teardown()

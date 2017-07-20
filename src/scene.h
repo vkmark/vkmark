@@ -53,7 +53,7 @@ class Scene
 public:
     virtual ~Scene() = default;
 
-    virtual bool setup(VulkanState&, std::vector<VulkanImage> const&);
+    virtual void setup(VulkanState&, std::vector<VulkanImage> const&);
     virtual void teardown();
 
     virtual VulkanImage draw(VulkanImage const&);

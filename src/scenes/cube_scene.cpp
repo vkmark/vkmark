@@ -53,7 +53,7 @@ CubeScene::CubeScene() : Scene{"cube"}
 
 CubeScene::~CubeScene() = default;
 
-bool CubeScene::setup(
+void CubeScene::setup(
     VulkanState& vulkan_,
     std::vector<VulkanImage> const& vulkan_images)
 {
@@ -79,10 +79,6 @@ bool CubeScene::setup(
     setup_command_buffers();
 
     submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
-
-    running = true;
-
-    return true;
 }
 
 void CubeScene::teardown()

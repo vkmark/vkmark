@@ -69,13 +69,6 @@ void log_scene_info(Scene& scene, bool show_all_options)
     Log::flush();
 }
 
-void log_scene_setup_failure()
-{
-    auto const fmt = Log::continuation_prefix + " Setup failed\n";
-    Log::info(fmt.c_str());
-    Log::flush();
-}
-
 void log_scene_exception(std::string const& what)
 {
     auto const fmt = Log::continuation_prefix + " Failed with exception: %s\n";
@@ -168,12 +161,6 @@ try
         auto const scene_setup = Util::make_raii(
             [&] { scene.setup(vulkan, ws.vulkan_images()); },
             [&] { scene.teardown(); });
-
-        if (!scene.is_running())
-        {
-            log_scene_setup_failure();
-            continue;
-        }
 
         bool should_quit = false;
 
