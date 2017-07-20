@@ -41,7 +41,7 @@ SceneOption::SceneOption(std::string const& name,
 bool SceneOption::accepts_value(std::string const& val)
 {
     return acceptable_values.empty() ||
-           std::find(acceptable_values.begin(), acceptable_values.end(), val) ==
+           std::find(acceptable_values.begin(), acceptable_values.end(), val) !=
                acceptable_values.end();
 }
 
