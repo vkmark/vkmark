@@ -171,6 +171,8 @@ try
 
         bool should_quit = false;
 
+        scene.start();
+
         while (scene.is_running() &&
                !(should_quit = ws.should_quit()) &&
                !should_quit_sig)

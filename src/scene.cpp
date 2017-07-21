@@ -57,15 +57,18 @@ Scene::Scene(std::string const& name)
 void Scene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     duration = 1000000.0 * Util::from_string<double>(options_["duration"].value);
-
-    current_frame = 0;
-    running = true;
-    start_time = Util::get_timestamp_us();
-    last_update_time = start_time;
 }
 
 void Scene::teardown()
 {
+}
+
+void Scene::start()
+{
+    current_frame = 0;
+    running = true;
+    start_time = Util::get_timestamp_us();
+    last_update_time = start_time;
 }
 
 VulkanImage Scene::draw(VulkanImage const& image)

@@ -56,6 +56,7 @@ public:
     virtual void setup(VulkanState&, std::vector<VulkanImage> const&);
     virtual void teardown();
 
+    virtual void start();
     virtual VulkanImage draw(VulkanImage const&);
     virtual void update();
 
