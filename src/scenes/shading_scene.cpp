@@ -50,7 +50,7 @@ ShadingScene::ShadingScene() : Scene{"shading"}
 {
     options_["shading"] =
         SceneOption("shading", "gouraud", "Which shading method to use",
-                    "gouraud,blinn-phong-inf,phong");
+                    "gouraud,blinn-phong-inf,phong,cel");
 }
 
 ShadingScene::~ShadingScene() = default;
@@ -238,6 +238,11 @@ void ShadingScene::setup_pipeline()
     {
         vertex_shader = Util::read_data_file("shaders/light-phong.vert.spv");
         fragment_shader = Util::read_data_file("shaders/light-phong.frag.spv");
+    }
+    else if (options_["shading"].value == "cel")
+    {
+        vertex_shader = Util::read_data_file("shaders/light-phong.vert.spv");
+        fragment_shader = Util::read_data_file("shaders/light-cel.frag.spv");
     }
 
     pipeline = vkutil::PipelineBuilder(*vulkan)
