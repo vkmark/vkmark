@@ -41,6 +41,7 @@ public:
     ImageBuilder& set_tiling(vk::ImageTiling tiling);
     ImageBuilder& set_usage(vk::ImageUsageFlags usage);
     ImageBuilder& set_memory_properties(vk::MemoryPropertyFlags memory_properties);
+    ImageBuilder& set_initial_layout(vk::ImageLayout initial_layout);
 
     ManagedResource<vk::Image> build();
 
@@ -51,6 +52,7 @@ private:
     vk::ImageTiling tiling;
     vk::ImageUsageFlags usage;
     vk::MemoryPropertyFlags memory_properties;
+    vk::ImageLayout initial_layout;
 };
 
 }

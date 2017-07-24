@@ -264,6 +264,7 @@ void ShadingScene::setup_depth_image()
         .set_tiling(vk::ImageTiling::eOptimal)
         .set_usage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
         .set_memory_properties(vk::MemoryPropertyFlagBits::eDeviceLocal)
+        .set_initial_layout(vk::ImageLayout::eUndefined)
         .build();
 }
 

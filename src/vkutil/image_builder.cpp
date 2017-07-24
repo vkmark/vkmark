@@ -28,7 +28,8 @@
 vkutil::ImageBuilder::ImageBuilder(VulkanState& vulkan)
     : vulkan{vulkan},
       format{vk::Format::eUndefined},
-      tiling{vk::ImageTiling::eOptimal}
+      tiling{vk::ImageTiling::eOptimal},
+      initial_layout{vk::ImageLayout::eUndefined}
 {
 }
 
@@ -63,6 +64,12 @@ vkutil::ImageBuilder& vkutil::ImageBuilder::set_memory_properties(
     return *this;
 }
 
+vkutil::ImageBuilder& vkutil::ImageBuilder::set_initial_layout(vk::ImageLayout initial_layout_)
+{
+    initial_layout = initial_layout_;
+    return *this;
+}
+
 ManagedResource<vk::Image> vkutil::ImageBuilder::build()
 {
     auto const image_create_info = vk::ImageCreateInfo{}
@@ -72,7 +79,7 @@ ManagedResource<vk::Image> vkutil::ImageBuilder::build()
         .setArrayLayers(1)
         .setFormat(format)
         .setTiling(tiling)
-        .setInitialLayout(vk::ImageLayout::ePreinitialized)
+        .setInitialLayout(initial_layout)
         .setUsage(usage)
         .setSamples(vk::SampleCountFlagBits::e1)
         .setSharingMode(vk::SharingMode::eExclusive);
