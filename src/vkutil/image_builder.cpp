@@ -26,7 +26,9 @@
 #include "vulkan_state.h"
 
 vkutil::ImageBuilder::ImageBuilder(VulkanState& vulkan)
-    : vulkan{vulkan}
+    : vulkan{vulkan},
+      format{vk::Format::eUndefined},
+      tiling{vk::ImageTiling::eOptimal}
 {
 }
 

@@ -25,7 +25,8 @@
 #include "vulkan_state.h"
 
 vkutil::ImageViewBuilder::ImageViewBuilder(VulkanState& vulkan)
-    : vulkan{vulkan}
+    : vulkan{vulkan},
+      format{vk::Format::eUndefined}
 {
 }
 

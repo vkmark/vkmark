@@ -26,6 +26,7 @@
 
 vkutil::DescriptorSetBuilder::DescriptorSetBuilder(VulkanState& vulkan)
     : vulkan{vulkan},
+      descriptor_type{vk::DescriptorType::eSampler},
       buffer{nullptr},
       offset{0},
       range{0},

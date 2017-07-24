@@ -45,7 +45,8 @@ ManagedResource<vk::ShaderModule> create_shader_module(
 }
 
 vkutil::PipelineBuilder::PipelineBuilder(VulkanState& vulkan)
-    : vulkan{vulkan}
+    : vulkan{vulkan},
+      depth_test{false}
 {
 }
 
