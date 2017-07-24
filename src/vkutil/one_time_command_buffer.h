@@ -20,20 +20,28 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#include "copy_buffer.h"
+#pragma once
 
-#include "one_time_command_buffer.h"
+#include <vulkan/vulkan.hpp>
 
-void vkutil::copy_buffer(
-    VulkanState& vulkan,
-    vk::Buffer src,
-    vk::Buffer dst,
-    vk::DeviceSize size)
+#include "managed_resource.h"
+
+class VulkanState;
+
+namespace vkutil
 {
-    OneTimeCommandBuffer otcb{vulkan};
 
-    auto const region = vk::BufferCopy{}.setSize(size);
-    otcb.command_buffer().copyBuffer(src, dst, region);
+class OneTimeCommandBuffer
+{
+public:
+    OneTimeCommandBuffer(VulkanState& vulkan);
 
-    otcb.submit();
+    vk::CommandBuffer command_buffer() const;
+    void submit();
+
+private:
+    VulkanState& vulkan;
+    ManagedResource<vk::CommandBuffer> command_buffer_;
+};
+
 }

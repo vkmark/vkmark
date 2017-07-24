@@ -21,9 +21,7 @@
  */
 
 #include "transition_image_layout.h"
-
-#include "managed_resource.h"
-#include "vulkan_state.h"
+#include "one_time_command_buffer.h"
 
 namespace
 {
@@ -54,18 +52,6 @@ void vkutil::transition_image_layout(
     vk::ImageLayout new_layout,
     vk::ImageAspectFlags aspect_mask)
 {
-    auto const command_buffer_allocate_info = vk::CommandBufferAllocateInfo{}
-        .setCommandPool(vulkan.command_pool())
-        .setCommandBufferCount(1)
-        .setLevel(vk::CommandBufferLevel::ePrimary);
-
-    auto command_buffer = ManagedResource<vk::CommandBuffer>{
-        std::move(vulkan.device().allocateCommandBuffers(command_buffer_allocate_info)[0]),
-        [&vulkan] (auto const& cb)
-        {
-            vulkan.device().freeCommandBuffers(vulkan.command_pool(), cb);
-        }};
-
     auto const image_subresource_range = vk::ImageSubresourceRange{}
         .setAspectMask(aspect_mask)
         .setBaseMipLevel(0)
@@ -83,24 +69,13 @@ void vkutil::transition_image_layout(
         .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
         .setSubresourceRange(image_subresource_range);
 
-    auto const begin_info = vk::CommandBufferBeginInfo{}
-        .setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    OneTimeCommandBuffer otcb{vulkan};
 
-    command_buffer.raw.begin(begin_info);
-
-    command_buffer.raw.pipelineBarrier(
+    otcb.command_buffer().pipelineBarrier(
         vk::PipelineStageFlagBits::eTopOfPipe,
         vk::PipelineStageFlagBits::eTopOfPipe,
         {}, {}, {},
         image_memory_barrier);
 
-    command_buffer.raw.end();
-
-    auto const submit_info = vk::SubmitInfo{}
-        .setCommandBufferCount(1)
-        .setPCommandBuffers(&command_buffer.raw);
-
-    vulkan.graphics_queue().submit(submit_info, {});
-
-    vulkan.device().waitIdle();
+    otcb.submit();
 }
