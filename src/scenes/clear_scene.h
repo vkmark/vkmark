@@ -42,8 +42,8 @@ private:
 
     VulkanState* vulkan;
     std::vector<vk::CommandBuffer> command_buffers;
+    std::vector<vk::Fence> command_buffer_fences;
     vk::Semaphore submit_semaphore;
-    vk::Fence submit_fence;
     vk::ClearColorValue clear_color;
     bool cycle;
 };

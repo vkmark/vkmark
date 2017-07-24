@@ -42,11 +42,13 @@ void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
 
     auto const command_buffer_allocate_info = vk::CommandBufferAllocateInfo{}
         .setCommandPool(vulkan->command_pool())
-        .setCommandBufferCount(1)
+        .setCommandBufferCount(images.size())
         .setLevel(vk::CommandBufferLevel::ePrimary);
 
     command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
-    submit_fence = vulkan->device().createFence(vk::FenceCreateInfo());
+    command_buffer_fences.resize(command_buffers.size());
+
+    submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
 
     if (options_["color"].value == "cycle")
     {
@@ -72,7 +74,10 @@ void ClearScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    vulkan->device().destroyFence(submit_fence);
+    vulkan->device().destroySemaphore(submit_semaphore);
+    for (auto i = 0u; i < command_buffer_fences.size(); i++)
+        vulkan->device().destroyFence(command_buffer_fences[i]);
+
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
 
     Scene::teardown();
@@ -90,15 +95,27 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
         .setBaseArrayLayer(0)
         .setLayerCount(1);
 
-    command_buffers[0].begin(begin_info);
+    auto const i = image.index;
 
-    command_buffers[0].clearColorImage(
+    if (!command_buffer_fences[i])
+    {
+        command_buffer_fences[i] = vulkan->device().createFence(vk::FenceCreateInfo());
+    }
+    else
+    {
+        vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
+        vulkan->device().resetFences(command_buffer_fences[i]);
+    }
+
+    command_buffers[i].begin(begin_info);
+
+    command_buffers[i].clearColorImage(
         image.image,
-        vk::ImageLayout::eGeneral,
+        vk::ImageLayout::eTransferDstOptimal,
         clear_color,
         image_range);                
 
-    command_buffers[0].end();
+    command_buffers[i].end();
 }
 
 VulkanImage ClearScene::draw(VulkanImage const& image)
@@ -107,18 +124,17 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
 
     vk::PipelineStageFlags mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
+        .setSignalSemaphoreCount(1)
+        .setPSignalSemaphores(&submit_semaphore)
         .setCommandBufferCount(1)
-        .setPCommandBuffers(&command_buffers[0])
+        .setPCommandBuffers(&command_buffers[image.index])
         .setWaitSemaphoreCount(1)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
-    vulkan->graphics_queue().submit(submit_info, submit_fence);
+    vulkan->graphics_queue().submit(submit_info, command_buffer_fences[image.index]);
 
-    vulkan->device().waitForFences(submit_fence, true, INT64_MAX);
-    vulkan->device().resetFences(submit_fence);
-
-    return image.copy_with_semaphore({});
+    return image.copy_with_semaphore(submit_semaphore);
 }
 
 void ClearScene::update()
