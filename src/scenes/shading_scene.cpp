@@ -321,9 +321,9 @@ void ShadingScene::setup_command_buffers()
 
         command_buffers[i].begin(begin_info);
 
-        std::array<vk::ClearValue, 2> clear_values{
+        std::array<vk::ClearValue, 2> clear_values{{
             vk::ClearColorValue{std::array<float,4>{{0.0f, 0.0f, 0.0f, 1.0f}}},
-            vk::ClearDepthStencilValue{1.0f, 0}};
+            vk::ClearDepthStencilValue{1.0f, 0}}};
 
         auto const render_pass_begin_info = vk::RenderPassBeginInfo{}
             .setRenderPass(render_pass)
