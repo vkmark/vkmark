@@ -95,6 +95,26 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
         .setBaseArrayLayer(0)
         .setLayerCount(1);
 
+    auto const undef_to_transfer_barrier = vk::ImageMemoryBarrier{}
+        .setImage(image.image)
+        .setOldLayout(vk::ImageLayout::eUndefined)
+        .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setSrcAccessMask({})
+        .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
+        .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+        .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+        .setSubresourceRange(image_range);
+
+    auto const transfer_to_present_barrier = vk::ImageMemoryBarrier{}
+        .setImage(image.image)
+        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setNewLayout(vk::ImageLayout::ePresentSrcKHR)
+        .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+        .setDstAccessMask({})
+        .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+        .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+        .setSubresourceRange(image_range);
+
     auto const i = image.index;
 
     if (!command_buffer_fences[i])
@@ -109,11 +129,23 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
 
     command_buffers[i].begin(begin_info);
 
+    command_buffers[i].pipelineBarrier(
+        vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eTransfer,
+        {}, {}, {},
+        undef_to_transfer_barrier);
+
     command_buffers[i].clearColorImage(
         image.image,
         vk::ImageLayout::eTransferDstOptimal,
         clear_color,
         image_range);                
+
+    command_buffers[i].pipelineBarrier(
+        vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eBottomOfPipe,
+        {}, {}, {},
+        transfer_to_present_barrier);
 
     command_buffers[i].end();
 }

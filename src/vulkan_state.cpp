@@ -116,7 +116,8 @@ void VulkanState::create_device()
 void VulkanState::create_command_pool()
 {
     auto const command_pool_create_info = vk::CommandPoolCreateInfo{}
-        .setQueueFamilyIndex(graphics_queue_family_index());
+        .setQueueFamilyIndex(graphics_queue_family_index())
+        .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 
     vk_command_pool = ManagedResource<vk::CommandPool>{
         device().createCommandPool(command_pool_create_info),
