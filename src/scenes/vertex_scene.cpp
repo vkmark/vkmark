@@ -123,7 +123,7 @@ VulkanImage VertexScene::draw(VulkanImage const& image)
 {
     update_uniforms();
 
-    vk::PipelineStageFlags const mask = vk::PipelineStageFlagBits::eTopOfPipe;
+    vk::PipelineStageFlags const mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
         .setCommandBufferCount(1)
         .setPCommandBuffers(&command_buffers[image.index])

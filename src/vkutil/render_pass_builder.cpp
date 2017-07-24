@@ -85,11 +85,23 @@ ManagedResource<vk::RenderPass> vkutil::RenderPassBuilder::build()
     if (use_depth_attachment)
         attachments.push_back(depth_attachment);
 
+    auto const subpass_dependency = vk::SubpassDependency{}
+        .setSrcSubpass(VK_SUBPASS_EXTERNAL)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setSrcAccessMask({})
+        .setDstSubpass(0)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead |
+                          vk::AccessFlagBits::eColorAttachmentWrite)
+        .setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+
     auto const render_pass_create_info = vk::RenderPassCreateInfo{}
         .setAttachmentCount(attachments.size())
         .setPAttachments(attachments.data())
         .setSubpassCount(1)
-        .setPSubpasses(&subpass);
+        .setPSubpasses(&subpass)
+        .setDependencyCount(1)
+        .setPDependencies(&subpass_dependency);
 
     return ManagedResource<vk::RenderPass>{
         vulkan.device().createRenderPass(render_pass_create_info),
