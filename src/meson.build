@@ -22,7 +22,8 @@ vkutil_sources = files(
     'vkutil/image_builder.cpp',
     'vkutil/image_view_builder.cpp',
     'vkutil/pipeline_builder.cpp',
-    'vkutil/render_pass_builder.cpp'
+    'vkutil/render_pass_builder.cpp',
+    'vkutil/transition_image_layout.cpp'
     )
 
 scene_sources = files(

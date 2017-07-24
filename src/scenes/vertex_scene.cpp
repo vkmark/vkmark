@@ -253,6 +253,13 @@ void VertexScene::setup_depth_image()
         .set_memory_properties(vk::MemoryPropertyFlagBits::eDeviceLocal)
         .set_initial_layout(vk::ImageLayout::eUndefined)
         .build();
+
+    vkutil::transition_image_layout(
+        *vulkan,
+        depth_image,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eDepthStencilAttachmentOptimal,
+        vk::ImageAspectFlagBits::eDepth);
 }
 
 void VertexScene::setup_framebuffers(std::vector<VulkanImage> const& vulkan_images)

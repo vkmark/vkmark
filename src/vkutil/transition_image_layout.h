@@ -22,13 +22,18 @@
 
 #pragma once
 
-#include "buffer_builder.h"
-#include "copy_buffer.h"
-#include "descriptor_set_builder.h"
-#include "find_matching_memory_type.h"
-#include "framebuffer_builder.h"
-#include "image_builder.h"
-#include "image_view_builder.h"
-#include "pipeline_builder.h"
-#include "render_pass_builder.h"
-#include "transition_image_layout.h"
+#include <vulkan/vulkan.hpp>
+
+class VulkanState;
+
+namespace vkutil
+{
+
+void transition_image_layout(
+    VulkanState& vulkan,
+    vk::Image image,
+    vk::ImageLayout old_layout,
+    vk::ImageLayout new_layout,
+    vk::ImageAspectFlags aspect_mask);
+
+}
