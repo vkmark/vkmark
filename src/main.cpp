@@ -130,9 +130,8 @@ try
     auto& ws = ws_loader.load_window_system();
     VulkanState vulkan{ws.vulkan_extensions()};
 
-    auto const ws_vulkan_init = Util::make_raii(
-        [&] { ws.init_vulkan(vulkan); },
-        [&] { ws.deinit_vulkan(); });
+    auto const ws_vulkan_deinit = Util::on_scope_exit([&] { ws.deinit_vulkan(); });
+    ws.init_vulkan(vulkan);
 
     Log::info("=======================================================\n");
     Log::info("    vkmark %s\n", VKMARK_VERSION_STR);
@@ -165,9 +164,8 @@ try
 
         log_scene_info(scene, options.show_all_options);
 
-        auto const scene_setup = Util::make_raii(
-            [&] { scene.setup(vulkan, ws.vulkan_images()); },
-            [&] { scene.teardown(); });
+        auto const scene_teardown = Util::on_scope_exit([&] { scene.teardown(); });
+        scene.setup(vulkan, ws.vulkan_images());
 
         bool should_quit = false;
 

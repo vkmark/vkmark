@@ -62,4 +62,10 @@ RAIIHelper<Init,Deinit> make_raii(Init&& init, Deinit&& deinit)
     return {std::move(init), std::move(deinit)};
 }
 
+template <typename Deinit>
+RAIIHelper<void (*)(void), Deinit> on_scope_exit(Deinit&& deinit)
+{
+    return {[]{}, std::move(deinit)};
+}
+
 }
