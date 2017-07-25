@@ -207,6 +207,15 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
     Log::debug("SwapchainWindowSystem: Selected swapchain format %s\n",
                to_string(vk_image_format).c_str());
 
+    auto const present_modes = vulkan->physical_device().getSurfacePresentModesKHR(vk_surface);
+    if (std::find(present_modes.begin(), present_modes.end(), vk_present_mode) ==
+            present_modes.end())
+    {
+        throw std::runtime_error{
+            "Selected present mode " + to_string(vk_present_mode) +
+            " is not supported by the used Vulkan physical device."};
+    }
+
     auto const swapchain_create_info = vk::SwapchainCreateInfoKHR{}
         .setSurface(vk_surface)
         .setMinImageCount(2)
