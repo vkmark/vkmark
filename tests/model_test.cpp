@@ -195,6 +195,45 @@ SCENARIO("model to mesh", "")
         }
     }
 
+    GIVEN("A model with texcoords")
+    {
+        std::string const model_str =
+            "ply\n"
+            "format ascii 1.0\n"
+            "element vertex 3\n"
+            "property float x\n"
+            "property float y\n"
+            "property float z\n"
+            "property float u\n"
+            "property float v\n"
+            "element face 1\n"
+            "property list uchar int vertex_index\n"
+            "end_header\n"
+            "-1.0 +1.0 +1.0 0 1\n"
+            "-1.0 -1.0 +1.0 0 0\n"
+            "+1.0 -1.0 +1.0 1 0\n"
+            "3 0 1 2\n";
+
+        Model model{model_str, "ply"};
+
+        WHEN("converting to a mesh")
+        {
+            auto const mesh = model.to_mesh(
+                ModelAttribMap{}
+                    .with_texcoord(vk::Format::eR32G32Sfloat));
+
+            THEN("the texcoords are read")
+            {
+                auto const vertex_data = mesh_vertex_data(*mesh);
+                REQUIRE_THAT(vertex_data, Equals(
+                    std::vector<float>{
+                        0, 0,
+                        0, 1,
+                        1, 1}));
+            }
+        }
+    }
+
     GIVEN("A model with multiple vertex attributes")
     {
         std::string const model_str =

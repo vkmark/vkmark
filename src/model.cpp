@@ -40,7 +40,7 @@ unsigned int const post_process_flags =
 }
 
 ModelAttribMap::ModelAttribMap()
-    : position{-1}, color{-1}, normal{-1}
+    : position{-1}, color{-1}, normal{-1}, texcoord{-1}
 {
 }
 
@@ -61,6 +61,13 @@ ModelAttribMap& ModelAttribMap::with_color(vk::Format format)
 ModelAttribMap& ModelAttribMap::with_normal(vk::Format format)
 {
     normal = formats.size();
+    formats.push_back(format);
+    return *this;
+}
+
+ModelAttribMap& ModelAttribMap::with_texcoord(vk::Format format)
+{
+    texcoord = formats.size();
     formats.push_back(format);
     return *this;
 }
@@ -105,6 +112,7 @@ std::unique_ptr<Mesh> Model::to_mesh(ModelAttribMap const& map)
     {
         auto const aimesh = scene->mMeshes[m];
         auto const colors = aimesh->mColors[0];
+        auto const texcoords = aimesh->mTextureCoords[0];
 
         for (auto f = 0u; f < aimesh->mNumFaces; ++f)
         {
@@ -134,6 +142,19 @@ std::unique_ptr<Mesh> Model::to_mesh(ModelAttribMap const& map)
                     else
                     {
                         mesh->set_attribute(map.color, {1, 1, 1});
+                    }
+                }
+
+                if (map.texcoord >= 0)
+                {
+                    if (texcoords)
+                    {
+                        auto const& texcoord = texcoords[vindex];
+                        mesh->set_attribute(map.texcoord, {texcoord.x, 1.0 - texcoord.y});
+                    }
+                    else
+                    {
+                        mesh->set_attribute(map.texcoord, {0, 0});
                     }
                 }
             }
