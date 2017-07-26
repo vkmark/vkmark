@@ -37,3 +37,31 @@ void vkutil::copy_buffer(
 
     otcb.submit();
 }
+
+void vkutil::copy_buffer_to_image(
+    VulkanState& vulkan,
+    vk::Buffer src,
+    vk::Image dst,
+    vk::Extent2D extent)
+{
+    OneTimeCommandBuffer otcb{vulkan};
+
+    auto const image_subresource_layers = vk::ImageSubresourceLayers{}
+        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+        .setMipLevel(0)
+        .setBaseArrayLayer(0)
+        .setLayerCount(1);
+
+    auto const region = vk::BufferImageCopy{}
+        .setBufferOffset(0)
+        .setBufferRowLength(0)
+        .setBufferImageHeight(0)
+        .setImageSubresource(image_subresource_layers)
+        .setImageOffset({0, 0, 0})
+        .setImageExtent({extent.width, extent.height, 1});
+
+    otcb.command_buffer().copyBufferToImage(
+        src, dst, vk::ImageLayout::eTransferDstOptimal, region);
+
+    otcb.submit();
+}

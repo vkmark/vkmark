@@ -35,4 +35,10 @@ void copy_buffer(
     vk::Buffer dst,
     vk::DeviceSize size);
 
+void copy_buffer_to_image(
+    VulkanState& vulkan,
+    vk::Buffer src,
+    vk::Image dst,
+    vk::Extent2D extent);
+
 }
