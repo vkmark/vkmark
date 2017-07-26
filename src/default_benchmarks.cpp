@@ -27,6 +27,8 @@ std::vector<std::string> DefaultBenchmarks::get()
     return std::vector<std::string>{
         "vertex:device-local=true",
         "vertex:device-local=false",
+        "texture:anisotropy=0",
+        "texture:anisotropy=16",
         "shading:shading=gouraud",
         "shading:shading=blinn-phong-inf",
         "shading:shading=phong",
