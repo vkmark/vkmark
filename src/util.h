@@ -38,6 +38,21 @@ void set_data_dir(std::string const& path);
 std::string get_data_file_path(std::string const& rel_path);
 std::vector<char> read_data_file(std::string const& rel_path);
 
+struct Image
+{
+    Image();
+    ~Image();
+    Image(Image&& image);
+    Image& operator=(Image&& image);
+
+    unsigned char* data;
+    size_t size;
+    size_t width;
+    size_t height;
+};
+
+Image read_image_file(std::string const& rel_path);
+
 template<typename T>
 T from_string(std::string const& str)
 {

@@ -13,6 +13,7 @@ test_sources = files(
     'scene_collection_test.cpp',
     'scene_option_test.cpp',
     'util_data_file_test.cpp',
+    'util_image_file_test.cpp',
     'util_split_test.cpp',
     'window_system_loader_test.cpp',
     )

@@ -27,6 +27,11 @@
 #include "util.h"
 #include <stdexcept>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
+#include "stb_image.h"
+
 namespace
 {
 std::string data_dir;
@@ -87,4 +92,62 @@ std::vector<char> Util::read_data_file(std::string const& rel_path)
     ifs.read(buffer.data(), file_size);
 
     return buffer;
+}
+
+Util::Image::Image()
+    : data{nullptr}, size{0}, width{0}, height{0}
+{
+}
+
+Util::Image::~Image()
+{
+    if (data)
+        stbi_image_free(data);
+}
+
+Util::Image::Image(Image&& other)
+    : data{other.data},
+      size{other.size},
+      width{other.width},
+      height{other.height}
+{
+    other.data = nullptr;
+}
+
+Util::Image& Util::Image::operator=(Image&& other)
+{
+    if (data)
+        stbi_image_free(data);
+    data = other.data;
+    size = other.size;
+    width = other.width;
+    height = other.height;
+
+    other.data = nullptr;
+
+    return *this;
+}
+
+Util::Image Util::read_image_file(std::string const& rel_path)
+{
+    auto const path = get_data_file_path(rel_path);
+
+    int w = 0;
+    int h = 0;
+    int c = 0;
+
+    Image image;
+    image.data = stbi_load(path.c_str(), &w, &h, &c, STBI_rgb_alpha);
+
+    if (!image.data)
+    {
+        throw std::runtime_error{
+            "Failed to read image file " + path + ": " + stbi_failure_reason()};
+    }
+
+    image.width = static_cast<size_t>(w);
+    image.height = static_cast<size_t>(h);
+    image.size = image.width * image.height * 4;
+
+    return image;
 }
