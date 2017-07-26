@@ -79,6 +79,7 @@ void CubeScene::setup(
     setup_command_buffers();
 
     submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    rotation = {45.0f, 45.0f, 10.0f};
 }
 
 void CubeScene::teardown()

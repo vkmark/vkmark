@@ -94,6 +94,7 @@ void ShadingScene::setup(
     setup_command_buffers();
 
     submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    rotation = 0.0;
 }
 
 void ShadingScene::teardown()

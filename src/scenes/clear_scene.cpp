@@ -53,12 +53,14 @@ void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
     if (options_["color"].value == "cycle")
     {
         cycle = true;
+        std::array<float,4> const color_value{{1.0f,0.0f,0.0f,1.0f}};
+        clear_color = vk::ClearColorValue{color_value};
     }
     else
     {
         cycle = false;
         auto const components = Util::split(options_["color"].value, ',');
-        std::array<float,4> color_value{{0.0f,0.0f,0.0f,0.0f}};
+        std::array<float,4> color_value{{0.0f,0.0f,0.0f,1.0f}};
 
         if (components.size() > color_value.size())
             throw std::runtime_error("too many components in \"color\" option");
