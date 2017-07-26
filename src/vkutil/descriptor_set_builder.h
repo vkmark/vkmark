@@ -39,18 +39,29 @@ public:
     DescriptorSetBuilder& set_type(vk::DescriptorType type);
     DescriptorSetBuilder& set_stage_flags(vk::ShaderStageFlags stage_flags);
     DescriptorSetBuilder& set_buffer(vk::Buffer& buffer_, size_t offset_, size_t range_);
+    DescriptorSetBuilder& set_image_view(vk::ImageView& image_view, vk::Sampler& sampler);
     DescriptorSetBuilder& set_layout_out(vk::DescriptorSetLayout& layout_out);
+    DescriptorSetBuilder& next_binding();
 
     ManagedResource<vk::DescriptorSet> build();
 
 private:
     VulkanState& vulkan;
 
-    vk::DescriptorType descriptor_type;
-    vk::ShaderStageFlags stage_flags;
-    vk::Buffer* buffer;
-    size_t offset;
-    size_t range;
+    struct Info
+    {
+        Info();
+        vk::DescriptorType descriptor_type;
+        vk::ShaderStageFlags stage_flags;
+        vk::Buffer* buffer;
+        size_t offset;
+        size_t range;
+        vk::ImageView* image_view;
+        vk::Sampler* sampler;
+    };
+
+    std::vector<Info> info;
+
     vk::DescriptorSetLayout* layout_out_ptr;
 };
 

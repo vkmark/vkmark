@@ -24,12 +24,19 @@
 
 #include "vulkan_state.h"
 
-vkutil::DescriptorSetBuilder::DescriptorSetBuilder(VulkanState& vulkan)
-    : vulkan{vulkan},
-      descriptor_type{vk::DescriptorType::eSampler},
+vkutil::DescriptorSetBuilder::Info::Info()
+    : descriptor_type{vk::DescriptorType::eSampler},
       buffer{nullptr},
       offset{0},
       range{0},
+      image_view{nullptr},
+      sampler{nullptr}
+{
+}
+
+vkutil::DescriptorSetBuilder::DescriptorSetBuilder(VulkanState& vulkan)
+    : vulkan{vulkan},
+      info{1},
       layout_out_ptr{nullptr}
 {
 }
@@ -37,23 +44,31 @@ vkutil::DescriptorSetBuilder::DescriptorSetBuilder(VulkanState& vulkan)
 vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::set_type(
     vk::DescriptorType type)
 {
-    descriptor_type = type;
+    info.back().descriptor_type = type;
     return *this;
 }
 
 vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::set_stage_flags(
     vk::ShaderStageFlags stage_flags_)
 {
-    stage_flags = stage_flags_;
+    info.back().stage_flags = stage_flags_;
     return *this;
 }
 
 vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::set_buffer(
     vk::Buffer& buffer_, size_t offset_, size_t range_)
 {
-    buffer = &buffer_;
-    offset = offset_;
-    range = range_;
+    info.back().buffer = &buffer_;
+    info.back().offset = offset_;
+    info.back().range = range_;
+    return *this;
+}
+
+vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::set_image_view(
+    vk::ImageView& image_view, vk::Sampler& sampler)
+{
+    info.back().image_view = &image_view;
+    info.back().sampler = &sampler;
     return *this;
 }
 
@@ -64,31 +79,48 @@ vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::set_layout_out(
     return *this;
 }
 
+vkutil::DescriptorSetBuilder& vkutil::DescriptorSetBuilder::next_binding()
+{
+    info.push_back({});
+    return *this;
+}
+
 ManagedResource<vk::DescriptorSet> vkutil::DescriptorSetBuilder::build()
 {
     // Layout
-    auto const uniform_layout_binding = vk::DescriptorSetLayoutBinding{}
-        .setBinding(0)
-        .setDescriptorType(descriptor_type)
-        .setDescriptorCount(1)
-        .setStageFlags(stage_flags);
+    std::vector<vk::DescriptorSetLayoutBinding> bindings;
+
+    for (auto i = 0u; i < info.size(); ++i)
+    {
+        bindings.push_back(
+            vk::DescriptorSetLayoutBinding{}
+                .setBinding(i)
+                .setDescriptorType(info[i].descriptor_type)
+                .setDescriptorCount(1)
+                .setStageFlags(info[i].stage_flags));
+    }
 
     auto const descriptor_set_layout_create_info = vk::DescriptorSetLayoutCreateInfo{}
-        .setBindingCount(1)
-        .setPBindings(&uniform_layout_binding);
+        .setBindingCount(bindings.size())
+        .setPBindings(bindings.data());
 
     auto descriptor_set_layout = ManagedResource<vk::DescriptorSetLayout>{
         vulkan.device().createDescriptorSetLayout(descriptor_set_layout_create_info),
         [vptr=&vulkan] (auto const& dsl) { vptr->device().destroyDescriptorSetLayout(dsl); }};
 
     // Descriptor pool and sets
-    auto const descriptor_pool_size = vk::DescriptorPoolSize{}
-        .setDescriptorCount(1)
-        .setType(vk::DescriptorType::eUniformBuffer);
+    std::vector<vk::DescriptorPoolSize> pool_sizes;
+
+    for (auto i = 0u; i < info.size(); ++i)
+    {
+        pool_sizes.push_back(vk::DescriptorPoolSize{}
+            .setDescriptorCount(1)
+            .setType(info[i].descriptor_type));
+    }
 
     auto const descriptor_pool_create_info = vk::DescriptorPoolCreateInfo{}
-        .setPoolSizeCount(1)
-        .setPPoolSizes(&descriptor_pool_size)
+        .setPoolSizeCount(pool_sizes.size())
+        .setPPoolSizes(pool_sizes.data())
         .setMaxSets(1);
 
     auto descriptor_pool = ManagedResource<vk::DescriptorPool>{
@@ -103,20 +135,40 @@ ManagedResource<vk::DescriptorSet> vkutil::DescriptorSetBuilder::build()
     auto descriptor_set = vulkan.device().allocateDescriptorSets(descriptor_set_allocate_info);
 
     // Update descriptor set
-    auto const descriptor_buffer_info = vk::DescriptorBufferInfo{}
-        .setBuffer(*buffer)
-        .setOffset(offset)
-        .setRange(range);
+    std::vector<vk::WriteDescriptorSet> write_descriptor_sets;
 
-    auto const write_descriptor_set = vk::WriteDescriptorSet{}
-        .setDstSet(descriptor_set[0])
-        .setDstBinding(0)
-        .setDstArrayElement(0)
-        .setDescriptorType(descriptor_type)
-        .setDescriptorCount(1)
-        .setPBufferInfo(&descriptor_buffer_info);
+    for (auto i = 0u; i < info.size(); ++i)
+    {
+        auto write_descriptor_set = vk::WriteDescriptorSet{}
+            .setDstSet(descriptor_set[0])
+            .setDstBinding(i)
+            .setDstArrayElement(0)
+            .setDescriptorType(info[i].descriptor_type)
+            .setDescriptorCount(1);
 
-    vulkan.device().updateDescriptorSets(write_descriptor_set, {});
+        if (info[i].buffer)
+        {
+            auto const descriptor_buffer_info = vk::DescriptorBufferInfo{}
+                .setBuffer(*info[i].buffer)
+                .setOffset(info[i].offset)
+                .setRange(info[i].range);
+
+            write_descriptor_set.setPBufferInfo(&descriptor_buffer_info);
+        }
+        else if (info[i].image_view)
+        {
+            auto const descriptor_image_info = vk::DescriptorImageInfo{}
+                .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                .setImageView(*info[i].image_view)
+                .setSampler(*info[i].sampler);
+
+            write_descriptor_set.setPImageInfo(&descriptor_image_info);
+        }
+
+        write_descriptor_sets.push_back(write_descriptor_set);
+    }
+
+    vulkan.device().updateDescriptorSets(write_descriptor_sets, {});
 
     if (layout_out_ptr)
         *layout_out_ptr = descriptor_set_layout.raw;
