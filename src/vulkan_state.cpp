@@ -100,11 +100,15 @@ void VulkanState::create_device()
     std::array<char const*,1> enabled_extensions{
         {VK_KHR_SWAPCHAIN_EXTENSION_NAME}};
 
+    auto const device_features = vk::PhysicalDeviceFeatures{}
+        .setSamplerAnisotropy(true);
+
     auto const device_create_info = vk::DeviceCreateInfo{}
         .setQueueCreateInfoCount(1)
         .setPQueueCreateInfos(&queue_create_info)
         .setEnabledExtensionCount(enabled_extensions.size())
-        .setPpEnabledExtensionNames(enabled_extensions.data());
+        .setPpEnabledExtensionNames(enabled_extensions.data())
+        .setPEnabledFeatures(&device_features);
 
     vk_device = ManagedResource<vk::Device>{
         physical_device().createDevice(device_create_info),
