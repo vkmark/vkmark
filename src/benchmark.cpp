@@ -49,16 +49,16 @@ void Benchmark::load_options()
 
             if (opt_iter == scene_.options().end())
             {
-                Log::info("Warning: Scene '%s' doesn't accept option '%s'\n",
-                          scene_.name().c_str(),
-                          option_pair.first.c_str());
+                Log::warning("Scene '%s' doesn't accept option '%s'\n",
+                             scene_.name().c_str(),
+                             option_pair.first.c_str());
             }
             else
             {
-                Log::info("Warning: Scene '%s' doesn't accept value '%s' for option '%s'\n",
-                          scene_.name().c_str(),
-                          option_pair.second.c_str(),
-                          option_pair.first.c_str());
+                Log::warning("Scene '%s' doesn't accept value '%s' for option '%s'\n",
+                             scene_.name().c_str(),
+                             option_pair.second.c_str(),
+                             option_pair.first.c_str());
             }
         }
     }

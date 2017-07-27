@@ -69,8 +69,8 @@ void SceneCollection::set_option_default(std::string const& name, std::string co
         if (!scene.set_option_default(name, value) &&
             scene.options().find(name) != scene.options().end())
         {
-            Log::info("Warning: Scene '%s' doesn't accept default value '%s' for option '%s'\n",
-                      scene.name().c_str(), value.c_str(), name.c_str());
+            Log::warning("Scene '%s' doesn't accept default value '%s' for option '%s'\n",
+                         scene.name().c_str(), value.c_str(), name.c_str());
         }
     }
 }
