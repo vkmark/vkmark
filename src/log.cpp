@@ -42,6 +42,7 @@ std::string const terminal_color_normal{"\033[0m"};
 std::string const terminal_color_red{"\033[1;31m"};
 std::string const terminal_color_cyan{"\033[36m"};
 std::string const terminal_color_yellow{"\033[33m"};
+std::string const terminal_color_magenta{"\033[35m"};
 std::string const empty;
 
 void print_prefixed_message(
@@ -157,6 +158,19 @@ void Log::error(const char *fmt, ...)
 
     static std::string const& errcolor{isatty(fileno(stderr)) ? terminal_color_red : empty};
     print_prefixed_message(std::cerr, errcolor, errprefix, fmt, ap);
+
+    va_end(ap);
+}
+
+void Log::warning(const char *fmt, ...)
+{
+    static std::string const warnprefix("Warning");
+
+    va_list ap;
+    va_start(ap, fmt);
+
+    static std::string const& warncolor{isatty(fileno(stderr)) ? terminal_color_magenta : empty};
+    print_prefixed_message(std::cerr, warncolor, warnprefix, fmt, ap);
 
     va_end(ap);
 }
