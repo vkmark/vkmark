@@ -24,6 +24,7 @@
 
 #include "benchmark.h"
 #include "scene_collection.h"
+#include "scene.h"
 #include "log.h"
 #include "util.h"
 
@@ -62,7 +63,8 @@ std::vector<Benchmark::OptionPair> get_options_from_description(std::string cons
 }
 
 BenchmarkCollection::BenchmarkCollection(SceneCollection& scene_collection)
-    : scene_collection{scene_collection}
+    : scene_collection{scene_collection},
+      contains_normal_scenes_{false}
 {
 }
 
@@ -73,6 +75,9 @@ void BenchmarkCollection::add(std::vector<std::string> const& benchmark_strings)
         auto const scene_name = get_name_from_description(bstr);
         auto const options = get_options_from_description(bstr);
         auto& scene = scene_collection.get_scene_by_name(scene_name);
+
+        if (!scene.name().empty())
+            contains_normal_scenes_ = true;
 
         benchmarks_.push_back(std::make_unique<Benchmark>(scene, options));
     }
@@ -86,4 +91,9 @@ std::vector<Benchmark*> BenchmarkCollection::benchmarks() const
         benchmarks_raw.push_back(b.get());
 
     return benchmarks_raw;
+}
+
+bool BenchmarkCollection::contains_normal_scenes() const
+{
+    return contains_normal_scenes_;
 }

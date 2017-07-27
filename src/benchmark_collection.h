@@ -37,7 +37,10 @@ public:
     void add(std::vector<std::string> const& benchmarks);
     std::vector<Benchmark*> benchmarks() const;
 
+    bool contains_normal_scenes() const;
+
 private:
     SceneCollection& scene_collection;
     std::vector<std::unique_ptr<Benchmark>> benchmarks_;
+    bool contains_normal_scenes_;
 };

@@ -143,7 +143,8 @@ try
 
     if (!options.benchmarks.empty())
         bc.add(options.benchmarks);
-    else
+
+    if (!bc.contains_normal_scenes())
         bc.add(DefaultBenchmarks::get());
 
     set_up_sighandler();

@@ -94,9 +94,13 @@ To run a series of benchmarks use the `-b, --benchmark` command line option mult
 
 `$ vkmark -b vertex:duration=5.0 -b clear:color=1.0,0.5,0 -b cube`
 
-To set default option values for benchmarks:
+To set default option values for benchmarks and run them:
 
 `$ vkmark -b :duration=2.0 -b vertex:interleave=true -b vertex:interleave=false -b :duration=5.0 -b cube`
+
+To set default option values for the default benchmarks and run them:
+
+`$ vkmark -b :duration=2.0`
 
 # Window system selection
 

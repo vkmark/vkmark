@@ -168,3 +168,46 @@ SCENARIO("benchmark collection", "")
         }
     }
 }
+
+SCENARIO("benchmark collection contains normal scenes", "")
+{
+    SceneCollection sc;
+    BenchmarkCollection bc{sc};
+
+    GIVEN("A few registered scenes including an option-setting one")
+    {
+        auto const scene_name_1 = TestScene::name(1);
+        auto const option_setting_scene_name = "";
+
+        sc.register_scene(std::make_unique<TestScene>(scene_name_1));
+        sc.register_scene(std::make_unique<TestScene>(option_setting_scene_name));
+
+        WHEN("the benchmark collection is empty")
+        {
+            THEN("contains no normal scenes is reported")
+            {
+                REQUIRE_FALSE(bc.contains_normal_scenes());
+            }
+        }
+
+        WHEN("adding only option-setting scenes")
+        {
+            bc.add({":duration=1", ":bla=2"});
+
+            THEN("contains no normal scenes is reported")
+            {
+                REQUIRE_FALSE(bc.contains_normal_scenes());
+            }
+        }
+
+        WHEN("adding at least one normal scene")
+        {
+            bc.add({":duration=1", scene_name_1});
+
+            THEN("contains normal scenes is reported")
+            {
+                REQUIRE(bc.contains_normal_scenes());
+            }
+        }
+    }
+}
