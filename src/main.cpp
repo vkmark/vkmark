@@ -71,6 +71,13 @@ void log_scene_info(Scene& scene, bool show_all_options)
     Log::flush();
 }
 
+void log_scene_invalid(Scene& scene)
+{
+    Log::warning("Skipping benchmark with invalid scene name '%s'\n",
+                 scene.name().c_str());
+    Log::flush();
+}
+
 void log_scene_exception(std::string const& what)
 {
     auto const fmt = Log::continuation_prefix + " Failed with exception: %s\n";
@@ -156,6 +163,12 @@ try
     try
     {
         auto& scene = benchmark->prepare_scene();
+
+        if (!scene.is_valid())
+        {
+            log_scene_invalid(scene);
+            continue;
+        }
 
         // Scenes with empty names are option-setting scenes.
         // Just set them up and continue.
