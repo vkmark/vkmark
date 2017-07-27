@@ -53,6 +53,7 @@ class Scene
 public:
     virtual ~Scene() = default;
 
+    virtual bool is_valid() const;
     virtual void setup(VulkanState&, std::vector<VulkanImage> const&);
     virtual void teardown();
 

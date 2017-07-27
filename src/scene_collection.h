@@ -41,6 +41,5 @@ public:
     void log_scene_info();
 
 private:
-    std::unique_ptr<Scene> dummy_scene;
     std::unordered_map<std::string,std::unique_ptr<Scene>> scene_map;
 };

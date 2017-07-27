@@ -65,6 +65,7 @@ SCENARIO("scene collection", "")
             THEN("the scene is returned")
             {
                 REQUIRE(scene.name() == scene_name_1);
+                REQUIRE(scene.is_valid());
             }
         }
 
@@ -72,9 +73,10 @@ SCENARIO("scene collection", "")
         {
             auto const& scene = sc.get_scene_by_name("unregistered");
 
-            THEN("the dummy scene is returned")
+            THEN("an invalid scene is returned")
             {
-                REQUIRE(scene.name() == "dummy");
+                REQUIRE(scene.name() == "unregistered");
+                REQUIRE_FALSE(scene.is_valid());
             }
         }
 

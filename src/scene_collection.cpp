@@ -28,16 +28,16 @@
 namespace
 {
 
-class DummyScene : public Scene
+class InvalidScene : public Scene
 {
 public:
-    DummyScene() : Scene{"dummy"} {}
+    InvalidScene(std::string const& name) : Scene{name} {}
+    bool is_valid() const override { return false; }
 };
 
 }
 
 SceneCollection::SceneCollection()
-    : dummy_scene{std::make_unique<DummyScene>()}
 {
 }
 
@@ -51,9 +51,14 @@ Scene& SceneCollection::get_scene_by_name(std::string const& name)
     auto const iter = scene_map.find(name);
 
     if (iter != scene_map.end())
+    {
         return *(iter->second);
+    }
     else
-        return *dummy_scene;
+    {
+        scene_map[name] = std::make_unique<InvalidScene>(name);
+        return *scene_map[name];
+    }
 }
 
 void SceneCollection::set_option_default(std::string const& name, std::string const& value)

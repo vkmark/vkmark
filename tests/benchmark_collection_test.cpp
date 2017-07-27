@@ -85,11 +85,11 @@ SCENARIO("benchmark collection", "")
         {
             bc.add({"unregistered"});
 
-            THEN("a dummy benchmark is returned")
+            THEN("an invalid benchmark is returned")
             {
                 auto const benchmarks = bc.benchmarks();
                 REQUIRE(benchmarks.size() == 1);
-                REQUIRE(benchmarks[0]->prepare_scene().name() == "dummy");
+                REQUIRE_FALSE(benchmarks[0]->prepare_scene().is_valid());
             }
         }
 
