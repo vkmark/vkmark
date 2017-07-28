@@ -492,7 +492,7 @@ void KMSWindowSystem::create_vk_images()
             vulkan->device().getProcAddr("vkCreateDmaBufImageINTEL"));
 
     if (!create_dma_buf_image)
-        throw std::runtime_error{"Failed to get vkCreateDmaBufImageINTEL function poninter"};
+        throw std::runtime_error{"Failed to get vkCreateDmaBufImageINTEL function pointer"};
 
     for (auto const& gbm_bo : gbm_bos)
     {

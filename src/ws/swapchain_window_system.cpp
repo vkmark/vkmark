@@ -212,7 +212,7 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
 
     for (auto const& format : surface_formats)
     {
-        Log::debug("SwapchainWindowSystem: Avalaible surface format %s\n",
+        Log::debug("SwapchainWindowSystem: Available surface format %s\n",
                    to_string(format.format).c_str());
     }
 
