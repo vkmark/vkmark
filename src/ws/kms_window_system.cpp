@@ -357,7 +357,7 @@ void KMSWindowSystem::init_vulkan(VulkanState& vulkan_)
 {
     vulkan = &vulkan_;
 
-    vk_image_format = vk::Format::eR8G8B8A8Srgb;
+    vk_image_format = vk::Format::eB8G8R8A8Srgb;
     create_gbm_bos();
     create_drm_fbs();
     create_vk_images();
