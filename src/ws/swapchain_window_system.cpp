@@ -136,6 +136,9 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
     vk_swapchain = create_vk_swapchain();
     vk_images = vulkan->device().getSwapchainImagesKHR(vk_swapchain);
 
+    Log::debug("SwapchainWindowSystem: Swapchain contains %d images\n",
+               vk_images.size());
+
     vk_acquire_semaphore = ManagedResource<vk::Semaphore>{
         vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
         [this] (auto& s) { vulkan->device().destroySemaphore(s); }};
@@ -225,9 +228,14 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
             " is not supported by the used Vulkan physical device."};
     }
 
+    // Try to enable triple buffering
+    auto min_image_count = std::max(surface_caps.minImageCount, 3u);
+    if (surface_caps.maxImageCount > 0)
+        min_image_count = std::min(min_image_count, surface_caps.maxImageCount);
+
     auto const swapchain_create_info = vk::SwapchainCreateInfoKHR{}
         .setSurface(vk_surface)
-        .setMinImageCount(2)
+        .setMinImageCount(min_image_count)
         .setImageFormat(vk_image_format)
         .setImageExtent(vk_extent)
         .setImageArrayLayers(1)
