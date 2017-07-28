@@ -93,16 +93,24 @@ vk::Extent2D XcbNativeSystem::get_vk_extent()
     return vk_extent;
 }
 
+uint32_t XcbNativeSystem::get_presentation_queue_family_index(vk::PhysicalDevice const& pd)
+{
+    auto const queue_families = pd.getQueueFamilyProperties();
+
+    for (auto i = 0u; i < queue_families.size(); ++i)
+    {
+        if (queue_families[i].queueCount > 0 &&
+            pd.getXcbPresentationSupportKHR(i, connection, visual_id))
+        {
+            return i;
+        }
+    }
+
+    return invalid_queue_family_index;
+}
+
 ManagedResource<vk::SurfaceKHR> XcbNativeSystem::create_vk_surface(VulkanState& vulkan)
 {
-    auto const vk_supported = vulkan.physical_device().getXcbPresentationSupportKHR(
-        vulkan.graphics_queue_family_index(),
-        connection,
-        visual_id);
-
-    if (!vk_supported)
-        throw std::runtime_error{"Queue family does not support presentation on XCB"};
-
     auto const xcb_surface_create_info = vk::XcbSurfaceCreateInfoKHR{}
         .setConnection(connection)
         .setWindow(window);

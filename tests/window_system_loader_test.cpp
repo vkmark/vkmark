@@ -23,6 +23,7 @@
 #include "src/window_system_loader.h"
 #include "src/window_system.h"
 #include "src/options.h"
+#include "src/vulkan_wsi.h"
 
 #include "test_window_system_plugin.h"
 
@@ -83,7 +84,7 @@ private:
 
 int window_system_id(WindowSystem& ws)
 {
-    return std::stoi(ws.vulkan_extensions()[0]);
+    return std::stoi(ws.vulkan_wsi().vulkan_extensions()[0]);
 }
 
 }

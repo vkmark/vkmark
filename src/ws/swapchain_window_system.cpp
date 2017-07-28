@@ -112,14 +112,24 @@ SwapchainWindowSystem::SwapchainWindowSystem(
 {
 }
 
-std::vector<char const*> SwapchainWindowSystem::vulkan_extensions()
+VulkanWSI& SwapchainWindowSystem::vulkan_wsi()
 {
-    return native->vulkan_extensions();
+    return *this;
 }
 
 void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
 {
     vulkan = &vulkan_;
+
+    vk_present_queue_family_index =
+        native->get_presentation_queue_family_index(vulkan->physical_device());
+    if (vk_present_queue_family_index == NativeSystem::invalid_queue_family_index)
+    {
+        throw std::runtime_error{
+            "Physical device doesn't have a queue family that supports "
+            "presentation on the selected window system"};
+    }
+    vk_present_queue = vulkan->device().getQueue(vk_present_queue_family_index, 0);
 
     vk_extent = native->get_vk_extent();
     vk_surface = native->create_vk_surface(vulkan_);
@@ -129,7 +139,6 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
     vk_acquire_semaphore = ManagedResource<vk::Semaphore>{
         vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
         [this] (auto& s) { vulkan->device().destroySemaphore(s); }};
-
 }
 
 void SwapchainWindowSystem::deinit_vulkan()
@@ -157,7 +166,7 @@ void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image
         .setWaitSemaphoreCount(vulkan_image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&vulkan_image.semaphore);
 
-    vulkan->graphics_queue().presentKHR(present_info);
+    vk_present_queue.presentKHR(present_info);
 }
 
 std::vector<VulkanImage> SwapchainWindowSystem::vulkan_images()
@@ -185,7 +194,7 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
     }
 
     if (!vulkan->physical_device().getSurfaceSupportKHR(
-            vulkan->graphics_queue_family_index(),
+            vk_present_queue_family_index,
             vk_surface))
     {
         throw std::runtime_error("Surface not supported");
@@ -226,10 +235,27 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
                        vk::ImageUsageFlagBits::eTransferDst)
         .setImageSharingMode(vk::SharingMode::eExclusive)
         .setQueueFamilyIndexCount(1)
-        .setPQueueFamilyIndices(&vulkan->graphics_queue_family_index())
+        .setPQueueFamilyIndices(&vk_present_queue_family_index)
         .setPresentMode(vk_present_mode);
 
     return ManagedResource<vk::SwapchainKHR>{
         vulkan->device().createSwapchainKHR(swapchain_create_info),
         [this] (auto& s) { vulkan->device().destroySwapchainKHR(s); }};
+}
+
+std::vector<char const*> SwapchainWindowSystem::vulkan_extensions()
+{
+    return native->vulkan_extensions();
+}
+
+bool SwapchainWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& pd)
+{
+    return native->get_presentation_queue_family_index(pd) !=
+               NativeSystem::invalid_queue_family_index;
+}
+
+std::vector<uint32_t> SwapchainWindowSystem::physical_device_queue_family_indices(
+    vk::PhysicalDevice const& pd)
+{
+    return {native->get_presentation_queue_family_index(pd)};
 }

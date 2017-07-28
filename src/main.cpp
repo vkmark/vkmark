@@ -137,7 +137,7 @@ try
     }
 
     auto& ws = ws_loader.load_window_system();
-    VulkanState vulkan{ws.vulkan_extensions()};
+    VulkanState vulkan{ws.vulkan_wsi()};
 
     auto const ws_vulkan_deinit = Util::on_scope_exit([&] { ws.deinit_vulkan(); });
     ws.init_vulkan(vulkan);

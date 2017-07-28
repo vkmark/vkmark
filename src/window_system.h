@@ -23,16 +23,18 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 class VulkanState;
 struct VulkanImage;
+class VulkanWSI;
 
 class WindowSystem
 {
 public:
     virtual ~WindowSystem() = default;
 
-    virtual std::vector<char const*> vulkan_extensions() = 0;
+    virtual VulkanWSI& vulkan_wsi() = 0;
     virtual void init_vulkan(VulkanState& vulkan) = 0;
     virtual void deinit_vulkan() = 0;
 

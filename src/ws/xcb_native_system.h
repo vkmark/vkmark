@@ -36,6 +36,7 @@ public:
     ~XcbNativeSystem();
 
     std::vector<char const*> vulkan_extensions() override;
+    uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) override;
     bool should_quit() override;
     vk::Extent2D get_vk_extent() override;
     ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) override;

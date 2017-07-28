@@ -22,28 +22,23 @@
 
 #pragma once
 
-#include "managed_resource.h"
-
-#include <vulkan/vulkan.hpp>
+#include <vector>
 #include <cstdint>
 
-class VulkanState;
+namespace vk { class PhysicalDevice; }
 
-class NativeSystem
+class VulkanWSI
 {
 public:
-    virtual ~NativeSystem() = default;
+    virtual ~VulkanWSI() = default;
 
     virtual std::vector<char const*> vulkan_extensions() = 0;
-    virtual uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) = 0;
-    virtual bool should_quit() = 0;
-    virtual vk::Extent2D get_vk_extent() = 0;
-    virtual ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) = 0;
-
-    static uint32_t constexpr invalid_queue_family_index = static_cast<uint32_t>(-1);
+    virtual bool is_physical_device_supported(vk::PhysicalDevice const& pd) = 0;
+    virtual std::vector<uint32_t> physical_device_queue_family_indices(
+        vk::PhysicalDevice const& pd) = 0;
 
 protected:
-    NativeSystem() = default;
-    NativeSystem(NativeSystem const&) = delete;
-    NativeSystem& operator=(NativeSystem const&) = delete;
+    VulkanWSI() = default;
+    VulkanWSI(VulkanWSI const&) = delete;
+    VulkanWSI& operator=(VulkanWSI const&) = delete;
 };

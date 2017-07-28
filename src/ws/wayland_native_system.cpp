@@ -119,6 +119,22 @@ std::vector<char const*> WaylandNativeSystem::vulkan_extensions()
     return {VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
 }
 
+uint32_t WaylandNativeSystem::get_presentation_queue_family_index(vk::PhysicalDevice const& pd)
+{
+    auto const queue_families = pd.getQueueFamilyProperties();
+
+    for (auto i = 0u; i < queue_families.size(); ++i)
+    {
+        if (queue_families[i].queueCount > 0 &&
+            pd.getWaylandPresentationSupportKHR(i, display))
+        {
+            return i;
+        }
+    }
+
+    return invalid_queue_family_index;
+}
+
 bool WaylandNativeSystem::should_quit()
 {
     while (wl_display_prepare_read(display) != 0)
@@ -152,13 +168,6 @@ vk::Extent2D WaylandNativeSystem::get_vk_extent()
 
 ManagedResource<vk::SurfaceKHR> WaylandNativeSystem::create_vk_surface(VulkanState& vulkan)
 {
-    auto const vk_supported = vulkan.physical_device().getWaylandPresentationSupportKHR(
-        vulkan.graphics_queue_family_index(),
-        display);
-
-    if (!vk_supported)
-        throw std::runtime_error{"Queue family does not support presentation on Wayland"};
-
     auto const wayland_surface_create_info = vk::WaylandSurfaceCreateInfoKHR{}
         .setDisplay(display)
         .setSurface(surface);

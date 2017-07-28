@@ -348,9 +348,9 @@ KMSWindowSystem::~KMSWindowSystem()
         &drm_prev_crtc->mode);
 }
 
-std::vector<char const*> KMSWindowSystem::vulkan_extensions()
+VulkanWSI& KMSWindowSystem::vulkan_wsi()
 {
-    return {};
+    return *this;
 }
 
 void KMSWindowSystem::init_vulkan(VulkanState& vulkan_)
@@ -526,4 +526,20 @@ void KMSWindowSystem::create_vk_images()
                     vptr->device().freeMemory(device_memory);
                 }});
     }
+}
+
+std::vector<char const*> KMSWindowSystem::vulkan_extensions()
+{
+    return {};
+}
+
+bool KMSWindowSystem::is_physical_device_supported(vk::PhysicalDevice const&)
+{
+    return true;
+}
+
+std::vector<uint32_t> KMSWindowSystem::physical_device_queue_family_indices(
+    vk::PhysicalDevice const&)
+{
+    return {};
 }

@@ -23,6 +23,7 @@
 #pragma once
 
 #include "window_system.h"
+#include "vulkan_wsi.h"
 #include "managed_resource.h"
 
 #include <vulkan/vulkan.hpp>
@@ -43,13 +44,13 @@ private:
     vt_mode prev_vt_mode;
 };
 
-class KMSWindowSystem : public WindowSystem
+class KMSWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
     KMSWindowSystem(std::string const& drm_device);
     ~KMSWindowSystem();
 
-    std::vector<char const*> vulkan_extensions() override;
+    VulkanWSI& vulkan_wsi() override;
     void init_vulkan(VulkanState& vulkan) override;
     void deinit_vulkan() override;
 
@@ -59,8 +60,13 @@ public:
 
     bool should_quit() override;
 
-private:
+    // VulkanWSI
+    std::vector<char const*> vulkan_extensions() override;
+    bool is_physical_device_supported(vk::PhysicalDevice const& pd) override;
+    std::vector<uint32_t> physical_device_queue_family_indices(
+        vk::PhysicalDevice const& pd) override;
 
+private:
     void create_gbm_bos();
     void create_drm_fbs();
     void create_vk_images();

@@ -23,13 +23,14 @@
 #pragma once
 
 #include "window_system.h"
+#include "vulkan_wsi.h"
 #include "managed_resource.h"
 
 #include <vulkan/vulkan.hpp>
 
 class NativeSystem;
 
-class SwapchainWindowSystem : public WindowSystem
+class SwapchainWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
     SwapchainWindowSystem(
@@ -37,7 +38,7 @@ public:
         vk::PresentModeKHR present_mode,
         vk::Format pixel_format);
 
-    std::vector<char const*> vulkan_extensions() override;
+    VulkanWSI& vulkan_wsi() override;
     void init_vulkan(VulkanState& vulkan) override;
     void deinit_vulkan() override;
 
@@ -47,6 +48,12 @@ public:
 
     bool should_quit() override;
 
+    // VulkanWSI
+    std::vector<char const*> vulkan_extensions() override;
+    bool is_physical_device_supported(vk::PhysicalDevice const& pd) override;
+    std::vector<uint32_t> physical_device_queue_family_indices(
+        vk::PhysicalDevice const& pd) override;
+
 private:
     ManagedResource<vk::SwapchainKHR> create_vk_swapchain();
 
@@ -55,6 +62,8 @@ private:
     vk::Format const vk_pixel_format;
 
     VulkanState* vulkan;
+    uint32_t vk_present_queue_family_index;
+    vk::Queue vk_present_queue;
     ManagedResource<vk::SurfaceKHR> vk_surface;
     ManagedResource<vk::SwapchainKHR> vk_swapchain;
     ManagedResource<vk::Semaphore> vk_acquire_semaphore;

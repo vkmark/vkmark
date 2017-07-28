@@ -26,10 +26,12 @@
 
 #include "managed_resource.h"
 
+class VulkanWSI;
+
 class VulkanState
 {
 public:
-    VulkanState(std::vector<char const*> required_extensions);
+    VulkanState(VulkanWSI& vulkan_wsi);
 
     void log_info();
 
@@ -63,11 +65,10 @@ public:
         return vk_command_pool;
     }
 
-
 private:
-    void create_instance(std::vector<char const*> const& required_extensions);
-    void choose_physical_device();
-    void create_device();
+    void create_instance(VulkanWSI& vulkan_wsi);
+    void choose_physical_device(VulkanWSI& vulkan_wsi);
+    void create_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
 
     ManagedResource<vk::Instance> vk_instance;
