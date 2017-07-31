@@ -135,11 +135,14 @@ ManagedResource<vk::DescriptorSet> vkutil::DescriptorSetBuilder::build()
     auto descriptor_set = vulkan.device().allocateDescriptorSets(descriptor_set_allocate_info);
 
     // Update descriptor set
-    std::vector<vk::WriteDescriptorSet> write_descriptor_sets;
+    std::vector<vk::WriteDescriptorSet> write_descriptor_sets(info.size());
+    // Not all info slots are used, depending on descriptor types
+    std::vector<vk::DescriptorBufferInfo> descriptor_buffer_infos(info.size());
+    std::vector<vk::DescriptorImageInfo> descriptor_image_infos(info.size());
 
     for (auto i = 0u; i < info.size(); ++i)
     {
-        auto write_descriptor_set = vk::WriteDescriptorSet{}
+        write_descriptor_sets[i]
             .setDstSet(descriptor_set[0])
             .setDstBinding(i)
             .setDstArrayElement(0)
@@ -148,24 +151,22 @@ ManagedResource<vk::DescriptorSet> vkutil::DescriptorSetBuilder::build()
 
         if (info[i].buffer)
         {
-            auto const descriptor_buffer_info = vk::DescriptorBufferInfo{}
+            descriptor_buffer_infos[i]
                 .setBuffer(*info[i].buffer)
                 .setOffset(info[i].offset)
                 .setRange(info[i].range);
 
-            write_descriptor_set.setPBufferInfo(&descriptor_buffer_info);
+            write_descriptor_sets[i].setPBufferInfo(&descriptor_buffer_infos[i]);
         }
         else if (info[i].image_view)
         {
-            auto const descriptor_image_info = vk::DescriptorImageInfo{}
+            descriptor_image_infos[i]
                 .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                 .setImageView(*info[i].image_view)
                 .setSampler(*info[i].sampler);
 
-            write_descriptor_set.setPImageInfo(&descriptor_image_info);
+            write_descriptor_sets[i].setPImageInfo(&descriptor_image_infos[i]);
         }
-
-        write_descriptor_sets.push_back(write_descriptor_set);
     }
 
     vulkan.device().updateDescriptorSets(write_descriptor_sets, {});
