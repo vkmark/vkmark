@@ -1,4 +1,4 @@
-/*texcoordi
+/*
  * Copyright © 2017 Collabora Ltd.
  *
  * This file is part of vkmark.
