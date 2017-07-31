@@ -24,6 +24,7 @@
 
 #include "scene.h"
 #include "managed_resource.h"
+#include "vkutil/texture.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -46,8 +47,7 @@ public:
 private:
     void setup_vertex_buffer();
     void setup_uniform_buffer();
-    void setup_texture_image();
-    void setup_texture_sampler();
+    void setup_texture();
     void setup_shader_descriptor_set();
     void setup_render_pass();
     void setup_pipeline();
@@ -69,9 +69,7 @@ private:
 
     ManagedResource<vk::Buffer> vertex_buffer;
     ManagedResource<vk::Buffer> uniform_buffer;
-    ManagedResource<vk::Image> texture_image;
-    ManagedResource<vk::ImageView> texture_image_view;
-    ManagedResource<vk::Sampler> texture_sampler;
+    vkutil::Texture texture;
     ManagedResource<vk::DescriptorSet> descriptor_set;
     ManagedResource<vk::RenderPass> render_pass;
     ManagedResource<vk::PipelineLayout> pipeline_layout;

@@ -88,8 +88,7 @@ void TextureScene::setup(
 
     setup_vertex_buffer();
     setup_uniform_buffer();
-    setup_texture_image();
-    setup_texture_sampler();
+    setup_texture();
     setup_shader_descriptor_set();
     setup_render_pass();
     setup_pipeline();
@@ -116,9 +115,7 @@ void TextureScene::teardown()
     pipeline_layout = {};
     render_pass = {};
     descriptor_set = {};
-    texture_sampler = {};
-    texture_image_view = {};
-    texture_image = {};
+    texture = {};
     uniform_buffer = {};
     vertex_buffer = {};
 
@@ -200,56 +197,7 @@ void TextureScene::setup_uniform_buffer()
         uniform_buffer_memory, 0, sizeof(Uniforms));
 }
 
-void TextureScene::setup_texture_image()
-{
-    auto const texture_format = vk::Format::eR8G8B8A8Srgb;
-    vk::DeviceMemory staging_buffer_memory;
-    auto const image = Util::read_image_file("textures/crate-base.jpg");
-    auto const image_extent = vk::Extent2D{
-        static_cast<uint32_t>(image.width),
-        static_cast<uint32_t>(image.height)};
-
-    auto staging_buffer = vkutil::BufferBuilder{*vulkan}
-        .set_size(image.size)
-        .set_usage(vk::BufferUsageFlagBits::eTransferSrc)
-        .set_memory_properties(
-            vk::MemoryPropertyFlagBits::eHostVisible |
-            vk::MemoryPropertyFlagBits::eHostCoherent)
-        .set_memory_out(staging_buffer_memory)
-        .build();
-
-    auto const staging_buffer_map = vulkan->device().mapMemory(
-        staging_buffer_memory, 0, image.size);
-    memcpy(staging_buffer_map, image.data, image.size);
-    vulkan->device().unmapMemory(staging_buffer_memory);
-
-    texture_image = vkutil::ImageBuilder{*vulkan}
-        .set_extent(image_extent)
-        .set_format(texture_format)
-        .set_tiling(vk::ImageTiling::eOptimal)
-        .set_usage(vk::ImageUsageFlagBits::eTransferDst |
-                   vk::ImageUsageFlagBits::eSampled)
-        .set_memory_properties(vk::MemoryPropertyFlagBits::eDeviceLocal)
-        .set_initial_layout(vk::ImageLayout::ePreinitialized)
-        .build();
-
-    vkutil::transition_image_layout(
-        *vulkan,
-        texture_image,
-        vk::ImageLayout::ePreinitialized,
-        vk::ImageLayout::eTransferDstOptimal,
-        vk::ImageAspectFlagBits::eColor);
-
-    vkutil::copy_buffer_to_image(*vulkan, staging_buffer, texture_image, image_extent);
-
-    texture_image_view = vkutil::ImageViewBuilder{*vulkan}
-        .set_image(texture_image)
-        .set_format(texture_format)
-        .set_aspect_mask(vk::ImageAspectFlagBits::eColor)
-        .build();
-}
-
-void TextureScene::setup_texture_sampler()
+void TextureScene::setup_texture()
 {
     auto const& filter = options_["texture-filter"].value;
     auto const anisotropy = std::stof(options_["anisotropy"].value);
@@ -260,23 +208,11 @@ void TextureScene::setup_texture_sampler()
     else if (filter == "linear")
         vk_filter = vk::Filter::eLinear;
 
-    auto const sampler_create_info = vk::SamplerCreateInfo{}
-        .setMagFilter(vk_filter)
-        .setMinFilter(vk_filter)
-        .setAddressModeU(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeV(vk::SamplerAddressMode::eRepeat)
-        .setAddressModeW(vk::SamplerAddressMode::eRepeat)
-        .setAnisotropyEnable(anisotropy > 0.0f)
-        .setMaxAnisotropy(anisotropy)
-        .setUnnormalizedCoordinates(false)
-        .setCompareEnable(false)
-        .setMinLod(0.0f)
-        .setMaxLod(0.25f)
-        .setMipmapMode(vk::SamplerMipmapMode::eNearest);
-
-    texture_sampler = ManagedResource<vk::Sampler>{
-        vulkan->device().createSampler(sampler_create_info),
-        [this] (auto const& s) { vulkan->device().destroySampler(s); }};
+    texture = vkutil::TextureBuilder{*vulkan}
+        .set_file("textures/crate-base.jpg")
+        .set_filter(vk_filter)
+        .set_anisotropy(anisotropy)
+        .build();
 }
 
 void TextureScene::setup_shader_descriptor_set()
@@ -288,7 +224,7 @@ void TextureScene::setup_shader_descriptor_set()
         .next_binding()
         .set_type(vk::DescriptorType::eCombinedImageSampler)
         .set_stage_flags(vk::ShaderStageFlagBits::eFragment)
-        .set_image_view(texture_image_view, texture_sampler)
+        .set_image_view(texture.image_view, texture.sampler)
         .set_layout_out(descriptor_set_layout)
         .build();
 }
