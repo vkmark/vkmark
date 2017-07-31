@@ -22,15 +22,33 @@
 
 #pragma once
 
-#include "buffer_builder.h"
-#include "copy_buffer.h"
-#include "descriptor_set_builder.h"
-#include "find_matching_memory_type.h"
-#include "framebuffer_builder.h"
-#include "image_builder.h"
-#include "image_view_builder.h"
-#include "pipeline_builder.h"
-#include "render_pass_builder.h"
-#include "texture.h"
-#include "texture_builder.h"
-#include "transition_image_layout.h"
+#include <vulkan/vulkan.hpp>
+
+#include <string>
+
+class VulkanState;
+
+namespace vkutil
+{
+
+struct Texture;
+
+class TextureBuilder
+{
+public:
+    TextureBuilder(VulkanState& vulkan);
+
+    TextureBuilder& set_file(std::string const& file);
+    TextureBuilder& set_filter(vk::Filter filter);
+    TextureBuilder& set_anisotropy(float anisotropy);
+
+    Texture build();
+
+private:
+    VulkanState& vulkan;
+    std::string file;
+    vk::Filter filter;
+    float anisotropy;
+};
+
+}
