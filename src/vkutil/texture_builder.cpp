@@ -112,7 +112,9 @@ void texture_setup_sampler(VulkanState& vulkan,
 }
 
 vkutil::TextureBuilder::TextureBuilder(VulkanState& vulkan)
-    : vulkan{vulkan}
+    : vulkan{vulkan},
+      filter{vk::Filter::eNearest},
+      anisotropy{0.0f}
 {
 }
 
