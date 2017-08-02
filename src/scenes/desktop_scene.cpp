@@ -164,6 +164,10 @@ DesktopScene::DesktopScene() : Scene{"desktop"}
                                       "the number of windows");
     options_["window-size"] = SceneOption("window-size", "0.35",
                                           "the window size as a percentage of the minimum screen dimension [0.0 - 0.5]");
+    options_["background-resolution"] =
+        SceneOption("background-resolution", "800x600",
+                    "the resolution of the background image",
+                    "800x600,1920x1080");
 }
 
 DesktopScene::~DesktopScene() = default;
@@ -180,7 +184,12 @@ void DesktopScene::setup(
 
     mesh = create_quad_mesh();
 
-    background = std::make_unique<RenderObject>(*vulkan, "textures/desktop-background.png");
+    auto const texture_file =
+        "textures/desktop-background-" +
+        options_["background-resolution"].value +
+        ".png";
+
+    background = std::make_unique<RenderObject>(*vulkan, texture_file);
     background->update_uniforms();
 
     auto const aspect = static_cast<float>(extent.width) / extent.height;
