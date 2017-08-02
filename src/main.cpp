@@ -36,6 +36,7 @@
 #include "scenes/clear_scene.h"
 #include "scenes/cube_scene.h"
 #include "scenes/default_options_scene.h"
+#include "scenes/desktop_scene.h"
 #include "scenes/shading_scene.h"
 #include "scenes/texture_scene.h"
 #include "scenes/vertex_scene.h"
@@ -97,6 +98,7 @@ void populate_scene_collection(SceneCollection& sc)
     sc.register_scene(std::make_unique<ClearScene>());
     sc.register_scene(std::make_unique<CubeScene>());
     sc.register_scene(std::make_unique<DefaultOptionsScene>(sc));
+    sc.register_scene(std::make_unique<DesktopScene>());
     sc.register_scene(std::make_unique<ShadingScene>());
     sc.register_scene(std::make_unique<TextureScene>());
     sc.register_scene(std::make_unique<VertexScene>());
