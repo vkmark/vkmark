@@ -33,6 +33,7 @@ std::vector<std::string> DefaultBenchmarks::get()
         "shading:shading=blinn-phong-inf",
         "shading:shading=phong",
         "shading:shading=cel",
+        "desktop",
         "cube",
         "clear"
     };
