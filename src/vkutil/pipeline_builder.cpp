@@ -46,7 +46,8 @@ ManagedResource<vk::ShaderModule> create_shader_module(
 
 vkutil::PipelineBuilder::PipelineBuilder(VulkanState& vulkan)
     : vulkan{vulkan},
-      depth_test{false}
+      depth_test{false},
+      blend{false}
 {
 }
 
@@ -94,6 +95,12 @@ vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_layout(vk::PipelineLayout 
 vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_render_pass(vk::RenderPass render_pass_)
 {
     render_pass = render_pass_;
+    return *this;
+}
+
+vkutil::PipelineBuilder& vkutil::PipelineBuilder::set_blend(bool blend_)
+{
+    blend = blend_;
     return *this;
 }
 
@@ -160,7 +167,13 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
             vk::ColorComponentFlagBits::eG |
             vk::ColorComponentFlagBits::eB |
             vk::ColorComponentFlagBits::eA)
-        .setBlendEnable(false);
+        .setBlendEnable(blend)
+        .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+        .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        .setColorBlendOp(vk::BlendOp::eAdd)
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
+        .setAlphaBlendOp(vk::BlendOp::eAdd);
 
     auto const color_blend_state_create_info = vk::PipelineColorBlendStateCreateInfo{}
         .setLogicOpEnable(false)

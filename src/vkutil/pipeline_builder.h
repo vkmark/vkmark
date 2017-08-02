@@ -45,6 +45,7 @@ public:
     PipelineBuilder& set_extent(vk::Extent2D extent);
     PipelineBuilder& set_layout(vk::PipelineLayout layout);
     PipelineBuilder& set_render_pass(vk::RenderPass render_pass);
+    PipelineBuilder& set_blend(bool blend);
 
     ManagedResource<vk::Pipeline> build();
 
@@ -55,6 +56,7 @@ private:
     std::vector<char> vertex_shader_spirv;
     std::vector<char> fragment_shader_spirv;
     bool depth_test;
+    bool blend;
     vk::Extent2D extent;
     vk::PipelineLayout layout;
     vk::RenderPass render_pass;
