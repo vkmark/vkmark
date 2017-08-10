@@ -33,6 +33,7 @@ scene_sources = files(
     'scenes/cube_scene.cpp',
     'scenes/default_options_scene.cpp',
     'scenes/desktop_scene.cpp',
+    'scenes/effect2d_scene.cpp',
     'scenes/shading_scene.cpp',
     'scenes/texture_scene.cpp',
     'scenes/vertex_scene.cpp',
