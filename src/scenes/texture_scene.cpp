@@ -232,7 +232,7 @@ void TextureScene::setup_shader_descriptor_set()
 void TextureScene::setup_render_pass()
 {
     render_pass = vkutil::RenderPassBuilder(*vulkan)
-        .set_format(format)
+        .set_color_format(format)
         .set_depth_format(depth_format)
         .build();
 }

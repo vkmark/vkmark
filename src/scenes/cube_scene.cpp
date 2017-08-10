@@ -177,7 +177,7 @@ void CubeScene::setup_uniform_descriptor_set()
 void CubeScene::setup_render_pass()
 {
     render_pass = vkutil::RenderPassBuilder(*vulkan)
-        .set_format(format)
+        .set_color_format(format)
         .build();
 }
 

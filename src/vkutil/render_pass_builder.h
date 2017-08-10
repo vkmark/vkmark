@@ -36,14 +36,14 @@ class RenderPassBuilder
 public:
     RenderPassBuilder(VulkanState& vulkan);
 
-    RenderPassBuilder& set_format(vk::Format format);
+    RenderPassBuilder& set_color_format(vk::Format format);
     RenderPassBuilder& set_depth_format(vk::Format format);
 
     ManagedResource<vk::RenderPass> build();
 
 private:
     VulkanState& vulkan;
-    vk::Format format;
+    vk::Format color_format;
     vk::Format depth_format;
 };
 

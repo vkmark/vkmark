@@ -26,14 +26,14 @@
 
 vkutil::RenderPassBuilder::RenderPassBuilder(VulkanState& vulkan)
     : vulkan{vulkan},
-      format{vk::Format::eUndefined},
+      color_format{vk::Format::eUndefined},
       depth_format{vk::Format::eUndefined}
 {
 }
 
-vkutil::RenderPassBuilder& vkutil::RenderPassBuilder::set_format(vk::Format format_)
+vkutil::RenderPassBuilder& vkutil::RenderPassBuilder::set_color_format(vk::Format format_)
 {
-    format = format_;
+    color_format = format_;
     return *this;
 }
 
@@ -46,7 +46,7 @@ vkutil::RenderPassBuilder& vkutil::RenderPassBuilder::set_depth_format(vk::Forma
 ManagedResource<vk::RenderPass> vkutil::RenderPassBuilder::build()
 {
     auto const color_attachment = vk::AttachmentDescription{}
-        .setFormat(format)
+        .setFormat(color_format)
         .setSamples(vk::SampleCountFlagBits::e1)
         .setLoadOp(vk::AttachmentLoadOp::eClear)
         .setStoreOp(vk::AttachmentStoreOp::eStore)
