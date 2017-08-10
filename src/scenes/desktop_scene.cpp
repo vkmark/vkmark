@@ -302,7 +302,7 @@ void DesktopScene::setup_render_pass()
 {
     render_pass = vkutil::RenderPassBuilder(*vulkan)
         .set_color_format(format)
-        .set_color_load_op(vk::AttachmentLoadOp::eClear)
+        .set_color_load_op(vk::AttachmentLoadOp::eDontCare)
         .build();
 }
 
@@ -370,15 +370,10 @@ void DesktopScene::setup_command_buffers()
 
         command_buffers[i].begin(begin_info);
 
-        std::array<vk::ClearValue, 1> clear_values{{
-            vk::ClearColorValue{std::array<float,4>{{0.0f, 0.0f, 0.0f, 1.0f}}}}};
-
         auto const render_pass_begin_info = vk::RenderPassBeginInfo{}
             .setRenderPass(render_pass)
             .setFramebuffer(framebuffers[i])
-            .setRenderArea({{0,0}, extent})
-            .setClearValueCount(clear_values.size())
-            .setPClearValues(clear_values.data());
+            .setRenderArea({{0,0}, extent});
 
         command_buffers[i].beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
 
