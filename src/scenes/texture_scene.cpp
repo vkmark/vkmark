@@ -234,6 +234,7 @@ void TextureScene::setup_render_pass()
     render_pass = vkutil::RenderPassBuilder(*vulkan)
         .set_color_format(format)
         .set_depth_format(depth_format)
+        .set_color_load_op(vk::AttachmentLoadOp::eClear)
         .build();
 }
 
