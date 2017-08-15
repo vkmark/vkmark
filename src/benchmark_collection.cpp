@@ -44,6 +44,9 @@ std::vector<Benchmark::OptionPair> get_options_from_description(std::string cons
 
     auto const elems = Util::split(s, ':');
 
+    if (elems.empty())
+        return options;
+
     for (auto iter = elems.begin() + 1;
          iter != elems.end();
          ++iter)

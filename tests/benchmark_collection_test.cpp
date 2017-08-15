@@ -73,10 +73,12 @@ SCENARIO("benchmark collection", "")
 
     GIVEN("A few registered scenes")
     {
+        auto const option_setting_scene_name = "";
         auto const scene_name_1 = TestScene::name(1);
         auto const scene_name_2 = TestScene::name(2);
         auto const scene_name_3 = TestScene::name(3);
 
+        sc.register_scene(std::make_unique<TestScene>(option_setting_scene_name));
         sc.register_scene(std::make_unique<TestSceneWithOptions>(scene_name_1));
         sc.register_scene(std::make_unique<TestScene>(scene_name_2));
         sc.register_scene(std::make_unique<TestSceneWithOptions>(scene_name_3));
@@ -164,6 +166,19 @@ SCENARIO("benchmark collection", "")
                 REQUIRE(scene3.name() == scene_name_1);
                 REQUIRE(scene3.options().at(option1.name).value == "3");
                 REQUIRE(scene3.options().at(option2.name).value == "4");
+            }
+        }
+        WHEN("adding a benchmark for an option-setting scene")
+        {
+            bc.add({benchmark_string(option_setting_scene_name)});
+
+            THEN("the option-setting benchmark is returned")
+            {
+                auto const benchmarks = bc.benchmarks();
+                REQUIRE(benchmarks.size() == 1);
+
+                auto const& scene1 = benchmarks.at(0)->prepare_scene();
+                REQUIRE(scene1.name() == option_setting_scene_name);
             }
         }
     }
