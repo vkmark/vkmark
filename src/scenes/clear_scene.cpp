@@ -77,8 +77,12 @@ void ClearScene::teardown()
     vulkan->device().waitIdle();
 
     vulkan->device().destroySemaphore(submit_semaphore);
-    for (auto i = 0u; i < command_buffer_fences.size(); i++)
-        vulkan->device().destroyFence(command_buffer_fences[i]);
+    for (auto const& fence : command_buffer_fences)
+    {
+        if (fence)
+            vulkan->device().destroyFence(fence);
+    }
+    command_buffer_fences.clear();
 
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
 
