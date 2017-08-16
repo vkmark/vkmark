@@ -21,36 +21,18 @@
  */
 
 #include "test_window_system_plugin.h"
+#include "null_window_system.h"
 
 #include "src/window_system_plugin.h"
-#include "src/window_system.h"
-#include "src/vulkan_image.h"
-#include "src/vulkan_wsi.h"
 
 namespace
 {
 
-class TestWindowSystem : public WindowSystem, public VulkanWSI
+class TestWindowSystem : public NullWindowSystem
 {
 public:
     TestWindowSystem(std::string const& id) : id{id} {}
-    VulkanWSI& vulkan_wsi() override { return *this; }
-    void init_vulkan(VulkanState&) override {}
-    void deinit_vulkan() override {}
-
-    VulkanImage next_vulkan_image() override { return {}; }
-    void present_vulkan_image(VulkanImage const&) override {}
-    std::vector<VulkanImage> vulkan_images() override { return {}; }
-
-    bool should_quit() override { return false; }
-
     std::vector<char const*> vulkan_extensions() override { return {id.c_str()}; }
-    bool is_physical_device_supported(vk::PhysicalDevice const&) override { return true; }
-    std::vector<uint32_t> physical_device_queue_family_indices(
-        vk::PhysicalDevice const&) override
-    {
-        return {};
-    }
 
 private:
     std::string const id;
