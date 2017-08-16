@@ -22,26 +22,34 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
-#include <memory>
+#include <atomic>
 
-class Benchmark;
-class SceneCollection;
+class VulkanState;
+class WindowSystem;
+class BenchmarkCollection;
+struct Options;
 
-class BenchmarkCollection
+class MainLoop
 {
 public:
-    BenchmarkCollection(SceneCollection& scene_collection);
-    ~BenchmarkCollection();
+    MainLoop(
+        VulkanState& vulkan,
+        WindowSystem& ws,
+        BenchmarkCollection& bc,
+        Options const& options);
 
-    void add(std::vector<std::string> const& benchmarks);
-    std::vector<Benchmark*> benchmarks() const;
+    void run();
+    void stop();
 
-    bool contains_normal_scenes() const;
+    unsigned int score();
 
 private:
-    SceneCollection& scene_collection;
-    std::vector<std::unique_ptr<Benchmark>> benchmarks_;
-    bool contains_normal_scenes_;
+    VulkanState& vulkan;
+    WindowSystem& ws;
+    BenchmarkCollection& bc;
+    Options const& options;
+
+    std::atomic<bool> should_stop;
+    unsigned int total_fps;
+    unsigned int total_benchmarks;
 };

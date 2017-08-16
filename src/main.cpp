@@ -23,15 +23,14 @@
 #include "window_system.h"
 #include "window_system_loader.h"
 #include "vulkan_state.h"
-#include "vulkan_image.h"
 #include "scene.h"
 #include "scene_collection.h"
-#include "benchmark.h"
 #include "benchmark_collection.h"
 #include "default_benchmarks.h"
 #include "options.h"
 #include "log.h"
 #include "util.h"
+#include "main_loop.h"
 
 #include "scenes/clear_scene.h"
 #include "scenes/cube_scene.h"
@@ -44,54 +43,28 @@
 
 #include <stdexcept>
 #include <csignal>
-#include <atomic>
 #include <memory>
 #include <iostream>
 
 namespace
 {
 
-std::atomic<bool> should_quit_sig{false};
+MainLoop* main_loop_global = nullptr;
 
 void sighandler(int)
 {
-    should_quit_sig = true;
+    main_loop_global->stop();
 }
 
-void set_up_sighandler()
+void set_up_sighandler(MainLoop& main_loop)
 {
+    main_loop_global = &main_loop;
+
     struct sigaction sa{};
     sa.sa_handler = sighandler;
 
     sigaction(SIGTERM, &sa, nullptr);
     sigaction(SIGINT, &sa, nullptr);
-}
-
-void log_scene_info(Scene& scene, bool show_all_options)
-{
-    Log::info("%s", scene.info_string(show_all_options).c_str());
-    Log::flush();
-}
-
-void log_scene_invalid(Scene& scene)
-{
-    Log::warning("Skipping benchmark with invalid scene name '%s'\n",
-                 scene.name().c_str());
-    Log::flush();
-}
-
-void log_scene_exception(std::string const& what)
-{
-    auto const fmt = Log::continuation_prefix + " Failed with exception: %s\n";
-    Log::info(fmt.c_str(), what.c_str());
-    Log::flush();
-}
-
-void log_scene_fps(unsigned int fps)
-{
-    auto const fmt = Log::continuation_prefix + " FPS: %u FrameTime: %.3f ms\n";
-    Log::info(fmt.c_str(), fps, 1000.0 / fps);
-    Log::flush();
 }
 
 void populate_scene_collection(SceneCollection& sc)
@@ -158,67 +131,17 @@ try
     if (!bc.contains_normal_scenes())
         bc.add(DefaultBenchmarks::get());
 
-    set_up_sighandler();
+    MainLoop main_loop{vulkan, ws, bc, options};
 
-    unsigned int total_fps = 0;
-    unsigned int total_benchmarks = 0;
+    set_up_sighandler(main_loop);
 
-    for (auto const& benchmark : bc.benchmarks())
-    try
-    {
-        auto& scene = benchmark->prepare_scene();
-
-        if (!scene.is_valid())
-        {
-            log_scene_invalid(scene);
-            continue;
-        }
-
-        // Scenes with empty names are option-setting scenes.
-        // Just set them up and continue.
-        if (scene.name().empty())
-        {
-            scene.setup(vulkan, ws.vulkan_images());
-            continue;
-        }
-
-        log_scene_info(scene, options.show_all_options);
-
-        auto const scene_teardown = Util::on_scope_exit([&] { scene.teardown(); });
-        scene.setup(vulkan, ws.vulkan_images());
-
-        bool should_quit = false;
-
-        scene.start();
-
-        while (scene.is_running() &&
-               !(should_quit = ws.should_quit()) &&
-               !should_quit_sig)
-        {
-            ws.present_vulkan_image(
-                scene.draw(ws.next_vulkan_image()));
-            scene.update();
-        }
-        
-        auto const scene_fps = scene.average_fps();
-
-        log_scene_fps(scene_fps);
-
-        total_fps += scene_fps;
-        ++total_benchmarks;
-
-        if (should_quit || should_quit_sig)
-            break;
-    }
-    catch (std::exception const& e)
-    {
-        log_scene_exception(e.what());
-    }
+    main_loop.run();
 
     Log::info("=======================================================\n");
     Log::info("                                   vkmark Score: %u\n",
-              total_benchmarks == 0 ? 0 : total_fps / total_benchmarks);
+              main_loop.score());
     Log::info("=======================================================\n");
+
 }
 catch (std::exception const& e)
 {

@@ -71,6 +71,8 @@ BenchmarkCollection::BenchmarkCollection(SceneCollection& scene_collection)
 {
 }
 
+BenchmarkCollection::~BenchmarkCollection() = default;
+
 void BenchmarkCollection::add(std::vector<std::string> const& benchmark_strings)
 {
     for (auto const& bstr : benchmark_strings)

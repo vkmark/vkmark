@@ -3,6 +3,7 @@ core_sources = files(
     'benchmark_collection.cpp',
     'default_benchmarks.cpp',
     'log.cpp',
+    'main_loop.cpp',
     'mesh.cpp',
     'model.cpp',
     'options.cpp',

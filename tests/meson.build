@@ -1,11 +1,14 @@
 test_data_dir = join_paths([meson.current_source_dir(), 'data'])
 test_window_system_dir = meson.current_build_dir()
 
+thread_dep = dependency('threads')
+
 test_sources = files(
     'catch_main.cpp',
     'test_scene.cpp',
 
     'benchmark_collection_test.cpp',
+    'main_loop_test.cpp',
     'managed_resource_test.cpp',
     'mesh_test.cpp',
     'model_test.cpp',
@@ -46,7 +49,8 @@ vkmark_tests = executable(
     link_with: vkmark_core,
     include_directories: root_incdir,
     cpp_args : ['-DVKMARK_TEST_DATA_DIR="@0@"'.format(test_data_dir),
-                '-DVKMARK_TEST_WINDOW_SYSTEM_DIR="@0@"'.format(test_window_system_dir)]
+                '-DVKMARK_TEST_WINDOW_SYSTEM_DIR="@0@"'.format(test_window_system_dir)],
+    dependencies : thread_dep
     )
 
 test('vkmark tests', vkmark_tests)
