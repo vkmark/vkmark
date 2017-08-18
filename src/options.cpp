@@ -162,6 +162,8 @@ std::string Options::help_string()
         "      --winsys WS             Window system plugin to use (default: choose best)\n"
         "                              [xcb, wayland, kms]\n"
         "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
+        "      --run-forever           Run indefinitely, looping from the last benchmark\n"
+        "                              back to the first\n"
         "  -d, --debug                 Display debug messages\n"
         "  -h, --help                  Display help\n";
 
