@@ -82,7 +82,9 @@ public:
     TestWindowSystem(std::vector<std::string>& log)
         : log{log},
           should_quit_{false},
-          image_index{0}
+          image_index{0},
+          max_frames{-1},
+          frames{0}
     {
     }
 
@@ -96,16 +98,24 @@ public:
     void present_vulkan_image(VulkanImage const& vi) override
     {
         log.push_back(present_log_entry(vi.index));
+        ++frames;
     }
 
-    bool should_quit() override { return should_quit_; }
+    bool should_quit() override
+    {
+        return (max_frames > 0 && frames >= max_frames) || should_quit_;
+    }
 
     void set_should_quit() { should_quit_ = true; }
+
+    void set_max_frames(int max_frames_) { max_frames = max_frames_; }
 
 private:
     std::vector<std::string>& log;
     std::atomic<bool> should_quit_;
     uint32_t image_index;
+    std::atomic<int> max_frames;
+    int frames;
 };
 
 class SingleFrameScene : public TestScene
@@ -346,6 +356,73 @@ SCENARIO("main loop stop", "")
             {
                 if (done_future.wait_for(done_timeout) == std::future_status::ready)
                     loop_thread.join();
+            }
+        }
+    }
+}
+
+SCENARIO("main loop run forever", "")
+{
+    VulkanState* null_vulkan_state = nullptr;
+    std::vector<std::string> log;
+    TestWindowSystem ws{log};
+
+    SceneCollection sc;
+    sc.register_scene(
+        std::make_unique<SingleFrameScene>(
+            TestScene::name(1), SingleFrameScene::fps(1), log));
+    sc.register_scene(
+        std::make_unique<SingleFrameScene>(
+            TestScene::name(2), SingleFrameScene::fps(2), log));
+    sc.register_scene(
+        std::make_unique<SingleFrameScene>(
+            TestScene::name(3), SingleFrameScene::fps(3), log));
+
+    BenchmarkCollection bc{sc};
+        std::vector<std::string> const benchmarks{
+            TestScene::name(1), TestScene::name(2), TestScene::name(3)};
+    bc.add(benchmarks);
+
+
+    GIVEN("User specifies run-forever")
+    {
+        Options options;
+        options.run_forever = true;
+
+        // Stop the loop after 3 frames have been rendered from each benchmark.
+        // (remember each benchmark renders single frame for each run because
+        // we are using SingleFrameScene)
+        int const max_frames = benchmarks.size() * 3;
+
+        ws.set_max_frames(max_frames);
+
+        MainLoop main_loop{*null_vulkan_state, ws, bc, options};
+
+        WHEN("running the main loop")
+        {
+            main_loop.run();
+
+            THEN("the loop runs benchmarks in a loop")
+            {
+                std::vector<std::string> expected;
+
+                for (int i = 0; i < max_frames; ++i)
+                {
+                    auto const run_log = expected_log_for_scene_run(
+                        benchmarks[i % benchmarks.size()],
+                        i);
+                    expected.insert(expected.end(), run_log.begin(), run_log.end());
+                }
+
+                // The WindowSystem quit request (which is activated when the
+                // limit set by set_max_frames is reached) is checked only
+                // after the next benchmark is set up and started, so expect
+                // these actions to be in the log, too.
+                auto const benchmark_end = benchmarks[max_frames % benchmarks.size()];
+                expected.push_back(setup_log_entry(benchmark_end));
+                expected.push_back(start_log_entry(benchmark_end));
+
+                REQUIRE_THAT(log, Equals(expected));
             }
         }
     }

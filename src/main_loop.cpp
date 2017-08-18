@@ -61,6 +61,15 @@ void log_scene_fps(unsigned int fps)
     Log::flush();
 }
 
+
+template <typename T>
+void advance_iter(T& iter, T const& start, T const& end, bool run_forever)
+{
+    ++iter;
+    if (run_forever && iter == end)
+        iter = start;
+}
+
 }
 
 MainLoop::MainLoop(VulkanState& vulkan,
@@ -76,9 +85,15 @@ MainLoop::MainLoop(VulkanState& vulkan,
 
 void MainLoop::run()
 {
-    for (auto const& benchmark : bc.benchmarks())
+    auto const& benchmarks = bc.benchmarks();
+
+    for (auto iter = benchmarks.begin();
+         iter != benchmarks.end();
+         advance_iter(iter, benchmarks.begin(), benchmarks.end(), options.run_forever))
     try
     {
+        auto& benchmark = *iter;
+
         auto& scene = benchmark->prepare_scene();
 
         if (!scene.is_valid())

@@ -44,6 +44,7 @@ struct option long_options[] = {
     {"data-dir", 1, 0, 0},
     {"winsys", 1, 0, 0},
     {"winsys-options", 1, 0, 0},
+    {"run-forever", 0, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
     {0, 0, 0, 0}
@@ -133,6 +134,7 @@ Options::Options()
       show_all_options{false},
       window_system_dir{VKMARK_WINDOW_SYSTEM_DIR},
       data_dir{VKMARK_DATA_DIR},
+      run_forever{false},
       show_debug{false},
       show_help{false}
 {
@@ -212,6 +214,8 @@ bool Options::parse_args(int argc, char **argv)
             window_system = optarg;
         else if (optname == "winsys-options")
             window_system_options = parse_window_system_options(optarg);
+        else if (optname == "run-forever")
+            run_forever = true;
         else if (c == 'd' || optname == "debug")
             show_debug = true;
         else if (c == 'h' || optname == "help")

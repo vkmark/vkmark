@@ -356,6 +356,23 @@ SCENARIO("options parses command line arguments", "")
         }
     }
 
+    GIVEN("A command line with --run-forever")
+    {
+        std::vector<std::string> args{"vkmark", "--run-forever"};
+        auto argv = argv_from_vector(args);
+
+        WHEN("parsing the args")
+        {
+            REQUIRE_FALSE(options.run_forever);
+            REQUIRE(options.parse_args(args.size(), argv.get()));
+
+            THEN("the run-forever option is parsed")
+            {
+                REQUIRE(options.run_forever);
+            }
+        }
+    }
+
     GIVEN("A complex command line")
     {
         std::vector<std::string> args{

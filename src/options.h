@@ -53,6 +53,7 @@ struct Options
     std::string data_dir;
     std::string window_system;
     std::vector<WindowSystemOption> window_system_options;
+    bool run_forever;
     bool show_debug;
     bool show_help;
 
