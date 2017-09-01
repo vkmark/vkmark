@@ -2,7 +2,7 @@ project(
     'vkmark',
     'cpp',
     default_options : ['cpp_std=c++14'],
-    version : '2017.07'
+    version : '2017.08'
     )
 
 root_incdir = include_directories('.')
