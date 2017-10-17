@@ -43,6 +43,26 @@ vk::AccessFlags access_mask_for_layout(vk::ImageLayout layout)
     return ret;
 }
 
+vk::PipelineStageFlags pipeline_stage_flags_for_layout(vk::ImageLayout layout)
+{
+    vk::PipelineStageFlags ret;
+
+    switch (layout)
+    {
+        case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+            ret = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            break;
+        case vk::ImageLayout::eTransferDstOptimal:
+            ret = vk::PipelineStageFlagBits::eTransfer;
+            break;
+        default:
+            ret = vk::PipelineStageFlagBits::eTopOfPipe;
+            break;
+    };
+
+    return ret;
+}
+
 }
 
 void vkutil::transition_image_layout(
@@ -72,8 +92,8 @@ void vkutil::transition_image_layout(
     OneTimeCommandBuffer otcb{vulkan};
 
     otcb.command_buffer().pipelineBarrier(
-        vk::PipelineStageFlagBits::eTopOfPipe,
-        vk::PipelineStageFlagBits::eTopOfPipe,
+        pipeline_stage_flags_for_layout(old_layout),
+        pipeline_stage_flags_for_layout(new_layout),
         {}, {}, {},
         image_memory_barrier);
 
