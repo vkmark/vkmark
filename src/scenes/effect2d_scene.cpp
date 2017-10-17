@@ -138,7 +138,7 @@ VulkanImage Effect2DScene::draw(VulkanImage const& image)
     auto const submit_info = vk::SubmitInfo{}
         .setCommandBufferCount(1)
         .setPCommandBuffers(&command_buffers[image.index])
-        .setWaitSemaphoreCount(1)
+        .setWaitSemaphoreCount(image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
         .setSignalSemaphoreCount(1)

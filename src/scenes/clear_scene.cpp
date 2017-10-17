@@ -166,7 +166,7 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
         .setPSignalSemaphores(&submit_semaphore)
         .setCommandBufferCount(1)
         .setPCommandBuffers(&command_buffers[image.index])
-        .setWaitSemaphoreCount(1)
+        .setWaitSemaphoreCount(image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
