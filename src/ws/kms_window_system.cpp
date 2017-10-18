@@ -388,6 +388,11 @@ void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
 
     auto const& fb = drm_fbs[vulkan_image.index];
 
+    // We can't use the VulkanImage semaphore in the KMS window system to
+    // synchronize rendering and presentation, so just wait for the graphics
+    // queue to finish before flipping.
+    vulkan->graphics_queue().waitIdle();
+
     if (!has_crtc_been_set)
     {
         auto const ret = drmModeSetCrtc(
