@@ -109,14 +109,14 @@ void Effect2DScene::setup(
 
     update_uniforms();
 
-    submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
 }
 
 void Effect2DScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    vulkan->device().destroySemaphore(submit_semaphore);
+    submit_semaphore = {};
     vulkan->device().unmapMemory(uniform_buffer_memory);
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
@@ -142,7 +142,7 @@ VulkanImage Effect2DScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
         .setSignalSemaphoreCount(1)
-        .setPSignalSemaphores(&submit_semaphore);
+        .setPSignalSemaphores(&submit_semaphore.raw);
 
     vulkan->graphics_queue().submit(submit_info, {});
 

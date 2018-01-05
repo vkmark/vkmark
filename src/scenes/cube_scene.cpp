@@ -78,7 +78,7 @@ void CubeScene::setup(
     setup_framebuffers(vulkan_images);
     setup_command_buffers();
 
-    submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
     rotation = {45.0f, 45.0f, 10.0f};
 }
 
@@ -86,7 +86,7 @@ void CubeScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    vulkan->device().destroySemaphore(submit_semaphore);
+    submit_semaphore = {};
     vulkan->device().unmapMemory(uniform_buffer_memory);
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
@@ -113,7 +113,7 @@ VulkanImage CubeScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
         .setSignalSemaphoreCount(1)
-        .setPSignalSemaphores(&submit_semaphore);
+        .setPSignalSemaphores(&submit_semaphore.raw);
 
     vulkan->graphics_queue().submit(submit_info, {});
 

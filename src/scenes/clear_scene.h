@@ -23,6 +23,7 @@
 #pragma once
 
 #include "scene.h"
+#include "managed_resource.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -43,7 +44,7 @@ private:
     VulkanState* vulkan;
     std::vector<vk::CommandBuffer> command_buffers;
     std::vector<vk::Fence> command_buffer_fences;
-    vk::Semaphore submit_semaphore;
+    ManagedResource<vk::Semaphore> submit_semaphore;
     vk::ClearColorValue clear_color;
     bool cycle;
 };

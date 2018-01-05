@@ -71,6 +71,5 @@ private:
     std::vector<ManagedResource<vk::ImageView>> image_views;
     std::vector<ManagedResource<vk::Framebuffer>> framebuffers;
     std::vector<vk::CommandBuffer> command_buffers;
-
-    vk::Semaphore submit_semaphore;
+    ManagedResource<vk::Semaphore> submit_semaphore;
 };

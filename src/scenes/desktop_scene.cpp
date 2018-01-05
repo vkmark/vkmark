@@ -214,14 +214,14 @@ void DesktopScene::setup(
     setup_framebuffers(vulkan_images);
     setup_command_buffers();
 
-    submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
 }
 
 void DesktopScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    vulkan->device().destroySemaphore(submit_semaphore);
+    submit_semaphore = {};
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
     image_views.clear();
@@ -249,7 +249,7 @@ VulkanImage DesktopScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
         .setSignalSemaphoreCount(1)
-        .setPSignalSemaphores(&submit_semaphore);
+        .setPSignalSemaphores(&submit_semaphore.raw);
 
     vulkan->graphics_queue().submit(submit_info, {});
 

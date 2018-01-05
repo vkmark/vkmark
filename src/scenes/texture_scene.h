@@ -79,11 +79,11 @@ private:
     std::vector<ManagedResource<vk::ImageView>> image_views;
     std::vector<ManagedResource<vk::Framebuffer>> framebuffers;
     std::vector<vk::CommandBuffer> command_buffers;
+    ManagedResource<vk::Semaphore> submit_semaphore;
 
     vk::DeviceMemory uniform_buffer_memory;
     void* uniform_buffer_map;
     vk::DescriptorSetLayout descriptor_set_layout;
-    vk::Semaphore submit_semaphore;
 
     float rotation;
 };

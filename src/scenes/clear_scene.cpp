@@ -25,6 +25,7 @@
 #include "util.h"
 #include "vulkan_state.h"
 #include "vulkan_image.h"
+#include "vkutil/vkutil.h"
 
 #include <cmath>
 
@@ -48,7 +49,7 @@ void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
     command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
     command_buffer_fences.resize(command_buffers.size());
 
-    submit_semaphore = vulkan->device().createSemaphore(vk::SemaphoreCreateInfo());
+    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
 
     if (options_["color"].value == "cycle")
     {
@@ -76,7 +77,7 @@ void ClearScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    vulkan->device().destroySemaphore(submit_semaphore);
+    submit_semaphore = {};
     for (auto const& fence : command_buffer_fences)
     {
         if (fence)
@@ -163,7 +164,7 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
     vk::PipelineStageFlags mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
         .setSignalSemaphoreCount(1)
-        .setPSignalSemaphores(&submit_semaphore)
+        .setPSignalSemaphores(&submit_semaphore.raw)
         .setCommandBufferCount(1)
         .setPCommandBuffers(&command_buffers[image.index])
         .setWaitSemaphoreCount(image.semaphore ? 1 : 0)
