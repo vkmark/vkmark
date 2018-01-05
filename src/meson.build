@@ -25,6 +25,7 @@ vkutil_sources = files(
     'vkutil/one_time_command_buffer.cpp',
     'vkutil/pipeline_builder.cpp',
     'vkutil/render_pass_builder.cpp',
+    'vkutil/semaphore_builder.cpp',
     'vkutil/texture_builder.cpp',
     'vkutil/transition_image_layout.cpp'
     )

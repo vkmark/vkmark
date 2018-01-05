@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 Collabora Ltd.
+ * Copyright © 2018 Collabora Ltd.
  *
  * This file is part of vkmark.
  *
@@ -22,16 +22,24 @@
 
 #pragma once
 
-#include "buffer_builder.h"
-#include "copy_buffer.h"
-#include "descriptor_set_builder.h"
-#include "find_matching_memory_type.h"
-#include "framebuffer_builder.h"
-#include "image_builder.h"
-#include "image_view_builder.h"
-#include "pipeline_builder.h"
-#include "render_pass_builder.h"
-#include "semaphore_builder.h"
-#include "texture.h"
-#include "texture_builder.h"
-#include "transition_image_layout.h"
+#include <vulkan/vulkan.hpp>
+
+#include "managed_resource.h"
+
+class VulkanState;
+
+namespace vkutil
+{
+
+class SemaphoreBuilder
+{
+public:
+    SemaphoreBuilder(VulkanState& vulkan);
+
+    ManagedResource<vk::Semaphore> build();
+
+private:
+    VulkanState& vulkan;
+};
+
+}
