@@ -65,6 +65,7 @@ private:
 
     ManagedResource<vk::Buffer> vertex_buffer;
     ManagedResource<vk::Buffer> uniform_buffer;
+    ManagedResource<void*> uniform_buffer_map;
     vkutil::Texture texture;
     ManagedResource<vk::DescriptorSet> descriptor_set;
     ManagedResource<vk::RenderPass> render_pass;
@@ -76,6 +77,5 @@ private:
     ManagedResource<vk::Semaphore> submit_semaphore;
 
     vk::DeviceMemory uniform_buffer_memory;
-    void* uniform_buffer_map;
     vk::DescriptorSetLayout descriptor_set_layout;
 };

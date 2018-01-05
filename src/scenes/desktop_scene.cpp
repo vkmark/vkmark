@@ -91,8 +91,8 @@ public:
             .set_memory_out(uniform_buffer_memory)
             .build();
 
-        uniform_buffer_map = vulkan.device().mapMemory(
-            uniform_buffer_memory, 0, sizeof(Uniforms));
+        uniform_buffer_map = vkutil::map_memory(
+            vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
 
         descriptor_set = vkutil::DescriptorSetBuilder{vulkan}
             .set_type(vk::DescriptorType::eUniformBuffer)
@@ -108,8 +108,8 @@ public:
 
     ~RenderObject()
     {
-        vulkan.device().unmapMemory(uniform_buffer_memory);
         descriptor_set = {};
+        uniform_buffer_map = {};
         uniform_buffer = {};
         texture = {};
     }
@@ -152,10 +152,10 @@ public:
     VulkanState& vulkan;
     vkutil::Texture texture;
     ManagedResource<vk::Buffer> uniform_buffer;
+    ManagedResource<void*> uniform_buffer_map;
     ManagedResource<vk::DescriptorSet> descriptor_set;
     vk::DescriptorSetLayout descriptor_set_layout;
     vk::DeviceMemory uniform_buffer_memory;
-    void* uniform_buffer_map;
 };
 
 DesktopScene::DesktopScene() : Scene{"desktop"}
@@ -282,10 +282,11 @@ void DesktopScene::setup_vertex_buffer()
         .set_memory_out(staging_buffer_memory)
         .build();
 
-    auto const staging_buffer_map = vulkan->device().mapMemory(
-        staging_buffer_memory, 0, mesh->vertex_data_size());
-    mesh->copy_vertex_data_to(staging_buffer_map);
-    vulkan->device().unmapMemory(staging_buffer_memory);
+    {
+        auto const staging_buffer_map = vkutil::map_memory(
+            *vulkan, staging_buffer_memory, 0, mesh->vertex_data_size());
+        mesh->copy_vertex_data_to(staging_buffer_map);
+    }
 
     vertex_buffer = vkutil::BufferBuilder{*vulkan}
         .set_size(mesh->vertex_data_size())

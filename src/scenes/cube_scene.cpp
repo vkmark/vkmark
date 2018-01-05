@@ -87,7 +87,6 @@ void CubeScene::teardown()
     vulkan->device().waitIdle();
 
     submit_semaphore = {};
-    vulkan->device().unmapMemory(uniform_buffer_memory);
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
     image_views.clear();
@@ -95,6 +94,7 @@ void CubeScene::teardown()
     pipeline_layout = {};
     render_pass = {};
     descriptor_set = {};
+    uniform_buffer_map = {};
     uniform_buffer = {};
     vertex_buffer = {};
 
@@ -142,10 +142,9 @@ void CubeScene::setup_vertex_buffer()
         .set_memory_out(vertex_buffer_memory)
         .build();
 
-    auto const vertex_buffer_map = vulkan->device().mapMemory(
-        vertex_buffer_memory, 0, mesh->vertex_data_size());
+    auto const vertex_buffer_map = vkutil::map_memory(
+        *vulkan, vertex_buffer_memory, 0, mesh->vertex_data_size());
     mesh->copy_vertex_data_to(vertex_buffer_map);
-    vulkan->device().unmapMemory(vertex_buffer_memory);
 }
 
 void CubeScene::setup_uniform_buffer()
@@ -159,8 +158,8 @@ void CubeScene::setup_uniform_buffer()
         .set_memory_out(uniform_buffer_memory)
         .build();
 
-    uniform_buffer_map = vulkan->device().mapMemory(
-        uniform_buffer_memory, 0, sizeof(Uniforms));
+    uniform_buffer_map = vkutil::map_memory(
+        *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
 }
 
 

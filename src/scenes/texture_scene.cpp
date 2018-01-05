@@ -105,7 +105,6 @@ void TextureScene::teardown()
     vulkan->device().waitIdle();
 
     submit_semaphore = {};
-    vulkan->device().unmapMemory(uniform_buffer_memory);
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
     image_views.clear();
@@ -116,6 +115,7 @@ void TextureScene::teardown()
     render_pass = {};
     descriptor_set = {};
     texture = {};
+    uniform_buffer_map = {};
     uniform_buffer = {};
     vertex_buffer = {};
 
@@ -166,10 +166,11 @@ void TextureScene::setup_vertex_buffer()
         .set_memory_out(staging_buffer_memory)
         .build();
 
-    auto const staging_buffer_map = vulkan->device().mapMemory(
-        staging_buffer_memory, 0, mesh->vertex_data_size());
-    mesh->copy_vertex_data_to(staging_buffer_map);
-    vulkan->device().unmapMemory(staging_buffer_memory);
+    {
+        auto const staging_buffer_map = vkutil::map_memory(
+            *vulkan, staging_buffer_memory, 0, mesh->vertex_data_size());
+        mesh->copy_vertex_data_to(staging_buffer_map);
+    }
 
     vertex_buffer = vkutil::BufferBuilder{*vulkan}
         .set_size(mesh->vertex_data_size())
@@ -193,8 +194,8 @@ void TextureScene::setup_uniform_buffer()
         .set_memory_out(uniform_buffer_memory)
         .build();
 
-    uniform_buffer_map = vulkan->device().mapMemory(
-        uniform_buffer_memory, 0, sizeof(Uniforms));
+    uniform_buffer_map = vkutil::map_memory(
+        *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
 }
 
 void TextureScene::setup_texture()
