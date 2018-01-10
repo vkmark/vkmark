@@ -35,6 +35,7 @@ namespace
 {
 
 std::string const drm_device_opt{"kms-drm-device"};
+std::string const atomic_opt{"kms-atomic"};
 
 std::string get_drm_device_option(Options const& options)
 {
@@ -57,6 +58,7 @@ void vkmark_window_system_load_options(Options& options)
     options.add_window_system_help(
         "KMS window system options (pass in --winsys-options)\n"
         "  kms-drm-device=DEV          The drm device to use (default: /dev/dri/card0)\n"
+        "  kms-atomic=auto|yes|no      Whether to use atomic modesetting (default: auto)\n"
         );
 }
 
@@ -82,12 +84,26 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
 {
     auto const& winsys_options = options.window_system_options;
     std::string drm_device{"/dev/dri/card0"};
+    std::string atomic{"auto"};
 
     for (auto const& opt : winsys_options)
     {
         if (opt.name == drm_device_opt)
         {
             drm_device = opt.value;
+        }
+        else if (opt.name == atomic_opt)
+        {
+            if (opt.value != "auto" && opt.value != "yes" && opt.value != "no")
+            {
+                Log::info("KMSWindowSystemPlugin: Ignoring unknown value '%s'"
+                          " for window system option '%s'\n",
+                          opt.value.c_str(), opt.name.c_str());
+            }
+            else
+            {
+                atomic = opt.value;
+            }
         }
         else
         {
@@ -96,7 +112,8 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         }
     }
 
-    if (AtomicKMSWindowSystem::is_supported_on(drm_device))
+    if (atomic == "yes" ||
+        (atomic == "auto" && AtomicKMSWindowSystem::is_supported_on(drm_device)))
     {
         Log::debug("KMSWindowSystemPlugin: Using atomic modesetting\n");
         return std::make_unique<AtomicKMSWindowSystem>(drm_device);
