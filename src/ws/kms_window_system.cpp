@@ -52,36 +52,32 @@ ManagedResource<int> open_drm_device(std::string const& drm_device)
             "Failed to open drm device"};
     }
 
-    return ManagedResource<int>{std::move(drm_fd), [] (int fd) { close(fd); }};
+    return ManagedResource<int>{std::move(drm_fd), close};
 }
 
 ManagedResource<drmModeResPtr> get_resources_for(int drm_fd)
 {
     return ManagedResource<drmModeResPtr>{
-        drmModeGetResources(drm_fd),
-        [] (auto& res) { drmModeFreeResources(res); }};
+        drmModeGetResources(drm_fd), drmModeFreeResources};
 }
 
 ManagedResource<drmModeConnectorPtr> get_connector_with_id(int drm_fd, uint32_t connector_id)
 {
     return ManagedResource<drmModeConnectorPtr>{
-        drmModeGetConnector(drm_fd, connector_id),
-        [] (auto& c) { drmModeFreeConnector(c); }};
+        drmModeGetConnector(drm_fd, connector_id), drmModeFreeConnector};
 }
 
 
 ManagedResource<drmModeEncoderPtr> get_encoder_with_id(int drm_fd, uint32_t encoder_id)
 {
     return ManagedResource<drmModeEncoderPtr>{
-        drmModeGetEncoder(drm_fd, encoder_id),
-        [] (auto& e) { drmModeFreeEncoder(e); }};
+        drmModeGetEncoder(drm_fd, encoder_id), drmModeFreeEncoder};
 }
 
 ManagedResource<drmModeCrtcPtr> get_crtc_with_id(int drm_fd, uint32_t crtc_id)
 {
     return ManagedResource<drmModeCrtcPtr>{
-        drmModeGetCrtc(drm_fd, crtc_id),
-        [] (auto& c) { drmModeFreeCrtc(c); }};
+        drmModeGetCrtc(drm_fd, crtc_id), drmModeFreeCrtc};
 }
 
 ManagedResource<drmModeConnectorPtr> get_connected_connector(
@@ -249,9 +245,7 @@ ManagedResource<gbm_device*> create_gbm_device(int drm_fd)
     if (!gbm_raw)
         throw std::runtime_error{"Failed to create gbm device"};
 
-    return ManagedResource<gbm_device*>{
-        std::move(gbm_raw),
-        [] (auto& d) { gbm_device_destroy(d); }};
+    return ManagedResource<gbm_device*>{std::move(gbm_raw), gbm_device_destroy};
 
 }
 
@@ -261,8 +255,7 @@ ManagedResource<int> open_active_vt()
     if (fd < 0)
         throw std::runtime_error{"Failed to open active VT"};
 
-    return ManagedResource<int>{
-        std::move(fd), [](auto& f) { close(f); }};
+    return ManagedResource<int>{std::move(fd), close};
 }
 
 void page_flip_handler(int, unsigned int, unsigned int, unsigned int, void*)
@@ -457,9 +450,7 @@ void KMSWindowSystem::create_gbm_bos()
             throw std::runtime_error{"Failed to create gbm bo"};
 
         gbm_bos.push_back(
-            ManagedResource<gbm_bo*>{
-                std::move(bo_raw),
-                [] (auto& bo) { gbm_bo_destroy(bo); }});
+            ManagedResource<gbm_bo*>{std::move(bo_raw), gbm_bo_destroy});
     }
 }
 
@@ -501,8 +492,7 @@ void KMSWindowSystem::create_vk_images()
 
     for (auto const& gbm_bo : gbm_bos)
     {
-        auto const fd = ManagedResource<int>{
-            gbm_bo_get_fd(gbm_bo), [](auto& f) { close(f); }};
+        auto const fd = ManagedResource<int>{gbm_bo_get_fd(gbm_bo), close};
         auto const stride = gbm_bo_get_stride(gbm_bo);
 
         VkDmaBufImageCreateInfo create_info{};
