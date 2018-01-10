@@ -372,13 +372,6 @@ VulkanImage KMSWindowSystem::next_vulkan_image()
 
 void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
 {
-    static int constexpr drm_event_context_version = 2;
-
-    static drmEventContext event_context = {
-        drm_event_context_version,
-        nullptr,
-        page_flip_handler};
-
     auto const& fb = drm_fbs[vulkan_image.index];
 
     // We can't use the VulkanImage semaphore in the KMS window system to
@@ -399,26 +392,7 @@ void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
 
     drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb, DRM_MODE_PAGE_FLIP_EVENT, nullptr);
 
-    pollfd pfd{drm_fd, POLLIN, 0};
-
-    while (true)
-    {
-        auto ret = poll(&pfd, 1, 1000);
-        if (ret < 0)
-        {
-            if (errno == EINTR)
-                continue;
-
-            throw std::system_error{
-                errno, std::system_category(), "Failed while polling for pages flip event"};
-        }
-
-        if (pfd.revents & POLLIN)
-        {
-            drmHandleEvent(drm_fd, &event_context);
-            break;
-        }
-    }
+    wait_for_drm_page_flip_event();
 
     current_image_index = (current_image_index + 1) % vk_images.size();
 }
@@ -520,6 +494,36 @@ void KMSWindowSystem::create_vk_images()
                     vptr->device().destroyImage(image);
                     vptr->device().freeMemory(device_memory);
                 }});
+    }
+}
+
+void KMSWindowSystem::wait_for_drm_page_flip_event()
+{
+    static int constexpr drm_event_context_version = 2;
+    static drmEventContext event_context = {
+        drm_event_context_version,
+        nullptr,
+        page_flip_handler};
+
+    pollfd pfd{drm_fd, POLLIN, 0};
+
+    while (true)
+    {
+        auto const ret = poll(&pfd, 1, 1000);
+        if (ret < 0)
+        {
+            if (errno == EINTR)
+                continue;
+
+            throw std::system_error{
+                errno, std::system_category(), "Failed while polling for pages flip event"};
+        }
+
+        if (pfd.revents & POLLIN)
+        {
+            drmHandleEvent(drm_fd, &event_context);
+            break;
+        }
     }
 }
 

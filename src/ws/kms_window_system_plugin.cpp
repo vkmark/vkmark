@@ -22,6 +22,7 @@
 
 #include "window_system_plugin.h"
 #include "kms_window_system.h"
+#include "atomic_kms_window_system.h"
 
 #include "options.h"
 #include "log.h"
@@ -95,6 +96,14 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         }
     }
 
-    return std::make_unique<KMSWindowSystem>(drm_device);
+    if (AtomicKMSWindowSystem::is_supported_on(drm_device))
+    {
+        Log::debug("KMSWindowSystemPlugin: Using atomic modesetting\n");
+        return std::make_unique<AtomicKMSWindowSystem>(drm_device);
+    }
+    else
+    {
+        Log::debug("KMSWindowSystemPlugin: Using legacy modesetting\n");
+        return std::make_unique<KMSWindowSystem>(drm_device);
+    }
 }
-

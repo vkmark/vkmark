@@ -88,6 +88,7 @@ if build_kms_ws
         'kms',
         'ws/kms_window_system_plugin.cpp',
         'ws/kms_window_system.cpp',
+        'ws/atomic_kms_window_system.cpp',
         dependencies : [vulkan_dep, libdrm_dep, gbm_dep],
         name_prefix : '',
         install : true,

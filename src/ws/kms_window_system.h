@@ -66,10 +66,11 @@ public:
     std::vector<uint32_t> physical_device_queue_family_indices(
         vk::PhysicalDevice const& pd) override;
 
-private:
+protected:
     void create_gbm_bos();
     void create_drm_fbs();
     void create_vk_images();
+    void wait_for_drm_page_flip_event();
 
     ManagedResource<int> const drm_fd;
     ManagedResource<drmModeResPtr> const drm_resources;
