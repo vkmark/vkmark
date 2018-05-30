@@ -479,12 +479,18 @@ void KMSWindowSystem::create_vk_images()
         VkImage image;
         VkDeviceMemory device_memory;
 
-        create_dma_buf_image(
+        VkResult result = create_dma_buf_image(
             vulkan->device(),
             &create_info,
             nullptr,
             &device_memory,
             &image);
+
+        if (result != VK_SUCCESS)
+        {
+            vk::throwResultException(static_cast<vk::Result>(result),
+                                     "vkCreateDmbBufImageINTEL");
+        }
 
         vk_images.push_back(
             ManagedResource<vk::Image>{
