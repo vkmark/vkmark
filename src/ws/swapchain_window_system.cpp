@@ -26,6 +26,7 @@
 #include "vulkan_state.h"
 #include "vulkan_image.h"
 #include "log.h"
+#include "vkutil/vkutil.h"
 
 #include <stdexcept>
 #include <algorithm>
@@ -139,9 +140,7 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
     Log::debug("SwapchainWindowSystem: Swapchain contains %d images\n",
                vk_images.size());
 
-    vk_acquire_semaphore = ManagedResource<vk::Semaphore>{
-        vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
-        [this] (auto& s) { vulkan->device().destroySemaphore(s); }};
+    vk_acquire_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
 }
 
 void SwapchainWindowSystem::deinit_vulkan()

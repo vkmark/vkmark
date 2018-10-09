@@ -31,7 +31,12 @@ vkutil::SemaphoreBuilder::SemaphoreBuilder(VulkanState& vulkan)
 
 ManagedResource<vk::Semaphore> vkutil::SemaphoreBuilder::build()
 {
+    auto const export_info = vk::ExportSemaphoreCreateInfo{}
+        .setHandleTypes(vk::ExternalSemaphoreHandleTypeFlagBits::eSyncFdKHR);
+    auto create_info = vk::SemaphoreCreateInfo{}
+        .setPNext(&export_info);
+
     return ManagedResource<vk::Semaphore>{
-        vulkan.device().createSemaphore(vk::SemaphoreCreateInfo{}),
+        vulkan.device().createSemaphore(create_info),
         [vptr=&vulkan] (auto const& s) { vptr->device().destroySemaphore(s); }};
 }
