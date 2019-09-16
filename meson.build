@@ -17,7 +17,8 @@ cpp = meson.get_compiler('cpp')
 
 vulkan_dep = cpp.find_library('vulkan')
 dl_dep = cpp.find_library('dl')
-glm_dep = dependency('glm')
+glm_dep = dependency('glm', required: false)
+glm_header = cpp.has_header('glm/glm.hpp', dependencies: glm_dep, required: true)
 assimp_dep = dependency('assimp')
 
 xcb_dep = dependency('xcb', required : get_option('xcb') == 'true')
