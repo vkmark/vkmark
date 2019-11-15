@@ -1,3 +1,5 @@
+![](https://github.com/vkmark/vkmark/workflows/build/badge.svg)
+
 vkmark is an extensible Vulkan benchmarking suite with targeted,
 configurable scenes.
 

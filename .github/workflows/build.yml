@@ -1,0 +1,26 @@
+name: build
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: >
+        sudo apt install meson libvulkan-dev libglm-dev libassimp-dev
+        libxcb1-dev libxcb-icccm4-dev libwayland-dev
+        libdrm-dev libgbm-dev
+    - name: Setup
+      run: meson setup build
+    - name: Build
+      run: ninja -C build
+    - name: Run tests
+      run: meson test -v -C build
