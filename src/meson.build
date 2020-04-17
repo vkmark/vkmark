@@ -71,11 +71,30 @@ if build_xcb_ws
 endif
 
 if build_wayland_ws
+    wayland_scanner = find_program(wayland_scanner_dep.get_pkgconfig_variable('wayland_scanner'))
+    wayland_protocols_dir = wayland_protocols_dep.get_pkgconfig_variable('pkgdatadir')
+
+    xdg_shell_xml_path = wayland_protocols_dir + '/stable/xdg-shell/xdg-shell.xml'
+	xdg_shell_client_header = custom_target(
+        'xdg-shell client-header',
+        command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ],
+        input: xdg_shell_xml_path,
+        output: 'xdg-shell-client-protocol.h',
+		)
+	xdg_shell_private_code = custom_target(
+        'xdg-shell private-code',
+        command: [ wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@' ],
+        input: xdg_shell_xml_path,
+        output: 'xdg-shell-protocol.c',
+		)
+
     wayland_ws = shared_module(
         'wayland',
         'ws/wayland_window_system_plugin.cpp',
         'ws/wayland_native_system.cpp',
         'ws/swapchain_window_system.cpp',
+        xdg_shell_client_header,
+        xdg_shell_private_code,
         dependencies : [vulkan_dep, wayland_client_dep],
         name_prefix : '',
         install : true,
