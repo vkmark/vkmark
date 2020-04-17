@@ -48,11 +48,6 @@ void handle_output_done(void* /*data*/, wl_output* /*wl_output*/)
 {
 }
 
-void handle_output_scale(
-    void* /*data*/, wl_output* /*wl_output*/, int32_t /*factor*/)
-{
-}
-
 void handle_keyboard_keymap(
     void* /*data*/, wl_keyboard* /*wl_keyboard*/, uint32_t /*format*/,
     int32_t /*fd*/, uint32_t /*size*/)
@@ -92,9 +87,9 @@ wl_seat_listener const WaylandNativeSystem::seat_listener{
 
 wl_output_listener const WaylandNativeSystem::output_listener{
     handle_output_geometry,
-    handle_output_mode,
+    WaylandNativeSystem::handle_output_mode,
     handle_output_done,
-    handle_output_scale
+    WaylandNativeSystem::handle_output_scale
 };
 
 wl_keyboard_listener const WaylandNativeSystem::keyboard_listener{
@@ -109,7 +104,12 @@ wl_keyboard_listener const WaylandNativeSystem::keyboard_listener{
 WaylandNativeSystem::WaylandNativeSystem(int width, int height)
     : requested_width{width},
       requested_height{height},
-      should_quit_{false}
+      should_quit_{false},
+      display_fd{0},
+      output_width{0},
+      output_height{0},
+      output_refresh{0},
+      output_scale{1}
 {
     create_native_window();
 }
@@ -271,7 +271,8 @@ void WaylandNativeSystem::handle_registry_global(
         if (!wws->output)
         {
             auto output_raw = static_cast<wl_output*>(
-                wl_registry_bind(registry, id, &wl_output_interface, 1));
+                wl_registry_bind(registry, id, &wl_output_interface,
+                    std::min(version, 2U));
             wws->output = ManagedResource<wl_output*>{
                 std::move(output_raw), wl_output_destroy};
 
@@ -312,6 +313,13 @@ void WaylandNativeSystem::handle_output_mode(
         wws->output_height = height;
         wws->output_refresh = refresh;
     }
+}
+
+void WaylandNativeSystem::handle_output_scale(
+    void* data, wl_output* /*output*/, int32_t factor)
+{
+    auto const wws = static_cast<WaylandNativeSystem*>(data);
+    wws->output_scale = factor;
 }
 
 void WaylandNativeSystem::handle_keyboard_key(

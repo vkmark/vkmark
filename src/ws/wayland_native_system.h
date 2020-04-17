@@ -52,6 +52,8 @@ private:
     static void handle_output_mode(
         void* data, wl_output* output,
         uint32_t flags, int32_t width, int32_t height, int32_t refresh);
+    static void handle_output_scale(
+        void* data, wl_output* output, int32_t factor);
     static void handle_keyboard_key(
         void* data, wl_keyboard* wl_keyboard,
         uint32_t serial, uint32_t time,
@@ -77,5 +79,6 @@ private:
     int32_t output_width;
     int32_t output_height;
     int32_t output_refresh;
+    int32_t output_scale;
     vk::Extent2D vk_extent;
 };
