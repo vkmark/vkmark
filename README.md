@@ -21,6 +21,7 @@ for the X11 backend:
 for the wayland backend:
 
  * libwayland-client and development files
+ * wayland-protocols >= 1.12
 
 for the KMS backend:
 
@@ -29,7 +30,7 @@ for the KMS backend:
 
 On a recent Debian/Ubuntu system you can get all the dependencies with:
 
- `$ sudo apt install meson libvulkan-dev libglm-dev libassimp-dev libxcb1-dev libxcb-icccm4-dev libwayland-dev libdrm-dev libgbm-dev`
+ `$ sudo apt install meson libvulkan-dev libglm-dev libassimp-dev libxcb1-dev libxcb-icccm4-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev`
 
 # Building and installing
 
