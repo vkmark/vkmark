@@ -16,7 +16,7 @@ jobs:
     - name: Install dependencies
       run: >
         sudo apt install meson libvulkan-dev libglm-dev libassimp-dev
-        libxcb1-dev libxcb-icccm4-dev libwayland-dev
+        libxcb1-dev libxcb-icccm4-dev libwayland-dev wayland-protocols
         libdrm-dev libgbm-dev
     - name: Setup
       run: meson setup build
