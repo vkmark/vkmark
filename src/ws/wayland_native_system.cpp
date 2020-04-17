@@ -235,6 +235,13 @@ void WaylandNativeSystem::create_native_window()
     {
         wl_surface_set_buffer_scale(surface, output_scale);
     }
+
+    auto const opaque_region = ManagedResource<wl_region*>{
+        wl_compositor_create_region(compositor), wl_region_destroy};
+    wl_region_add(opaque_region, 0, 0, vk_extent.width, vk_extent.height);
+    wl_surface_set_opaque_region(surface, opaque_region);
+
+    wl_surface_commit(surface);
 }
 
 bool WaylandNativeSystem::fullscreen_requested()
