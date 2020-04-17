@@ -24,6 +24,7 @@
 
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #include "native_system.h"
+#include "xdg-shell-client-protocol.h"
 
 #include <wayland-client.h>
 
@@ -47,6 +48,8 @@ private:
     static void handle_registry_global(
         void* data, wl_registry* registry, uint32_t id,
         char const* interface, uint32_t version);
+    static void handle_xdg_toplevel_close(
+        void* data, xdg_toplevel* xdg_toplevel);
     static void handle_seat_capabilities(
         void* data, wl_seat* seat, uint32_t capabilities);
     static void handle_output_mode(
@@ -62,6 +65,9 @@ private:
     static wl_seat_listener const seat_listener;
     static wl_keyboard_listener const keyboard_listener;
     static wl_output_listener const output_listener;
+    static struct xdg_wm_base_listener const xdg_wm_base_listener;
+    static struct xdg_toplevel_listener const xdg_toplevel_listener;
+    static struct xdg_surface_listener const xdg_surface_listener;
 
     int const requested_width;
     int const requested_height;
@@ -69,12 +75,13 @@ private:
 
     ManagedResource<wl_display*> display;
     ManagedResource<wl_compositor*> compositor;
-    ManagedResource<wl_shell*> shell;
+    ManagedResource<struct xdg_wm_base*> xdg_wm_base;
     ManagedResource<wl_seat*> seat;
     ManagedResource<wl_output*> output;
     ManagedResource<wl_keyboard*> keyboard;
     ManagedResource<wl_surface*> surface;
-    ManagedResource<wl_shell_surface*> shell_surface;
+    ManagedResource<struct xdg_surface*> xdg_surface;
+    ManagedResource<struct xdg_toplevel*> xdg_toplevel;
     int display_fd;
     int32_t output_width;
     int32_t output_height;

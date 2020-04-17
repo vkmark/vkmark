@@ -79,7 +79,38 @@ void handle_keyboard_repeat_info(
 {
 }
 
+void handle_xdg_wm_base_ping(
+    void* /*data*/, xdg_wm_base* xdg_wm_base, uint32_t serial)
+{
+    xdg_wm_base_pong(xdg_wm_base, serial);
 }
+
+void handle_xdg_surface_configure(
+    void* /*data*/, xdg_surface* xdg_surface, uint32_t serial)
+{
+    xdg_surface_ack_configure(xdg_surface, serial);
+}
+
+void handle_xdg_toplevel_configure(
+    void* /*data*/, struct xdg_toplevel* /*xdg_toplevel*/,
+    int32_t /*width*/, int32_t /*height*/, wl_array* /*states*/)
+{
+}
+
+}
+
+xdg_wm_base_listener const WaylandNativeSystem::xdg_wm_base_listener{
+    handle_xdg_wm_base_ping,
+};
+
+xdg_toplevel_listener const WaylandNativeSystem::xdg_toplevel_listener{
+    handle_xdg_toplevel_configure,
+    WaylandNativeSystem::handle_xdg_toplevel_close,
+};
+
+xdg_surface_listener const WaylandNativeSystem::xdg_surface_listener{
+    handle_xdg_surface_configure,
+};
 
 wl_seat_listener const WaylandNativeSystem::seat_listener{
     WaylandNativeSystem::handle_seat_capabilities
@@ -203,28 +234,40 @@ void WaylandNativeSystem::create_native_window()
     if (!surface)
         throw std::runtime_error("Failed to create Wayland surface");
 
-    shell_surface = ManagedResource<wl_shell_surface*>{
-        wl_shell_get_shell_surface(shell, surface),
-        wl_shell_surface_destroy};
-    if (!shell_surface)
-        throw std::runtime_error("Failed to create Wayland shell surface");
+    if (!xdg_wm_base)
+    {
+        throw std::runtime_error(
+            "Failed to create Wayland xdg_surface, xdg_wm_base not supported");
+    }
 
-    wl_shell_surface_set_title(shell_surface, "vkmark " VKMARK_VERSION_STR);
+    xdg_surface = ManagedResource<struct xdg_surface*>{
+        xdg_wm_base_get_xdg_surface(xdg_wm_base, surface),
+        xdg_surface_destroy};
+    if (!xdg_surface)
+        throw std::runtime_error("Failed to create Wayland xdg_surface");
+
+    xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, this);
+
+    xdg_toplevel = ManagedResource<struct xdg_toplevel*>{
+        xdg_surface_get_toplevel(xdg_surface),
+        xdg_toplevel_destroy};
+    if (!xdg_toplevel)
+        throw std::runtime_error("Failed to create Wayland xdg_toplevel");
+
+    xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, this);
+
+    xdg_toplevel_set_app_id(xdg_toplevel, "com.github.vkmark.vkmark");
+    xdg_toplevel_set_title(xdg_toplevel, "vkmark " VKMARK_VERSION_STR);
 
     if (fullscreen_requested())
     {
-        wl_shell_surface_set_fullscreen(
-            shell_surface,
-            WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER,
-            output_refresh,
-            output);
+        xdg_toplevel_set_fullscreen(xdg_toplevel, output);
         vk_extent = vk::Extent2D{
             static_cast<uint32_t>(output_width),
             static_cast<uint32_t>(output_height)};
     }
     else
     {
-        wl_shell_surface_set_toplevel(shell_surface);
         vk_extent = vk::Extent2D{
             static_cast<uint32_t>(requested_width),
             static_cast<uint32_t>(requested_height)};
@@ -264,12 +307,13 @@ void WaylandNativeSystem::handle_registry_global(
         wws->compositor = ManagedResource<wl_compositor*>{
             std::move(compositor_raw), wl_compositor_destroy};
     }
-    else if (interface == "wl_shell")
+    else if (interface == "xdg_wm_base")
     {
-        auto shell_raw = static_cast<wl_shell*>(
-            wl_registry_bind(registry, id, &wl_shell_interface, 1));
-        wws->shell = ManagedResource<wl_shell*>{
-            std::move(shell_raw), wl_shell_destroy};
+        auto xdg_wm_base_raw = static_cast<struct xdg_wm_base*>(
+            wl_registry_bind(
+                registry, id, &xdg_wm_base_interface, std::min(version, 2U)));
+        wws->xdg_wm_base = ManagedResource<struct xdg_wm_base*>{
+            std::move(xdg_wm_base_raw), xdg_wm_base_destroy};
     }
     else if (interface == "wl_seat")
     {
@@ -294,6 +338,13 @@ void WaylandNativeSystem::handle_registry_global(
             wl_display_roundtrip(wws->display);
         }
     }
+}
+
+void WaylandNativeSystem::handle_xdg_toplevel_close(
+    void* data, struct xdg_toplevel* /*xdg_toplevel*/)
+{
+    auto const wws = static_cast<WaylandNativeSystem*>(data);
+    wws->should_quit_ = true;
 }
 
 void WaylandNativeSystem::handle_seat_capabilities(
