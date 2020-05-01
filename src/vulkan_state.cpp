@@ -42,7 +42,7 @@ void VulkanState::log_info()
 
     Log::info("    Vendor ID:      0x%X\n", props.vendorID);
     Log::info("    Device ID:      0x%X\n", props.deviceID);
-    Log::info("    Device Name:    %s\n", props.deviceName);
+    Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
     Log::info("    Driver Version: %u\n", props.driverVersion);
 }
 
