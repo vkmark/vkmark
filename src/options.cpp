@@ -28,6 +28,8 @@
 #include "options.h"
 #include "util.h"
 
+#include "format_map_gen.h" // Generated map from string to vk::Format
+
 namespace
 {
 
@@ -92,13 +94,9 @@ std::string normalize_pixel_format(std::string str)
 
 vk::Format parse_pixel_format(std::string const& str)
 {
-    for (auto e = static_cast<vk::Format>(VK_FORMAT_BEGIN_RANGE);
-         e < static_cast<vk::Format>(VK_FORMAT_END_RANGE);
-         e = static_cast<vk::Format>(static_cast<int>(e) + 1))
-    {
-        if (normalize_pixel_format(to_string(e)) == normalize_pixel_format(str))
-            return e;
-    }
+    auto const format_iter = format_map.find(normalize_pixel_format(str));
+    if (format_iter != format_map.end())
+        return format_iter->second;
 
     return vk::Format::eUndefined;
 }

@@ -1,3 +1,18 @@
+prog_python = find_program('python3')
+
+vulkan_hpp = join_paths([
+    vulkan_dep.get_pkgconfig_variable('includedir'),
+    'vulkan',
+    'vulkan.hpp'
+    ])
+
+format_map_gen_h = custom_target(
+    'format_map_gen.h',
+    output: 'format_map_gen.h',
+    input: vulkan_hpp,
+    command: [prog_python, files('gen_format_map.py'), '@INPUT@', '@OUTPUT@']
+    )
+
 core_sources = files(
     'benchmark.cpp',
     'benchmark_collection.cpp',
@@ -12,7 +27,7 @@ core_sources = files(
     'util.cpp',
     'vulkan_state.cpp',
     'window_system_loader.cpp'
-    )
+    ) + [format_map_gen_h]
 
 vkutil_sources = files(
     'vkutil/buffer_builder.cpp',

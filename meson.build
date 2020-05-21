@@ -16,7 +16,7 @@ add_global_arguments('-DVKMARK_VERSION_STR="@0@"'.format(meson.project_version()
 
 cpp = meson.get_compiler('cpp')
 
-vulkan_dep = cpp.find_library('vulkan')
+vulkan_dep = dependency('vulkan')
 dl_dep = cpp.find_library('dl')
 glm_dep = dependency('glm', required: false)
 if not glm_dep.found() and not cpp.has_header('glm/glm.hpp')
