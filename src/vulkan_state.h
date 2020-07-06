@@ -79,9 +79,8 @@ private:
 
     ManagedResource<vk::Instance> vk_instance;
     ManagedResource<vk::Device> vk_device;
-    vk::Queue vk_graphics_queue;
     ManagedResource<vk::CommandPool> vk_command_pool;
-    std::pair<size_t, bool> force_physical_device; // pseudo-optional
+    vk::Queue vk_graphics_queue;
     vk::PhysicalDevice vk_physical_device;
     uint32_t vk_graphics_queue_family_index;
     
