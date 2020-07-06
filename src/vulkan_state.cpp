@@ -181,9 +181,6 @@ void ChooseIndexPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWS
 {
     auto const physical_devices = vk_instance.enumeratePhysicalDevices();
 
-    // TODO: move to print list of physical devices
-    // Log::debug("Found %d physical devices\n", physical_devices.size());
-
     Log::debug("Trying to use device with specified index %d.\n", use_physical_device_index);
 
     if (use_physical_device_index < physical_devices.size())
