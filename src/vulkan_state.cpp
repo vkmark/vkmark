@@ -141,7 +141,7 @@ void VulkanState::create_command_pool()
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
 }
 
-void ChooseFirstSupportedPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+void ChooseFirstSupportedStrategy::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
 {
     Log::debug("Trying to use first supported device.\n");
 
@@ -177,15 +177,15 @@ void ChooseFirstSupportedPhysicalDevice::choose(vk::Instance const& vk_instance,
     Log::debug("First supported device choosen!\n");
 }
 
-void ChooseIndexPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+void ChooseByIndexStrategy::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
 {
     auto const physical_devices = vk_instance.enumeratePhysicalDevices();
 
-    Log::debug("Trying to use device with specified index %d.\n", use_physical_device_index);
+    Log::debug("Trying to use device with specified index %d.\n", physical_device_index);
 
-    if (use_physical_device_index < physical_devices.size())
+    if (physical_device_index < physical_devices.size())
     {
-        auto const pd = physical_devices[use_physical_device_index];
+        auto const pd = physical_devices[physical_device_index];
 
         if (vulkan_wsi.is_physical_device_supported(pd))
         {
@@ -212,12 +212,12 @@ void ChooseIndexPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWS
         
     }
     else
-        Log::warning("Device with index %d does not exist!\n", use_physical_device_index);
+        Log::warning("Device with index %d does not exist!\n", physical_device_index);
 
     if(!vk_physical_device)
     {
-       throw std::runtime_error("Could not use device with index " + std::to_string(use_physical_device_index) + "!\n");
+       throw std::runtime_error("Could not use device with index " + std::to_string(physical_device_index) + "!\n");
     }
 
-    Log::debug("Device with index %d succesfully choosen!\n", use_physical_device_index);
+    Log::debug("Device with index %d succesfully choosen!\n", physical_device_index);
 }

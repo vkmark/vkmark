@@ -110,22 +110,22 @@ protected:
     uint32_t vk_graphics_queue_family_index;
 };
 
-class ChooseFirstSupportedPhysicalDevice : public ChoosePhysicalDeviceStrategy
+class ChooseFirstSupportedStrategy : public ChoosePhysicalDeviceStrategy
 {
 public:
     void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
 };
 
-class ChooseIndexPhysicalDevice : public ChoosePhysicalDeviceStrategy
+class ChooseByIndexStrategy : public ChoosePhysicalDeviceStrategy
 {
 public:
-    inline ChooseIndexPhysicalDevice(uint32_t use_physical_device_index)
+    inline ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
     {
-        this->use_physical_device_index = use_physical_device_index;
+        physical_device_index = use_physical_device_with_index;
     }
 
     void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
 
 private:
-    uint32_t use_physical_device_index;
+    uint32_t physical_device_index;
 };

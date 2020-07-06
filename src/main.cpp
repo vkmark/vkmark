@@ -113,14 +113,14 @@ try
         return 0;
     }
 
-    std::unique_ptr<ChoosePhysicalDeviceStrategy> choosed_strategy;
+    std::unique_ptr<ChoosePhysicalDeviceStrategy> choosen_strategy;
     if (options.use_device_with_index.second)
-        choosed_strategy = std::make_unique<ChooseIndexPhysicalDevice>(options.use_device_with_index.first);
+        choosen_strategy = std::make_unique<ChooseByIndexStrategy>(options.use_device_with_index.first);
     else
-        choosed_strategy = std::make_unique<ChooseFirstSupportedPhysicalDevice>();
+        choosen_strategy = std::make_unique<ChooseFirstSupportedStrategy>();
 
     auto& ws = ws_loader.load_window_system();
-    VulkanState vulkan{ws.vulkan_wsi(), *choosed_strategy.get()};
+    VulkanState vulkan{ws.vulkan_wsi(), *choosen_strategy.get()};
 
     if (options.list_devices)
     {

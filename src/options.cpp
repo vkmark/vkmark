@@ -36,7 +36,7 @@ namespace
 struct option long_options[] = {
     {"benchmark", 1, 0, 0},
     {"size", 1, 0, 0},
-    {"force-device", 1, 0, 0},
+    {"use-device", 1, 0, 0},
     {"fullscreen", 0, 0, 0},
     {"present-mode", 1, 0, 0},
     {"pixel-format", 1, 0, 0},
