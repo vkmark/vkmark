@@ -55,6 +55,8 @@ struct Options
     bool run_forever;
     bool show_debug;
     bool show_help;
+    bool list_devices;
+    std::pair<uint32_t, bool> use_device_with_index; // pseudo-optional
 
 private:
     std::vector<std::string> window_system_help;

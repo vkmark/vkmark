@@ -113,8 +113,20 @@ try
         return 0;
     }
 
+    std::unique_ptr<ChoosePhysicalDeviceStrategy> choosed_strategy;
+    if (options.use_device_with_index.second)
+        choosed_strategy = std::make_unique<ChooseIndexPhysicalDevice>(options.use_device_with_index.first);
+    else
+        choosed_strategy = std::make_unique<ChooseFirstSupportedPhysicalDevice>();
+
     auto& ws = ws_loader.load_window_system();
-    VulkanState vulkan{ws.vulkan_wsi()};
+    VulkanState vulkan{ws.vulkan_wsi(), *choosed_strategy.get()};
+
+    if (options.list_devices)
+    {
+        log_info(vulkan.instance().enumeratePhysicalDevices());
+        return 0;
+    }
 
     auto const ws_vulkan_deinit = Util::on_scope_exit([&] { ws.deinit_vulkan(); });
     ws.init_vulkan(vulkan);

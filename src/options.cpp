@@ -36,6 +36,7 @@ namespace
 struct option long_options[] = {
     {"benchmark", 1, 0, 0},
     {"size", 1, 0, 0},
+    {"force-device", 1, 0, 0},
     {"fullscreen", 0, 0, 0},
     {"present-mode", 1, 0, 0},
     {"pixel-format", 1, 0, 0},
@@ -133,7 +134,9 @@ Options::Options()
       data_dir{VKMARK_DATA_DIR},
       run_forever{false},
       show_debug{false},
-      show_help{false}
+      show_help{false},
+      list_devices{false},
+      use_device_with_index{}
 {
 }
 
@@ -162,6 +165,8 @@ std::string Options::help_string()
         "      --run-forever           Run indefinitely, looping from the last benchmark\n"
         "                              back to the first\n"
         "  -d, --debug                 Display debug messages\n"
+        "  -D  --use-device            Use Vulkan device with index as in list\n"
+        "  -L  --list-devices          List Vulkan devices\n"
         "  -h, --help                  Display help\n";
 
     for (auto const& wsh : window_system_help)
@@ -181,7 +186,7 @@ bool Options::parse_args(int argc, char **argv)
         int c;
         std::string optname;
 
-        c = getopt_long(argc, argv, "b:s:p:ldh",
+        c = getopt_long(argc, argv, "b:s:p:ldhD:L",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -219,6 +224,10 @@ bool Options::parse_args(int argc, char **argv)
             show_debug = true;
         else if (c == 'h' || optname == "help")
             show_help = true;
+        else if (c == 'L' || optname == "list-devices")
+            list_devices = true;
+        else if (c == 'D' || optname == "use-device")
+            use_device_with_index = std::make_pair(static_cast<uint32_t>(std::stoi(optarg)), true);
     }
 
     return true;

@@ -23,17 +23,24 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <optional>
 
 #include "managed_resource.h"
 
 class VulkanWSI;
+class ChoosePhysicalDeviceStrategy;
+void log_info(vk::PhysicalDevice const& physical_device);
+void log_info(std::vector<vk::PhysicalDevice> const& physical_devices);
 
 class VulkanState
 {
 public:
-    VulkanState(VulkanWSI& vulkan_wsi);
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy& choose_physical_device_strategy);
 
-    void log_info();
+    inline void log_info()
+    {
+        ::log_info(physical_device());
+    }
 
     vk::Instance const& instance() const
     {
@@ -72,9 +79,53 @@ private:
     void create_command_pool();
 
     ManagedResource<vk::Instance> vk_instance;
-    vk::PhysicalDevice vk_physical_device;
-    uint32_t vk_graphics_queue_family_index;
     ManagedResource<vk::Device> vk_device;
     vk::Queue vk_graphics_queue;
     ManagedResource<vk::CommandPool> vk_command_pool;
+    std::pair<size_t, bool> force_physical_device; // pseudo-optional
+    vk::PhysicalDevice vk_physical_device;
+    uint32_t vk_graphics_queue_family_index;
+    
+};
+
+class ChoosePhysicalDeviceStrategy
+{
+public:
+    virtual ~ChoosePhysicalDeviceStrategy(){};
+
+    inline vk::PhysicalDevice const& physical_device() const noexcept
+    {
+        return vk_physical_device;
+    }
+
+    inline uint32_t const& graphics_queue_family_index() const noexcept
+    {
+        return vk_graphics_queue_family_index;
+    }
+
+    virtual void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) = 0;
+
+protected:
+    vk::PhysicalDevice vk_physical_device;
+    uint32_t vk_graphics_queue_family_index;
+};
+
+class ChooseFirstSupportedPhysicalDevice : public ChoosePhysicalDeviceStrategy
+{
+public:
+    void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
+};
+
+class ChooseIndexPhysicalDevice : public ChoosePhysicalDeviceStrategy
+{
+public:
+    inline ChooseIndexPhysicalDevice(uint32_t use_physical_device_index)
+    {
+        this->use_physical_device_index = use_physical_device_index;
+    }
+
+    void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
+
+private:
+    uint32_t use_physical_device_index;
 };

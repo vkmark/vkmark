@@ -28,22 +28,35 @@
 #include <vector>
 #include <algorithm>
 
-VulkanState::VulkanState(VulkanWSI& vulkan_wsi)
+void log_info(vk::PhysicalDevice const& physical_device)
 {
-    create_instance(vulkan_wsi);
-    choose_physical_device(vulkan_wsi);
-    create_device(vulkan_wsi);
-    create_command_pool();
-}
-
-void VulkanState::log_info()
-{
-    auto const props = physical_device().getProperties();
+    auto const props = physical_device.getProperties();
 
     Log::info("    Vendor ID:      0x%X\n", props.vendorID);
     Log::info("    Device ID:      0x%X\n", props.deviceID);
     Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
     Log::info("    Driver Version: %u\n", props.driverVersion);
+}
+
+void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
+{
+    for (size_t device_index = 0; device_index < physical_devices.size(); ++device_index)
+    {
+        Log::info("=== Physical Device %d. ===\n", device_index);
+        log_info(physical_devices[device_index]);
+    }
+}
+
+VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy& choose_physical_device_strategy)
+{
+    create_instance(vulkan_wsi);
+
+    choose_physical_device_strategy.choose(instance(), vulkan_wsi);
+    vk_physical_device = choose_physical_device_strategy.physical_device();
+    vk_graphics_queue_family_index = choose_physical_device_strategy.graphics_queue_family_index();
+
+    create_device(vulkan_wsi);
+    create_command_pool();
 }
 
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
@@ -62,38 +75,6 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
     vk_instance = ManagedResource<vk::Instance>{
         vk::createInstance(create_info),
         [] (auto& i) { i.destroy(); }};
-}
-
-void VulkanState::choose_physical_device(VulkanWSI& vulkan_wsi)
-{
-    auto const physical_devices = instance().enumeratePhysicalDevices();
-
-    for (auto const& pd : physical_devices)
-    {
-        if (!vulkan_wsi.is_physical_device_supported(pd))
-            continue;
-
-        auto const queue_families = pd.getQueueFamilyProperties();
-        int queue_index = 0;
-        for (auto const& queue_family : queue_families)
-        {
-            if (queue_family.queueCount > 0 &&
-                (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
-            {
-                vk_physical_device = pd;
-                vk_graphics_queue_family_index = queue_index;
-
-                break;
-            }
-            ++queue_index;
-        }
-
-        if (vk_physical_device)
-            break;
-    }
-
-    if (!vk_physical_device)
-        throw std::runtime_error("No suitable Vulkan physical devices found");
 }
 
 void VulkanState::create_device(VulkanWSI& vulkan_wsi)
@@ -158,4 +139,88 @@ void VulkanState::create_command_pool()
     vk_command_pool = ManagedResource<vk::CommandPool>{
         device().createCommandPool(command_pool_create_info),
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
+}
+
+void ChooseFirstSupportedPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+{
+    Log::debug("Trying to use first supported device.\n");
+
+    auto const physical_devices = vk_instance.enumeratePhysicalDevices();
+
+    for (auto const& pd : physical_devices)
+    {
+        if (!vulkan_wsi.is_physical_device_supported(pd))
+            continue;
+
+        auto const queue_families = pd.getQueueFamilyProperties();
+        uint32_t queue_index = 0;
+        for (auto const& queue_family : queue_families)
+        {
+            if (queue_family.queueCount > 0 &&
+                (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
+            {
+                vk_physical_device = pd;
+                vk_graphics_queue_family_index = queue_index;
+
+                break;
+            }
+            ++queue_index;
+        }
+
+        if (vk_physical_device)
+            break;
+    }
+    
+    if (!vk_physical_device)
+        throw std::runtime_error("No suitable Vulkan physical devices found");
+
+    Log::debug("First supported device choosen!\n");
+}
+
+void ChooseIndexPhysicalDevice::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+{
+    auto const physical_devices = vk_instance.enumeratePhysicalDevices();
+
+    // TODO: move to print list of physical devices
+    // Log::debug("Found %d physical devices\n", physical_devices.size());
+
+    Log::debug("Trying to use device with specified index %d.\n", use_physical_device_index);
+
+    if (use_physical_device_index < physical_devices.size())
+    {
+        auto const pd = physical_devices[use_physical_device_index];
+
+        if (vulkan_wsi.is_physical_device_supported(pd))
+        {
+            auto const queue_families = pd.getQueueFamilyProperties();
+            uint32_t queue_index = 0;
+            for (auto const& queue_family : queue_families)
+            {
+                if (queue_family.queueCount > 0 &&
+                    (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
+                {
+                    vk_physical_device = pd;
+                    vk_graphics_queue_family_index = queue_index;
+
+                    break;
+                }
+                ++queue_index;
+            }
+
+            if(!vk_physical_device)
+                Log::warning("Selected device does not support eGraphics queue family!\n");
+        }
+        else
+            Log::warning("Selected device is not supported by your Vulkan window system integration layer (VulkanWSI)!\n");
+        
+    }
+    else
+        Log::warning("Device with index %d does not exist!\n", use_physical_device_index);
+
+    if(!vk_physical_device)
+    {
+       throw std::runtime_error("Could not use device with index " + std::to_string(use_physical_device_index) + "!\n");
+    }
+
+    Log::debug("Device with index %d succesfully choosen!\n", use_physical_device_index);
 }
