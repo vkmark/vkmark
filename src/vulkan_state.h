@@ -23,7 +23,6 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <optional>
 
 #include "managed_resource.h"
 
