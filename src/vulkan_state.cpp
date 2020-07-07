@@ -215,9 +215,7 @@ void ChooseByIndexStrategy::choose(vk::Instance const& vk_instance, VulkanWSI& v
         Log::warning("Device with index %d does not exist!\n", physical_device_index);
 
     if(!vk_physical_device)
-    {
        throw std::runtime_error("Could not use device with index " + std::to_string(physical_device_index) + "!\n");
-    }
 
     Log::debug("Device with index %d succesfully choosen!\n", physical_device_index);
 }

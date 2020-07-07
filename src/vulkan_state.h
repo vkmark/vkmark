@@ -118,9 +118,8 @@ class ChooseByIndexStrategy : public ChoosePhysicalDeviceStrategy
 {
 public:
     inline ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
-    {
-        physical_device_index = use_physical_device_with_index;
-    }
+        : physical_device_index(use_physical_device_with_index)
+    {}
 
     void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
 
