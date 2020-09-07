@@ -46,6 +46,7 @@ struct option long_options[] = {
     {"data-dir", 1, 0, 0},
     {"winsys", 1, 0, 0},
     {"winsys-options", 1, 0, 0},
+    {"list-devices", 0, 0, 0},
     {"run-forever", 0, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
