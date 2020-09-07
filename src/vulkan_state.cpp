@@ -47,18 +47,6 @@ void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
     }
 }
 
-VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy& choose_physical_device_strategy)
-{
-    create_instance(vulkan_wsi);
-
-    choose_physical_device_strategy.choose(instance(), vulkan_wsi);
-    vk_physical_device = choose_physical_device_strategy.physical_device();
-    vk_graphics_queue_family_index = choose_physical_device_strategy.graphics_queue_family_index();
-
-    create_device(vulkan_wsi);
-    create_command_pool();
-}
-
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 {
     auto const app_info = vk::ApplicationInfo{}
@@ -141,7 +129,7 @@ void VulkanState::create_command_pool()
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
 }
 
-void ChooseFirstSupportedStrategy::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+void ChooseFirstSupportedStrategy::operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
 {
     Log::debug("Trying to use first supported device.\n");
 
@@ -177,7 +165,7 @@ void ChooseFirstSupportedStrategy::choose(vk::Instance const& vk_instance, Vulka
     Log::debug("First supported device choosen!\n");
 }
 
-void ChooseByIndexStrategy::choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+void ChooseByIndexStrategy::operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
 {
     auto const physical_devices = vk_instance.enumeratePhysicalDevices();
 

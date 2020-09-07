@@ -27,14 +27,24 @@
 #include "managed_resource.h"
 
 class VulkanWSI;
-class ChoosePhysicalDeviceStrategy;
 void log_info(vk::PhysicalDevice const& physical_device);
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices);
 
 class VulkanState
 {
 public:
-    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy& choose_physical_device_strategy);
+    template <typename ChoosePhysicalDeviceStrategy>
+    inline VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy choose_physical_device_strategy)
+    {
+        create_instance(vulkan_wsi);
+
+        choose_physical_device_strategy(instance(), vulkan_wsi);
+        vk_physical_device = choose_physical_device_strategy.physical_device();
+        vk_graphics_queue_family_index = choose_physical_device_strategy.graphics_queue_family_index();
+
+        create_device(vulkan_wsi);
+        create_command_pool();
+    }
 
     inline void log_info()
     {
@@ -86,10 +96,11 @@ private:
     
 };
 
-class ChoosePhysicalDeviceStrategy
+// template strategies seems to require simpler code than polymorphic
+class ChooseFirstSupportedStrategy
 {
 public:
-    virtual ~ChoosePhysicalDeviceStrategy(){};
+    ~ChooseFirstSupportedStrategy(){};
 
     inline vk::PhysicalDevice const& physical_device() const noexcept
     {
@@ -101,27 +112,21 @@ public:
         return vk_graphics_queue_family_index;
     }
 
-    virtual void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) = 0;
+    void operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi);
 
-protected:
-    vk::PhysicalDevice vk_physical_device;
-    uint32_t vk_graphics_queue_family_index;
+    protected:
+        vk::PhysicalDevice vk_physical_device;
+        uint32_t vk_graphics_queue_family_index;
 };
 
-class ChooseFirstSupportedStrategy : public ChoosePhysicalDeviceStrategy
-{
-public:
-    void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
-};
-
-class ChooseByIndexStrategy : public ChoosePhysicalDeviceStrategy
+class ChooseByIndexStrategy : public ChooseFirstSupportedStrategy
 {
 public:
     inline ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
         : physical_device_index(use_physical_device_with_index)
     {}
 
-    void choose(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi) override;
+    void operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi);
 
 private:
     uint32_t physical_device_index;
