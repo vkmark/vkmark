@@ -34,7 +34,7 @@ class VulkanState
 {
 public:
     template <typename ChoosePhysicalDeviceStrategy>
-    inline VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy choose_physical_device_strategy)
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy choose_physical_device_strategy)
     {
         create_instance(vulkan_wsi);
 
@@ -46,7 +46,7 @@ public:
         create_command_pool();
     }
 
-    inline void log_info()
+    void log_info()
     {
         ::log_info(physical_device());
     }
@@ -102,12 +102,12 @@ class ChooseFirstSupportedStrategy
 public:
     ~ChooseFirstSupportedStrategy(){};
 
-    inline vk::PhysicalDevice const& physical_device() const noexcept
+    vk::PhysicalDevice const& physical_device() const noexcept
     {
         return vk_physical_device;
     }
 
-    inline uint32_t const& graphics_queue_family_index() const noexcept
+    uint32_t const& graphics_queue_family_index() const noexcept
     {
         return vk_graphics_queue_family_index;
     }
@@ -122,7 +122,7 @@ public:
 class ChooseByIndexStrategy : public ChooseFirstSupportedStrategy
 {
 public:
-    inline ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
+    ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
         : physical_device_index(use_physical_device_with_index)
     {}
 
