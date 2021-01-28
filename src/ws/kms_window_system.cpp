@@ -251,7 +251,7 @@ ManagedResource<gbm_device*> create_gbm_device(int drm_fd)
 
 ManagedResource<int> open_active_vt()
 {
-    auto fd = open("/dev/tty0", O_RDONLY);
+    auto fd = open("/dev/tty", O_RDONLY);
     if (fd < 0)
         throw std::runtime_error{"Failed to open active VT"};
 
@@ -281,7 +281,7 @@ VTState::VTState()
             errno, std::system_category(), "Failed to get VT control mode"};
     }
 
-    vt_mode const vtm{VT_PROCESS, 0, 0, 0, 0};
+    vt_mode const vtm{VT_PROCESS, 0, SIGUSR1, SIGUSR2, SIGIO};
 
     if (ioctl(vt_fd, VT_SETMODE, &vtm) < 0)
     {
