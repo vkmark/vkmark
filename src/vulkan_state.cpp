@@ -21,12 +21,12 @@
  */
 
 #include "vulkan_state.h"
-#include "vulkan_wsi.h"
 
 #include "log.h"
 
 #include <vector>
 #include <algorithm>
+#include <vulkan/vulkan.hpp>
 
 void log_info(vk::PhysicalDevice const& physical_device)
 {
@@ -36,15 +36,31 @@ void log_info(vk::PhysicalDevice const& physical_device)
     Log::info("    Device ID:      0x%X\n", props.deviceID);
     Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
     Log::info("    Driver Version: %u\n", props.driverVersion);
+    Log::info("    Device UUID:    %u\n", props.deviceID);
 }
 
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
 {
-    for (size_t device_index = 0; device_index < physical_devices.size(); ++device_index)
-    {
-        Log::info("=== Physical Device %d. ===\n", device_index);
-        log_info(physical_devices[device_index]);
+    for (size_t i = 0; i < physical_devices.size(); ++i)
+    {        
+        Log::info("=== Physical Device %d. ===\n", i);
+        log_info(physical_devices[i]);
     }
+}
+
+// pseudo-optional
+std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
+{
+    auto const queue_families = pd.getQueueFamilyProperties();
+    
+    for (uint32_t queue_index = 0; queue_index < queue_families.size(); ++queue_index)
+    {
+        // each queue family must support at least one queue
+        if (queue_families[queue_index].queueFlags & queue_family_type)
+            return std::make_pair(queue_index, true);
+    }
+
+    return std::make_pair(0, false);
 }
 
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
@@ -65,8 +81,14 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
         [] (auto& i) { i.destroy(); }};
 }
 
-void VulkanState::create_device(VulkanWSI& vulkan_wsi)
+void VulkanState::create_logical_device(VulkanWSI& vulkan_wsi)
 {
+    // it would be really nice to support c++17
+    auto pair = find_queue_family_index(physical_device(), vk::QueueFlagBits::eGraphics);
+    if (!pair.second)
+        throw std::runtime_error("selected physical device does not provide graphics queue");
+    vk_graphics_queue_family_index = pair.first;
+
     auto const priority = 1.0f;
 
     auto queue_family_indices =
@@ -129,81 +151,36 @@ void VulkanState::create_command_pool()
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
 }
 
-void ChooseFirstSupportedStrategy::operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
 {
     Log::debug("Trying to use first supported device.\n");
 
-    auto const physical_devices = vk_instance.enumeratePhysicalDevices();
-
-    for (auto const& pd : physical_devices)
+    for (auto const& pd : avaiable_devices)
     {
-        if (!vulkan_wsi.is_physical_device_supported(pd))
-            continue;
-
-        auto const queue_families = pd.getQueueFamilyProperties();
-        uint32_t queue_index = 0;
-        for (auto const& queue_family : queue_families)
+        if (find_queue_family_index(pd, vk::QueueFlagBits::eGraphics).second)
         {
-            if (queue_family.queueCount > 0 &&
-                (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
-            {
-                vk_physical_device = pd;
-                vk_graphics_queue_family_index = queue_index;
-
-                break;
-            }
-            ++queue_index;
+            Log::debug("First supported device choosen!\n");
+            return pd;
         }
 
-        if (vk_physical_device)
-            break;
+        Log::debug("device with index TODO skipped!\n");
     }
     
-    if (!vk_physical_device)
-        throw std::runtime_error("No suitable Vulkan physical devices found");
-
-    Log::debug("First supported device choosen!\n");
+    throw std::runtime_error("No suitable Vulkan physical devices found");
 }
 
-void ChooseByIndexStrategy::operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi)
+vk::PhysicalDevice ChooseByUUIDStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
 {
-    auto const physical_devices = vk_instance.enumeratePhysicalDevices();
+    Log::debug("Trying to use device with specified UUID %d.\n", m_selected_device_index);
 
-    Log::debug("Trying to use device with specified index %d.\n", physical_device_index);
-
-    if (physical_device_index < physical_devices.size())
+    for (auto const& device: avaiable_devices)
     {
-        auto const pd = physical_devices[physical_device_index];
-
-        if (vulkan_wsi.is_physical_device_supported(pd))
+        if (device.getProperties().deviceID == m_selected_device_index)
         {
-            auto const queue_families = pd.getQueueFamilyProperties();
-            uint32_t queue_index = 0;
-            for (auto const& queue_family : queue_families)
-            {
-                if (queue_family.queueCount > 0 &&
-                    (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
-                {
-                    vk_physical_device = pd;
-                    vk_graphics_queue_family_index = queue_index;
-
-                    break;
-                }
-                ++queue_index;
-            }
-
-            if(!vk_physical_device)
-                Log::warning("Selected device does not support eGraphics queue family!\n");
+            Log::debug("Device with index %d succesfully choosen!\n", m_selected_device_index);
+            return device;
         }
-        else
-            Log::warning("Selected device is not supported by your Vulkan window system integration layer (VulkanWSI)!\n");
-        
     }
-    else
-        Log::warning("Device with index %d does not exist!\n", physical_device_index);
 
-    if(!vk_physical_device)
-       throw std::runtime_error("Could not use device with index " + std::to_string(physical_device_index) + "!\n");
-
-    Log::debug("Device with index %d succesfully choosen!\n", physical_device_index);
+    throw std::runtime_error("Could not find device with UUID " + std::to_string(m_selected_device_index));
 }

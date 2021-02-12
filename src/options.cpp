@@ -166,7 +166,7 @@ std::string Options::help_string()
         "      --run-forever           Run indefinitely, looping from the last benchmark\n"
         "                              back to the first\n"
         "  -d, --debug                 Display debug messages\n"
-        "  -D  --use-device            Use Vulkan device with index as in list\n"
+        "  -D  --use-device            Use Vulkan device with specified UUID\n"
         "  -L  --list-devices          List Vulkan devices\n"
         "  -h, --help                  Display help\n";
 

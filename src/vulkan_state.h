@@ -24,26 +24,37 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "vulkan_wsi.h"
 #include "managed_resource.h"
 
 class VulkanWSI;
 void log_info(vk::PhysicalDevice const& physical_device);
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices);
 
+
 class VulkanState
 {
 public:
-    template <typename ChoosePhysicalDeviceStrategy>
-    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy choose_physical_device_strategy)
+    template<typename ChoosePhysicalDeviceStrategy>
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
     {
         create_instance(vulkan_wsi);
-
-        choose_physical_device_strategy(instance(), vulkan_wsi);
-        vk_physical_device = choose_physical_device_strategy.physical_device();
-        vk_graphics_queue_family_index = choose_physical_device_strategy.graphics_queue_family_index();
-
-        create_device(vulkan_wsi);
+        create_physical_device(vulkan_wsi, pd_strategy);
+        create_logical_device(vulkan_wsi);
         create_command_pool();
+    }
+
+    template<typename ChoosePhysicalDeviceStrategy>
+    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
+    {
+        auto avaiable_devices = instance().enumeratePhysicalDevices();
+        for (auto it_device = avaiable_devices.begin(); it_device < avaiable_devices.end(); ++it_device)
+        {
+            if (!vulkan_wsi.is_physical_device_supported(*it_device))
+                avaiable_devices.erase(it_device);
+        }
+
+        vk_physical_device = pd_strategy(avaiable_devices);
     }
 
     void log_info()
@@ -84,7 +95,7 @@ public:
 private:
     void create_instance(VulkanWSI& vulkan_wsi);
     void choose_physical_device(VulkanWSI& vulkan_wsi);
-    void create_device(VulkanWSI& vulkan_wsi);
+    void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
 
     ManagedResource<vk::Instance> vk_instance;
@@ -100,34 +111,18 @@ private:
 class ChooseFirstSupportedStrategy
 {
 public:
-    ~ChooseFirstSupportedStrategy(){};
-
-    vk::PhysicalDevice const& physical_device() const noexcept
-    {
-        return vk_physical_device;
-    }
-
-    uint32_t const& graphics_queue_family_index() const noexcept
-    {
-        return vk_graphics_queue_family_index;
-    }
-
-    void operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi);
-
-    protected:
-        vk::PhysicalDevice vk_physical_device;
-        uint32_t vk_graphics_queue_family_index;
+    vk::PhysicalDevice operator()(std::vector<vk::PhysicalDevice> avaiable_devices);
 };
 
-class ChooseByIndexStrategy : public ChooseFirstSupportedStrategy
+class ChooseByUUIDStrategy
 {
 public:
-    ChooseByIndexStrategy(uint32_t use_physical_device_with_index)
-        : physical_device_index(use_physical_device_with_index)
+    ChooseByUUIDStrategy(uint32_t use_physical_device_with_index)
+        : m_selected_device_index(use_physical_device_with_index)
     {}
 
-    void operator()(vk::Instance const& vk_instance, VulkanWSI& vulkan_wsi);
+    vk::PhysicalDevice operator()(std::vector<vk::PhysicalDevice> avaiable_devices);
 
 private:
-    uint32_t physical_device_index;
+    uint32_t m_selected_device_index;
 };
