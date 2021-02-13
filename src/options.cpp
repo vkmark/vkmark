@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <utility>
 #include <vulkan/vulkan_core.h>
 
 #include "options.h"
@@ -234,14 +235,8 @@ bool Options::parse_args(int argc, char **argv)
             list_devices = true;
         else if (c == 'D' || optname == "use-device")
         {
-            std::string formated_argument{optarg};
-            formated_argument.resize(2 * VK_UUID_SIZE + 1);
-            formated_argument.back() = '\0';
-            
-            std::array<char, 2 * VK_UUID_SIZE + 1> representation;
-            std::copy(formated_argument.cbegin(), formated_argument.cend(), representation.begin());
-
-            use_device_with_uuid = std::make_pair(encode_UUID<VK_UUID_SIZE>(representation), true);
+            DeviceUUID&& uuid{std::string {optarg}};
+            use_device_with_uuid = std::make_pair(uuid, true);
         }
     }
 

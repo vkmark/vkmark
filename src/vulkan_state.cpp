@@ -21,7 +21,9 @@
  */
 
 #include "vulkan_state.h"
+#include "device_uuid.h"
 #include "log.h"
+#include <string>
 
 
 void log_info(vk::PhysicalDevice const& physical_device)
@@ -32,7 +34,8 @@ void log_info(vk::PhysicalDevice const& physical_device)
     Log::info("    Device ID:      0x%X\n", props.deviceID);
     Log::info("    Device Name:    %s\n", props.deviceName.data());
     Log::info("    Driver Version: %u\n", props.driverVersion);
-    Log::info("    Device UUID:    %s\n", decode_UUID(props.pipelineCacheUUID).data());
+    Log::info("    Device UUID:    %s\n", 
+        static_cast<std::string>(static_cast<DeviceUUID>(props.pipelineCacheUUID)).c_str());
 }
 
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
@@ -160,7 +163,9 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::Phys
         }
 
         Log::debug("device with uuid %s skipped!\n",
-            decode_UUID(physical_device.getProperties().pipelineCacheUUID).data());
+           static_cast<std::string>(
+               static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID)).c_str()
+            );
     }
     
     throw std::runtime_error("No suitable Vulkan physical devices found");
@@ -168,11 +173,12 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::Phys
 
 vk::PhysicalDevice ChooseByUUIDStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
 {
-    Log::debug("Trying to use device with specified UUID %s.\n", decode_UUID(m_selected_device_uuid).data());
+    Log::debug("Trying to use device with specified UUID %s.\n", 
+        static_cast<std::string>(m_selected_device_uuid).c_str());
 
     for (auto const& physical_device: avaiable_devices)
     {
-        if (physical_device.getProperties().pipelineCacheUUID == m_selected_device_uuid)
+        if (static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID) == m_selected_device_uuid)
         {
             Log::debug("Device found\n");
             return physical_device;
