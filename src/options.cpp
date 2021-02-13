@@ -20,10 +20,15 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
+#include <array>
+#include <bits/getopt_core.h>
 #include <cstdio>
+#include <cstring>
 #include <getopt.h>
 #include <algorithm>
 #include <cctype>
+#include <string>
+#include <vulkan/vulkan_core.h>
 
 #include "options.h"
 #include "util.h"
@@ -137,7 +142,7 @@ Options::Options()
       show_debug{false},
       show_help{false},
       list_devices{false},
-      use_device_with_index{}
+      use_device_with_uuid{}
 {
 }
 
@@ -228,7 +233,16 @@ bool Options::parse_args(int argc, char **argv)
         else if (c == 'L' || optname == "list-devices")
             list_devices = true;
         else if (c == 'D' || optname == "use-device")
-            use_device_with_index = std::make_pair(static_cast<uint32_t>(std::stoi(optarg)), true);
+        {
+            std::string formated_argument{optarg};
+            formated_argument.resize(2 * VK_UUID_SIZE + 1);
+            formated_argument.back() = '\0';
+            
+            std::array<char, 2 * VK_UUID_SIZE + 1> representation;
+            std::copy(formated_argument.cbegin(), formated_argument.cend(), representation.begin());
+
+            use_device_with_uuid = std::make_pair(encode_UUID<VK_UUID_SIZE>(representation), true);
+        }
     }
 
     return true;

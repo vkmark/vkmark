@@ -26,6 +26,7 @@
 
 #include "vulkan_wsi.h"
 #include "managed_resource.h"
+#include "device_uuid.h"
 
 class VulkanWSI;
 void log_info(vk::PhysicalDevice const& physical_device);
@@ -117,12 +118,12 @@ public:
 class ChooseByUUIDStrategy
 {
 public:
-    ChooseByUUIDStrategy(uint32_t use_physical_device_with_index)
-        : m_selected_device_index(use_physical_device_with_index)
+    ChooseByUUIDStrategy(const DeviceUUID& uuid)
+        : m_selected_device_uuid(uuid)
     {}
 
     vk::PhysicalDevice operator()(std::vector<vk::PhysicalDevice> avaiable_devices);
 
 private:
-    uint32_t m_selected_device_index;
+    DeviceUUID m_selected_device_uuid;
 };

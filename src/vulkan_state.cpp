@@ -21,12 +21,8 @@
  */
 
 #include "vulkan_state.h"
-
 #include "log.h"
 
-#include <vector>
-#include <algorithm>
-#include <vulkan/vulkan.hpp>
 
 void log_info(vk::PhysicalDevice const& physical_device)
 {
@@ -34,9 +30,9 @@ void log_info(vk::PhysicalDevice const& physical_device)
 
     Log::info("    Vendor ID:      0x%X\n", props.vendorID);
     Log::info("    Device ID:      0x%X\n", props.deviceID);
-    Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
+    Log::info("    Device Name:    %s\n", props.deviceName.data());
     Log::info("    Driver Version: %u\n", props.driverVersion);
-    Log::info("    Device UUID:    %u\n", props.deviceID);
+    Log::info("    Device UUID:    %s\n", decode_UUID(props.pipelineCacheUUID).data());
 }
 
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
@@ -155,15 +151,16 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::Phys
 {
     Log::debug("Trying to use first supported device.\n");
 
-    for (auto const& pd : avaiable_devices)
+    for (auto const& physical_device : avaiable_devices)
     {
-        if (find_queue_family_index(pd, vk::QueueFlagBits::eGraphics).second)
+        if (find_queue_family_index(physical_device, vk::QueueFlagBits::eGraphics).second)
         {
             Log::debug("First supported device choosen!\n");
-            return pd;
+            return physical_device;
         }
 
-        Log::debug("device with index TODO skipped!\n");
+        Log::debug("device with uuid %s skipped!\n",
+            decode_UUID(physical_device.getProperties().pipelineCacheUUID).data());
     }
     
     throw std::runtime_error("No suitable Vulkan physical devices found");
@@ -171,16 +168,16 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::Phys
 
 vk::PhysicalDevice ChooseByUUIDStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
 {
-    Log::debug("Trying to use device with specified UUID %d.\n", m_selected_device_index);
+    Log::debug("Trying to use device with specified UUID %s.\n", decode_UUID(m_selected_device_uuid).data());
 
-    for (auto const& device: avaiable_devices)
+    for (auto const& physical_device: avaiable_devices)
     {
-        if (device.getProperties().deviceID == m_selected_device_index)
+        if (physical_device.getProperties().pipelineCacheUUID == m_selected_device_uuid)
         {
-            Log::debug("Device with index %d succesfully choosen!\n", m_selected_device_index);
-            return device;
+            Log::debug("Device found\n");
+            return physical_device;
         }
     }
 
-    throw std::runtime_error("Could not find device with UUID " + std::to_string(m_selected_device_index));
+    throw std::runtime_error(std::string("Could not find!"));
 }
