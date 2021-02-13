@@ -24,14 +24,13 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "vulkan_wsi.h"
 #include "managed_resource.h"
 #include "device_uuid.h"
+#include "vulkan_wsi.h"
 
-class VulkanWSI;
+
 void log_info(vk::PhysicalDevice const& physical_device);
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices);
-
 
 class VulkanState
 {
@@ -112,7 +111,7 @@ private:
 class ChooseFirstSupportedStrategy
 {
 public:
-    vk::PhysicalDevice operator()(std::vector<vk::PhysicalDevice> avaiable_devices);
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices);
 };
 
 class ChooseByUUIDStrategy
@@ -122,7 +121,7 @@ public:
         : m_selected_device_uuid(uuid)
     {}
 
-    vk::PhysicalDevice operator()(std::vector<vk::PhysicalDevice> avaiable_devices);
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices);
 
 private:
     DeviceUUID m_selected_device_uuid;

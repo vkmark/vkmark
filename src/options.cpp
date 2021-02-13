@@ -20,16 +20,13 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-#include <array>
-#include <bits/getopt_core.h>
+
 #include <cstdio>
-#include <cstring>
 #include <getopt.h>
 #include <algorithm>
 #include <cctype>
 #include <string>
 #include <utility>
-#include <vulkan/vulkan_core.h>
 
 #include "options.h"
 #include "util.h"

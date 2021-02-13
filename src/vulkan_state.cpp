@@ -150,7 +150,7 @@ void VulkanState::create_command_pool()
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
 }
 
-vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
+vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices)
 {
     Log::debug("Trying to use first supported device.\n");
 
@@ -171,7 +171,7 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(std::vector<vk::Phys
     throw std::runtime_error("No suitable Vulkan physical devices found");
 }
 
-vk::PhysicalDevice ChooseByUUIDStrategy::operator()(std::vector<vk::PhysicalDevice> avaiable_devices)
+vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices)
 {
     Log::debug("Trying to use device with specified UUID %s.\n", 
         static_cast<std::string>(m_selected_device_uuid).c_str());
