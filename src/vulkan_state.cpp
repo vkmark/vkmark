@@ -180,10 +180,10 @@ vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::Physic
     {
         if (static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID) == m_selected_device_uuid)
         {
-            Log::debug("Device found\n");
+            Log::debug("Device found by UUID\n");
             return physical_device;
         }
     }
 
-    throw std::runtime_error(std::string("Could not find!"));
+    throw std::runtime_error(std::string("Could not find device by UUID!"));
 }
