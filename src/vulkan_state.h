@@ -26,6 +26,7 @@
 
 #include "managed_resource.h"
 #include "vulkan_wsi.h"
+#include "log.h"
 
 
 void log_info(vk::PhysicalDevice const& physical_device);
@@ -50,7 +51,10 @@ public:
         for (auto it_device = avaiable_devices.begin(); it_device < avaiable_devices.end(); ++it_device)
         {
             if (!vulkan_wsi.is_physical_device_supported(*it_device))
+            {
                 avaiable_devices.erase(it_device);
+                Log::debug("device wit uuid %s ins not supported by window system integration layer");
+            }
         }
 
         vk_physical_device = pd_strategy(avaiable_devices);

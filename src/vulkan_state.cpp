@@ -22,7 +22,6 @@
 
 #include "vulkan_state.h"
 #include "device_uuid.h"
-#include "log.h"
 
 #include <array>
 
@@ -184,5 +183,5 @@ vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::Physic
         }
     }
 
-    throw std::runtime_error(std::string("Could not find device by UUID!"));
+    throw std::runtime_error(std::string("Device specified by uuid is not avaiable!"));
 }
