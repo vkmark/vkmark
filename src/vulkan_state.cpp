@@ -23,7 +23,8 @@
 #include "vulkan_state.h"
 #include "device_uuid.h"
 #include "log.h"
-#include <string>
+
+#include <array>
 
 
 void log_info(vk::PhysicalDevice const& physical_device)
@@ -32,10 +33,9 @@ void log_info(vk::PhysicalDevice const& physical_device)
 
     Log::info("    Vendor ID:      0x%X\n", props.vendorID);
     Log::info("    Device ID:      0x%X\n", props.deviceID);
-    Log::info("    Device Name:    %s\n", props.deviceName.data());
+    Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
     Log::info("    Driver Version: %u\n", props.driverVersion);
-    Log::info("    Device UUID:    %s\n", 
-        static_cast<std::string>(static_cast<DeviceUUID>(props.pipelineCacheUUID)).c_str());
+    Log::info("    Device UUID:    %s\n", static_cast<DeviceUUID>(props.pipelineCacheUUID).representation().data());
 }
 
 void log_info(std::vector<vk::PhysicalDevice> const& physical_devices)
@@ -163,9 +163,8 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk
         }
 
         Log::debug("device with uuid %s skipped!\n",
-           static_cast<std::string>(
-               static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID)).c_str()
-            );
+               static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID).representation().data()
+        );
     }
     
     throw std::runtime_error("No suitable Vulkan physical devices found");
@@ -174,7 +173,7 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk
 vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices)
 {
     Log::debug("Trying to use device with specified UUID %s.\n", 
-        static_cast<std::string>(m_selected_device_uuid).c_str());
+        m_selected_device_uuid.representation().data());
 
     for (auto const& physical_device: avaiable_devices)
     {

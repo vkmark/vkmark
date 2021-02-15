@@ -25,7 +25,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include "managed_resource.h"
-#include "device_uuid.h"
 #include "vulkan_wsi.h"
 
 
@@ -106,6 +105,8 @@ private:
     uint32_t vk_graphics_queue_family_index;
     
 };
+
+#include "device_uuid.h"
 
 // template strategies seems to require simpler code than polymorphic
 class ChooseFirstSupportedStrategy

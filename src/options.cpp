@@ -232,8 +232,7 @@ bool Options::parse_args(int argc, char **argv)
             list_devices = true;
         else if (c == 'D' || optname == "use-device")
         {
-            DeviceUUID&& uuid{std::string {optarg}};
-            use_device_with_uuid = std::make_pair(uuid, true);
+            use_device_with_uuid = std::make_pair(DeviceUUID{std::string {optarg}}, true);
         }
     }
 

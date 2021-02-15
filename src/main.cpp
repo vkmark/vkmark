@@ -23,6 +23,7 @@
 #include "window_system.h"
 #include "window_system_loader.h"
 #include "vulkan_state.h"
+#include "device_uuid.h"
 #include "scene.h"
 #include "scene_collection.h"
 #include "benchmark_collection.h"

@@ -2,12 +2,13 @@
 
 #include <array>
 #include <stdexcept>
+#include <cstdint>
 #include <string>
 #include <vulkan/vulkan.hpp>
 
 
 template<std::size_t Size>
-constexpr std::array<char, 2 * Size> decode_UUID(const std::array<unsigned char, Size>& bytes)
+constexpr std::array<char, 2 * Size> decode_UUID(const std::array<uint8_t, Size>& bytes)
 {
     std::array<char, 2 * Size> representation{};
     constexpr char characters[16] = 
@@ -25,9 +26,9 @@ constexpr std::array<char, 2 * Size> decode_UUID(const std::array<unsigned char,
 }
 
 template<std::size_t Size>
-constexpr std::array<unsigned char, Size> encode_UUID(const std::array<char, 2 * Size>& representation)
+constexpr std::array<uint8_t, Size> encode_UUID(const std::array<char, 2 * Size>& representation)
 {
-    std::array<unsigned char, Size> bytes{};
+    std::array<uint8_t, Size> bytes{};
 
     auto&& decode_character = [](const char ch){
         if (ch >= '0' && ch <= '9')
@@ -49,12 +50,18 @@ constexpr std::array<unsigned char, Size> encode_UUID(const std::array<char, 2 *
 
 struct DeviceUUID
 {
-    std::array<unsigned char, VK_UUID_SIZE> raw{};
+    std::array<uint8_t, VK_UUID_SIZE> raw{};
     
     DeviceUUID() = default;
-    DeviceUUID(std::array<unsigned char, VK_UUID_SIZE> const& bytes)
+    DeviceUUID(std::array<uint8_t, VK_UUID_SIZE> const& bytes)
         : raw(bytes)
     {}
+
+    DeviceUUID(const uint8_t bytes[])
+    {
+        std::copy(bytes, bytes + 16, raw.data());
+    }
+
     DeviceUUID(std::string const& representation)
     {
         std::array<char, 2 * VK_UUID_SIZE> chars{};
@@ -65,20 +72,23 @@ struct DeviceUUID
         raw = encode_UUID<chars.size() / 2>(chars);
     }
 
-    operator std::array<unsigned char, VK_UUID_SIZE> () const 
+    operator std::array<uint8_t, VK_UUID_SIZE> () const 
     {
         return raw;
     }
 
-    operator std::string () const
-    {
-        auto&& chars = decode_UUID(raw);
-        return std::string(chars.begin(), chars.end());
-    }
-
-    bool operator==(const DeviceUUID& other)
+    bool operator==(const DeviceUUID& other) const
     {
         return raw == other.raw;
     } 
+
+    std::array<char, 2 * VK_UUID_SIZE + 1> representation() const 
+    {
+        std::array<char, 2 * VK_UUID_SIZE + 1> c_str{};
+        auto&& chars = decode_UUID(raw);
+        std::copy(chars.begin(), chars.end(), c_str.begin());
+
+        return c_str;
+    }
 
 };
