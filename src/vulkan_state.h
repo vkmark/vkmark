@@ -26,7 +26,6 @@
 
 #include "managed_resource.h"
 #include "vulkan_wsi.h"
-#include "log.h"
 
 
 void log_info(vk::PhysicalDevice const& physical_device);
@@ -47,17 +46,7 @@ public:
     template<typename ChoosePhysicalDeviceStrategy>
     void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
     {
-        auto avaiable_devices = instance().enumeratePhysicalDevices();
-        for (auto it_device = avaiable_devices.begin(); it_device < avaiable_devices.end(); ++it_device)
-        {
-            if (!vulkan_wsi.is_physical_device_supported(*it_device))
-            {
-                avaiable_devices.erase(it_device);
-                Log::debug("device wit uuid %s ins not supported by window system integration layer");
-            }
-        }
-
-        vk_physical_device = pd_strategy(avaiable_devices);
+        vk_physical_device = pd_strategy(avaiable_devices(vulkan_wsi));
     }
 
     void log_info()
@@ -100,6 +89,7 @@ private:
     void choose_physical_device(VulkanWSI& vulkan_wsi);
     void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
+    std::vector<vk::PhysicalDevice> avaiable_devices(VulkanWSI& vulkan_wsi);
 
     ManagedResource<vk::Instance> vk_instance;
     ManagedResource<vk::Device> vk_device;

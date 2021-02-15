@@ -22,9 +22,27 @@
 
 #include "vulkan_state.h"
 #include "device_uuid.h"
+#include "vulkan_wsi.h"
+#include "log.h"
 
 #include <array>
+#include <vector>
 
+std::vector<vk::PhysicalDevice> VulkanState::avaiable_devices(VulkanWSI& vulkan_wsi)
+{
+    auto avaiable_devices = instance().enumeratePhysicalDevices();
+        for (auto it_device = avaiable_devices.begin(); it_device < avaiable_devices.end(); ++it_device)
+        {
+            if (!vulkan_wsi.is_physical_device_supported(*it_device))
+            {
+                avaiable_devices.erase(it_device);
+                Log::debug("device with uuid %s is not supported by window system integration layer", 
+                    static_cast<DeviceUUID>(it_device->getProperties().pipelineCacheUUID).representation().data());
+            }
+        }
+
+    return avaiable_devices;
+}
 
 void log_info(vk::PhysicalDevice const& physical_device)
 {
