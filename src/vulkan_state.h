@@ -32,9 +32,10 @@
 class VulkanState
 {
 public:
+    using ChoosePhysicalDeviceStrategy = 
+        std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
     
-    template<typename ChoosePhysicalDeviceStrategy>
-    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
     {
         create_instance(vulkan_wsi);
         create_physical_device(vulkan_wsi, pd_strategy);
@@ -42,8 +43,7 @@ public:
         create_command_pool();
     }
 
-    template<typename ChoosePhysicalDeviceStrategy>
-    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
+    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
     {
         vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
     }
@@ -110,7 +110,6 @@ private:
 
 #include "device_uuid.h"
 
-// template strategies seems to require simpler code than polymorphic
 class ChooseFirstSupportedStrategy
 {
 public:
