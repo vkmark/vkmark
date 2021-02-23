@@ -7,10 +7,11 @@
 #include <vulkan/vulkan.hpp>
 
 
-template<std::size_t Size>
-constexpr std::array<char, 2 * Size> decode_UUID(const std::array<uint8_t, Size>& bytes)
+namespace {
+
+inline std::array<char, 2 * VK_UUID_SIZE> decode_UUID(const std::array<uint8_t, VK_UUID_SIZE>& bytes)
 {
-    std::array<char, 2 * Size> representation{};
+    std::array<char, 2 * VK_UUID_SIZE> representation{};
     constexpr char characters[16] = 
         { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
@@ -25,12 +26,11 @@ constexpr std::array<char, 2 * Size> decode_UUID(const std::array<uint8_t, Size>
     return representation;
 }
 
-template<std::size_t Size>
-constexpr std::array<uint8_t, Size> encode_UUID(const std::array<char, 2 * Size>& representation)
+inline std::array<uint8_t, VK_UUID_SIZE> encode_UUID(const std::array<char, 2 * VK_UUID_SIZE>& representation)
 {
-    std::array<uint8_t, Size> bytes{};
+    std::array<uint8_t, VK_UUID_SIZE> bytes{};
 
-    auto&& decode_character = [](const char ch){
+    auto&& decode_character = [](const char ch) {
         if (ch >= '0' && ch <= '9')
             return ch - '0';
         else if (ch >= 'a' && ch <= 'f')
@@ -46,6 +46,8 @@ constexpr std::array<uint8_t, Size> encode_UUID(const std::array<char, 2 * Size>
     }
 
     return bytes;
+}
+
 }
 
 struct DeviceUUID
@@ -69,7 +71,7 @@ struct DeviceUUID
             throw std::invalid_argument("given UUID representation has wrong size!");
 
         std::copy(representation.begin(), representation.end(), chars.begin());
-        raw = encode_UUID<chars.size() / 2>(chars);
+        raw = encode_UUID(chars);
     }
 
     operator std::array<uint8_t, VK_UUID_SIZE> () const 
