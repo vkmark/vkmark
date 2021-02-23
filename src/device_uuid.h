@@ -59,10 +59,10 @@ struct DeviceUUID
         : raw(bytes)
     {}
 
-    // DeviceUUID(const uint8_t bytes[])
-    // {
-    //     std::copy(bytes, bytes + 16, raw.data());
-    // }
+    DeviceUUID(const uint8_t bytes[])
+    {
+        std::copy(bytes, bytes + 16, raw.data());
+    }
 
     DeviceUUID(std::string const& representation)
     {
