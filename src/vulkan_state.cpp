@@ -28,20 +28,20 @@
 #include <array>
 #include <vector>
 
-std::vector<vk::PhysicalDevice> VulkanState::avaiable_devices(VulkanWSI& vulkan_wsi)
+std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi)
 {
-    auto avaiable_devices = instance().enumeratePhysicalDevices();
-    for (auto it_device = avaiable_devices.begin(); it_device < avaiable_devices.end(); ++it_device)
+    auto available_devices = instance().enumeratePhysicalDevices();
+    for (auto it_device = available_devices.begin(); it_device < available_devices.end(); ++it_device)
     {
         if (!vulkan_wsi.is_physical_device_supported(*it_device))
         {
-            avaiable_devices.erase(it_device);
+            available_devices.erase(it_device);
             Log::debug("device with uuid %s is not supported by window system integration layer", 
                 static_cast<DeviceUUID>(it_device->getProperties().pipelineCacheUUID).representation().data());
         }
     }
 
-    return avaiable_devices;
+    return available_devices;
 }
 
 void log_info(vk::PhysicalDevice const& physical_device)
@@ -167,11 +167,11 @@ void VulkanState::create_command_pool()
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
 }
 
-vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices)
+vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
 {
     Log::debug("Trying to use first supported device.\n");
 
-    for (auto const& physical_device : avaiable_devices)
+    for (auto const& physical_device : available_devices)
     {
         if (find_queue_family_index(physical_device, vk::QueueFlagBits::eGraphics).second)
         {
@@ -187,12 +187,12 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk
     throw std::runtime_error("No suitable Vulkan physical devices found");
 }
 
-vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices)
+vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
 {
     Log::debug("Trying to use device with specified UUID %s.\n", 
         m_selected_device_uuid.representation().data());
 
-    for (auto const& physical_device: avaiable_devices)
+    for (auto const& physical_device: available_devices)
     {
         if (static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID) == m_selected_device_uuid)
         {
@@ -201,5 +201,5 @@ vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::Physic
         }
     }
 
-    throw std::runtime_error(std::string("Device specified by uuid is not avaiable!"));
+    throw std::runtime_error(std::string("Device specified by uuid is not available!"));
 }

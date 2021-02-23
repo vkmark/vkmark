@@ -46,7 +46,7 @@ public:
     template<typename ChoosePhysicalDeviceStrategy>
     void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy pd_strategy)
     {
-        vk_physical_device = pd_strategy(avaiable_devices(vulkan_wsi));
+        vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
     }
 
     void log_info()
@@ -89,7 +89,7 @@ private:
     void choose_physical_device(VulkanWSI& vulkan_wsi);
     void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
-    std::vector<vk::PhysicalDevice> avaiable_devices(VulkanWSI& vulkan_wsi);
+    std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi);
 
     ManagedResource<vk::Instance> vk_instance;
     ManagedResource<vk::Device> vk_device;
@@ -106,7 +106,7 @@ private:
 class ChooseFirstSupportedStrategy
 {
 public:
-    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices);
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& available_devices);
 };
 
 class ChooseByUUIDStrategy
@@ -116,7 +116,7 @@ public:
         : m_selected_device_uuid(uuid)
     {}
 
-    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& avaiable_devices);
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& available_devices);
 
 private:
     DeviceUUID m_selected_device_uuid;
