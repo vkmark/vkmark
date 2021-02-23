@@ -122,7 +122,7 @@ try
 
     if (options.list_devices)
     {
-        log_info(vulkan.instance().enumeratePhysicalDevices());
+        vulkan.log_all_devices();
         return 0;
     }
 

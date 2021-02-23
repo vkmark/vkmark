@@ -28,9 +28,6 @@
 #include "vulkan_wsi.h"
 
 
-void log_info(vk::PhysicalDevice const& physical_device);
-void log_info(std::vector<vk::PhysicalDevice> const& physical_devices);
-
 class VulkanState
 {
 public:
@@ -51,7 +48,7 @@ public:
 
     void log_info()
     {
-        ::log_info(physical_device());
+        log_info(physical_device());
     }
 
     vk::Instance const& instance() const
@@ -84,11 +81,14 @@ public:
         return vk_command_pool;
     }
 
+    void log_all_devices();
+
 private:
     void create_instance(VulkanWSI& vulkan_wsi);
     void choose_physical_device(VulkanWSI& vulkan_wsi);
     void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
+    void log_info(vk::PhysicalDevice const& device);
     std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi);
 
     ManagedResource<vk::Instance> vk_instance;
