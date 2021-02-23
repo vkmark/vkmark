@@ -22,11 +22,11 @@
 
 #include "vulkan_state.h"
 #include "device_uuid.h"
-#include "vulkan_wsi.h"
 #include "log.h"
 
 #include <array>
 #include <vector>
+#include <vulkan/vulkan.hpp>
 
 
 // pseudo-optional
@@ -72,10 +72,8 @@ void VulkanState::log_info(vk::PhysicalDevice const& device)
     Log::info("    Device UUID:    %s\n", static_cast<DeviceUUID>(props.pipelineCacheUUID).representation().data());
 }
 
-void VulkanState::log_all_devices()
+void VulkanState::log_all_devices(std::vector<vk::PhysicalDevice> const& physical_devices)
 {
-    const auto& physical_devices = instance().enumeratePhysicalDevices();
-
     for (size_t i = 0; i < physical_devices.size(); ++i)
     {        
         Log::info("=== Physical Device %d. ===\n", i);
@@ -199,12 +197,14 @@ vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::Physic
 
     for (auto const& physical_device: available_devices)
     {
-        if (static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID) == m_selected_device_uuid)
+        auto&& uuid = static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID);
+        if (uuid == m_selected_device_uuid)
         {
             Log::debug("Device found by UUID\n");
             return physical_device;
         }
     }
 
+    // if device is not supported by wsi it would appear in list_all_devices but is not available here
     throw std::runtime_error(std::string("Device specified by uuid is not available!"));
 }
