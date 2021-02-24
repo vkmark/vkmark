@@ -29,21 +29,6 @@
 #include <vulkan/vulkan.hpp>
 
 
-// pseudo-optional
-std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
-{
-    auto const queue_families = pd.getQueueFamilyProperties();
-    
-    for (uint32_t queue_index = 0; queue_index < queue_families.size(); ++queue_index)
-    {
-        // each queue family must support at least one queue
-        if (queue_families[queue_index].queueFlags & queue_family_type)
-            return std::make_pair(queue_index, true);
-    }
-
-    return std::make_pair(0, false);
-}
-
 VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
 {
     create_instance(vulkan_wsi);
@@ -52,7 +37,7 @@ VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy con
     create_command_pool();
 }
 
-std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi)
+std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi) const
 {
     auto available_devices = instance().enumeratePhysicalDevices();
     for (auto it_device = available_devices.begin(); it_device < available_devices.end(); ++it_device)
@@ -68,7 +53,7 @@ std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan
     return available_devices;
 }
 
-void VulkanState::log_info(vk::PhysicalDevice const& device)
+void log_device_info(vk::PhysicalDevice const& device)
 {
     auto const props = device.getProperties();
 
@@ -79,12 +64,19 @@ void VulkanState::log_info(vk::PhysicalDevice const& device)
     Log::info("    Device UUID:    %s\n", static_cast<DeviceUUID>(props.pipelineCacheUUID).representation().data());
 }
 
-void VulkanState::log_all_devices(std::vector<vk::PhysicalDevice> const& physical_devices)
+void VulkanState::log_info() const
 {
+    log_device_info(physical_device());
+}
+
+void VulkanState::log_all_devices() const
+{
+    std::vector<vk::PhysicalDevice> const& physical_devices = instance().enumeratePhysicalDevices();
+
     for (size_t i = 0; i < physical_devices.size(); ++i)
     {        
         Log::info("=== Physical Device %d. ===\n", i);
-        log_info(physical_devices[i]);
+        log_device_info(physical_devices[i]);
     }
 }
 
@@ -109,6 +101,21 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
 {
     vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
+}
+
+// pseudo-optional
+std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
+{
+    auto const queue_families = pd.getQueueFamilyProperties();
+    
+    for (uint32_t queue_index = 0; queue_index < queue_families.size(); ++queue_index)
+    {
+        // each queue family must support at least one queue
+        if (queue_families[queue_index].queueFlags & queue_family_type)
+            return std::make_pair(queue_index, true);
+    }
+
+    return std::make_pair(0, false);
 }
 
 void VulkanState::create_logical_device(VulkanWSI& vulkan_wsi)

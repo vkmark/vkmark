@@ -37,17 +37,6 @@ public:
     
     VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
 
-    void log_info()
-    {
-        log_info(physical_device());
-    }
-
-    void log_all_devices()
-    {
-        // all devices not devices supported by wsi
-        log_all_devices(instance().enumeratePhysicalDevices());
-    }
-
     vk::Instance const& instance() const
     {
         return vk_instance;
@@ -78,17 +67,16 @@ public:
         return vk_command_pool;
     }
 
+    void log_info() const;
+    void log_all_devices() const;
 
 private:
 
-
-    void log_info(vk::PhysicalDevice const& device);
-    void log_all_devices(std::vector<vk::PhysicalDevice> const& physical_devices);
     void create_instance(VulkanWSI& vulkan_wsi);
     void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
     void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
-    std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi);
+    std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi) const;
 
     ManagedResource<vk::Instance> vk_instance;
     ManagedResource<vk::Device> vk_device;
