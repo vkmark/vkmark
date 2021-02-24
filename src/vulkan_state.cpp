@@ -106,6 +106,11 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
         [] (auto& i) { i.destroy(); }};
 }
 
+void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
+{
+    vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
+}
+
 void VulkanState::create_logical_device(VulkanWSI& vulkan_wsi)
 {
     // it would be really nice to support c++17

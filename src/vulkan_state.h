@@ -36,11 +36,6 @@ public:
         std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
     
     VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
-    
-    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
-    {
-        vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
-    }
 
     void log_info()
     {
@@ -84,11 +79,13 @@ public:
     }
 
 
-private: 
+private:
+
+
     void log_info(vk::PhysicalDevice const& device);
     void log_all_devices(std::vector<vk::PhysicalDevice> const& physical_devices);
     void create_instance(VulkanWSI& vulkan_wsi);
-    void choose_physical_device(VulkanWSI& vulkan_wsi);
+    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
     void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
     std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi);
