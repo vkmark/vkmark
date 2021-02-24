@@ -44,6 +44,13 @@ std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::Que
     return std::make_pair(0, false);
 }
 
+VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
+{
+    create_instance(vulkan_wsi);
+    create_physical_device(vulkan_wsi, pd_strategy);
+    create_logical_device(vulkan_wsi);
+    create_command_pool();
+}
 
 std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi)
 {

@@ -35,14 +35,8 @@ public:
     using ChoosePhysicalDeviceStrategy = 
         std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
     
-    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
-    {
-        create_instance(vulkan_wsi);
-        create_physical_device(vulkan_wsi, pd_strategy);
-        create_logical_device(vulkan_wsi);
-        create_command_pool();
-    }
-
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
+    
     void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
     {
         vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
