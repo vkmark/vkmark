@@ -27,8 +27,7 @@ static std::array<uint8_t, VK_UUID_SIZE> encode_UUID(const std::array<char, 2 * 
             return ch - '0';
         else if (ch >= 'a' && ch <= 'f')
             return ch - 'a' + 10;
-        else 
-            throw std::invalid_argument(
+        throw std::invalid_argument(
             std::string{ch} + "character found while parsing hexadecimal string!");
     };
 
