@@ -104,7 +104,7 @@ void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDe
 }
 
 // pseudo-optional
-std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
+static std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
 {
     auto const queue_families = pd.getQueueFamilyProperties();
     
