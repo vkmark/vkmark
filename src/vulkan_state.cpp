@@ -53,7 +53,7 @@ std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan
     return available_devices;
 }
 
-void log_device_info(vk::PhysicalDevice const& device)
+static void log_device_info(vk::PhysicalDevice const& device)
 {
     auto const props = device.getProperties();
 
