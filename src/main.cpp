@@ -116,9 +116,10 @@ try
 
     auto& ws = ws_loader.load_window_system();
 
-    auto vulkan = options.use_device_with_uuid.second ?
-        VulkanState{ws.vulkan_wsi(), ChooseByUUIDStrategy{options.use_device_with_uuid.first}} :
-        VulkanState{ws.vulkan_wsi(), ChooseFirstSupportedStrategy{}};
+    auto&& device_strategy = options.use_device_with_uuid.second ?
+        VulkanState::ChoosePhysicalDeviceStrategy{ChooseByUUIDStrategy{options.use_device_with_uuid.first}} :
+        VulkanState::ChoosePhysicalDeviceStrategy{ChooseFirstSupportedStrategy{}};
+    VulkanState vulkan{ws.vulkan_wsi(), device_strategy}; 
 
     if (options.list_devices)
     {
