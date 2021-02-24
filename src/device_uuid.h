@@ -61,7 +61,7 @@ struct DeviceUUID
 
     DeviceUUID(const uint8_t bytes[]) // TODO: only used for githubs CI. delete when not needed anymore
     {
-        std::copy(bytes, bytes + 16, raw.data());
+        std::copy(bytes, bytes + VK_UUID_SIZE, raw.data());
     }
 
     DeviceUUID(std::string const& representation)
