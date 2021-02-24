@@ -59,7 +59,7 @@ struct DeviceUUID
         : raw(bytes)
     {}
 
-    DeviceUUID(const uint8_t bytes[])
+    DeviceUUID(const uint8_t bytes[]) // TODO: only used for githubs CI. delete when not needed anymore
     {
         std::copy(bytes, bytes + 16, raw.data());
     }
