@@ -40,14 +40,16 @@ VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy con
 std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi) const
 {
     auto available_devices = instance().enumeratePhysicalDevices();
-    for (auto it_device = available_devices.begin(); it_device < available_devices.end(); ++it_device)
+    for (auto it_device = available_devices.begin(); it_device != available_devices.end();)
     {
         if (!vulkan_wsi.is_physical_device_supported(*it_device))
         {
-            available_devices.erase(it_device);
             Log::debug("device with uuid %s is not supported by window system integration layer", 
                 static_cast<DeviceUUID>(it_device->getProperties().pipelineCacheUUID).representation().data());
+            it_device = available_devices.erase(it_device);
         }
+        else
+            ++it_device;
     }
 
     return available_devices;
