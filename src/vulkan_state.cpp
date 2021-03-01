@@ -21,29 +21,65 @@
  */
 
 #include "vulkan_state.h"
-#include "vulkan_wsi.h"
-
+#include "device_uuid.h"
 #include "log.h"
 
+#include <array>
 #include <vector>
-#include <algorithm>
+#include <vulkan/vulkan.hpp>
 
-VulkanState::VulkanState(VulkanWSI& vulkan_wsi)
+
+VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
 {
     create_instance(vulkan_wsi);
-    choose_physical_device(vulkan_wsi);
-    create_device(vulkan_wsi);
+    create_physical_device(vulkan_wsi, pd_strategy);
+    create_logical_device(vulkan_wsi);
     create_command_pool();
 }
 
-void VulkanState::log_info()
+std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan_wsi) const
 {
-    auto const props = physical_device().getProperties();
+    auto available_devices = instance().enumeratePhysicalDevices();
+    for (auto it_device = available_devices.begin(); it_device != available_devices.end();)
+    {
+        if (!vulkan_wsi.is_physical_device_supported(*it_device))
+        {
+            Log::debug("device with uuid %s is not supported by window system integration layer",
+                static_cast<DeviceUUID>(it_device->getProperties().pipelineCacheUUID).representation().data());
+            it_device = available_devices.erase(it_device);
+        }
+        else
+            ++it_device;
+    }
+
+    return available_devices;
+}
+
+static void log_device_info(vk::PhysicalDevice const& device)
+{
+    auto const props = device.getProperties();
 
     Log::info("    Vendor ID:      0x%X\n", props.vendorID);
     Log::info("    Device ID:      0x%X\n", props.deviceID);
     Log::info("    Device Name:    %s\n", static_cast<char const*>(props.deviceName));
     Log::info("    Driver Version: %u\n", props.driverVersion);
+    Log::info("    Device UUID:    %s\n", static_cast<DeviceUUID>(props.pipelineCacheUUID).representation().data());
+}
+
+void VulkanState::log_info() const
+{
+    log_device_info(physical_device());
+}
+
+void VulkanState::log_all_devices() const
+{
+    std::vector<vk::PhysicalDevice> const& physical_devices = instance().enumeratePhysicalDevices();
+
+    for (size_t i = 0; i < physical_devices.size(); ++i)
+    {
+        Log::info("=== Physical Device %d ===\n", i);
+        log_device_info(physical_devices[i]);
+    }
 }
 
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
@@ -64,40 +100,34 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
         [] (auto& i) { i.destroy(); }};
 }
 
-void VulkanState::choose_physical_device(VulkanWSI& vulkan_wsi)
+void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
 {
-    auto const physical_devices = instance().enumeratePhysicalDevices();
-
-    for (auto const& pd : physical_devices)
-    {
-        if (!vulkan_wsi.is_physical_device_supported(pd))
-            continue;
-
-        auto const queue_families = pd.getQueueFamilyProperties();
-        int queue_index = 0;
-        for (auto const& queue_family : queue_families)
-        {
-            if (queue_family.queueCount > 0 &&
-                (queue_family.queueFlags & vk::QueueFlagBits::eGraphics))
-            {
-                vk_physical_device = pd;
-                vk_graphics_queue_family_index = queue_index;
-
-                break;
-            }
-            ++queue_index;
-        }
-
-        if (vk_physical_device)
-            break;
-    }
-
-    if (!vk_physical_device)
-        throw std::runtime_error("No suitable Vulkan physical devices found");
+    vk_physical_device = pd_strategy(available_devices(vulkan_wsi));
 }
 
-void VulkanState::create_device(VulkanWSI& vulkan_wsi)
+// pseudo-optional
+static std::pair<uint32_t, bool> find_queue_family_index(vk::PhysicalDevice pd, vk::QueueFlagBits queue_family_type)
 {
+    auto const queue_families = pd.getQueueFamilyProperties();
+
+    for (uint32_t queue_index = 0; queue_index < queue_families.size(); ++queue_index)
+    {
+        // each queue family must support at least one queue
+        if (queue_families[queue_index].queueFlags & queue_family_type)
+            return std::make_pair(queue_index, true);
+    }
+
+    return std::make_pair(0, false);
+}
+
+void VulkanState::create_logical_device(VulkanWSI& vulkan_wsi)
+{
+    // it would be really nice to support c++17
+    auto pair = find_queue_family_index(physical_device(), vk::QueueFlagBits::eGraphics);
+    if (!pair.second)
+        throw std::runtime_error("selected physical device does not provide graphics queue");
+    vk_graphics_queue_family_index = pair.first;
+
     auto const priority = 1.0f;
 
     auto queue_family_indices =
@@ -158,4 +188,44 @@ void VulkanState::create_command_pool()
     vk_command_pool = ManagedResource<vk::CommandPool>{
         device().createCommandPool(command_pool_create_info),
         [this] (auto& cp) { this->device().destroyCommandPool(cp); }};
+}
+
+
+vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
+{
+    Log::debug("Trying to use first supported device.\n");
+
+    for (auto const& physical_device : available_devices)
+    {
+        if (find_queue_family_index(physical_device, vk::QueueFlagBits::eGraphics).second)
+        {
+            Log::debug("First supported device choosen!\n");
+            return physical_device;
+        }
+
+        Log::debug("device with uuid %s skipped!\n",
+               static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID).representation().data()
+        );
+    }
+
+    throw std::runtime_error("No suitable Vulkan physical devices found");
+}
+
+vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
+{
+    Log::debug("Trying to use device with specified UUID %s.\n",
+        m_selected_device_uuid.representation().data());
+
+    for (auto const& physical_device: available_devices)
+    {
+        auto&& uuid = static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID);
+        if (uuid == m_selected_device_uuid)
+        {
+            Log::debug("Device found by UUID\n");
+            return physical_device;
+        }
+    }
+
+    // if device is not supported by wsi it would appear in list_all_devices but is not available here
+    throw std::runtime_error(std::string("Device specified by uuid is not available!"));
 }

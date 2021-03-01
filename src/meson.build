@@ -17,6 +17,7 @@ core_sources = files(
     'benchmark.cpp',
     'benchmark_collection.cpp',
     'default_benchmarks.cpp',
+    'device_uuid.cpp',
     'log.cpp',
     'main_loop.cpp',
     'mesh.cpp',

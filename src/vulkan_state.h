@@ -22,18 +22,21 @@
 
 #pragma once
 
+#include <functional>
 #include <vulkan/vulkan.hpp>
 
 #include "managed_resource.h"
+#include "vulkan_wsi.h"
+#include "device_uuid.h"
 
-class VulkanWSI;
 
 class VulkanState
 {
 public:
-    VulkanState(VulkanWSI& vulkan_wsi);
+    using ChoosePhysicalDeviceStrategy =
+        std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
 
-    void log_info();
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
 
     vk::Instance const& instance() const
     {
@@ -65,16 +68,40 @@ public:
         return vk_command_pool;
     }
 
+    void log_info() const;
+    void log_all_devices() const;
+
 private:
+
     void create_instance(VulkanWSI& vulkan_wsi);
-    void choose_physical_device(VulkanWSI& vulkan_wsi);
-    void create_device(VulkanWSI& vulkan_wsi);
+    void create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
+    void create_logical_device(VulkanWSI& vulkan_wsi);
     void create_command_pool();
+    std::vector<vk::PhysicalDevice> available_devices(VulkanWSI& vulkan_wsi) const;
 
     ManagedResource<vk::Instance> vk_instance;
+    ManagedResource<vk::Device> vk_device;
+    ManagedResource<vk::CommandPool> vk_command_pool;
+    vk::Queue vk_graphics_queue;
     vk::PhysicalDevice vk_physical_device;
     uint32_t vk_graphics_queue_family_index;
-    ManagedResource<vk::Device> vk_device;
-    vk::Queue vk_graphics_queue;
-    ManagedResource<vk::CommandPool> vk_command_pool;
+};
+
+class ChooseFirstSupportedStrategy
+{
+public:
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& available_devices);
+};
+
+class ChooseByUUIDStrategy
+{
+public:
+    ChooseByUUIDStrategy(const DeviceUUID& uuid)
+        : m_selected_device_uuid(uuid)
+    {}
+
+    vk::PhysicalDevice operator()(const std::vector<vk::PhysicalDevice>& available_devices);
+
+private:
+    DeviceUUID m_selected_device_uuid;
 };

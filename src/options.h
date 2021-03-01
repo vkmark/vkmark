@@ -28,6 +28,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "device_uuid.h"
+
 struct Options
 {
     struct WindowSystemOption
@@ -55,6 +57,8 @@ struct Options
     bool run_forever;
     bool show_debug;
     bool show_help;
+    bool list_devices;
+    std::pair<DeviceUUID, bool> use_device_with_uuid; // pseudo-optional
 
 private:
     std::vector<std::string> window_system_help;

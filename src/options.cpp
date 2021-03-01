@@ -24,6 +24,8 @@
 #include <getopt.h>
 #include <algorithm>
 #include <cctype>
+#include <string>
+#include <utility>
 
 #include "options.h"
 #include "util.h"
@@ -36,6 +38,7 @@ namespace
 struct option long_options[] = {
     {"benchmark", 1, 0, 0},
     {"size", 1, 0, 0},
+    {"use-device", 1, 0, 0},
     {"fullscreen", 0, 0, 0},
     {"present-mode", 1, 0, 0},
     {"pixel-format", 1, 0, 0},
@@ -45,6 +48,7 @@ struct option long_options[] = {
     {"data-dir", 1, 0, 0},
     {"winsys", 1, 0, 0},
     {"winsys-options", 1, 0, 0},
+    {"list-devices", 0, 0, 0},
     {"run-forever", 0, 0, 0},
     {"debug", 0, 0, 0},
     {"help", 0, 0, 0},
@@ -133,7 +137,9 @@ Options::Options()
       data_dir{VKMARK_DATA_DIR},
       run_forever{false},
       show_debug{false},
-      show_help{false}
+      show_help{false},
+      list_devices{false},
+      use_device_with_uuid{}
 {
 }
 
@@ -162,6 +168,8 @@ std::string Options::help_string()
         "      --run-forever           Run indefinitely, looping from the last benchmark\n"
         "                              back to the first\n"
         "  -d, --debug                 Display debug messages\n"
+        "  -D  --use-device            Use Vulkan device with specified UUID\n"
+        "  -L  --list-devices          List Vulkan devices\n"
         "  -h, --help                  Display help\n";
 
     for (auto const& wsh : window_system_help)
@@ -181,7 +189,7 @@ bool Options::parse_args(int argc, char **argv)
         int c;
         std::string optname;
 
-        c = getopt_long(argc, argv, "b:s:p:ldh",
+        c = getopt_long(argc, argv, "b:s:p:ldhD:L",
                         long_options, &option_index);
         if (c == -1)
             break;
@@ -219,6 +227,10 @@ bool Options::parse_args(int argc, char **argv)
             show_debug = true;
         else if (c == 'h' || optname == "help")
             show_help = true;
+        else if (c == 'L' || optname == "list-devices")
+            list_devices = true;
+        else if (c == 'D' || optname == "use-device")
+            use_device_with_uuid = std::make_pair(DeviceUUID{std::string {optarg}}, true);
     }
 
     return true;

@@ -23,6 +23,7 @@
 #include "window_system.h"
 #include "window_system_loader.h"
 #include "vulkan_state.h"
+#include "device_uuid.h"
 #include "scene.h"
 #include "scene_collection.h"
 #include "benchmark_collection.h"
@@ -114,7 +115,17 @@ try
     }
 
     auto& ws = ws_loader.load_window_system();
-    VulkanState vulkan{ws.vulkan_wsi()};
+
+    auto&& device_strategy = options.use_device_with_uuid.second ?
+        VulkanState::ChoosePhysicalDeviceStrategy{ChooseByUUIDStrategy{options.use_device_with_uuid.first}} :
+        VulkanState::ChoosePhysicalDeviceStrategy{ChooseFirstSupportedStrategy{}};
+    VulkanState vulkan{ws.vulkan_wsi(), device_strategy};
+
+    if (options.list_devices)
+    {
+        vulkan.log_all_devices();
+        return 0;
+    }
 
     auto const ws_vulkan_deinit = Util::on_scope_exit([&] { ws.deinit_vulkan(); });
     ws.init_vulkan(vulkan);
