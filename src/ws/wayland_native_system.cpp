@@ -314,6 +314,7 @@ void WaylandNativeSystem::handle_registry_global(
                 registry, id, &xdg_wm_base_interface, std::min(version, 2U)));
         wws->xdg_wm_base = ManagedResource<struct xdg_wm_base*>{
             std::move(xdg_wm_base_raw), xdg_wm_base_destroy};
+        xdg_wm_base_add_listener(wws->xdg_wm_base, &xdg_wm_base_listener, wws);
     }
     else if (interface == "wl_seat")
     {
