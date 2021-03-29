@@ -30,7 +30,13 @@
 
 #include <xf86drmMode.h>
 #include <gbm.h>
+#if __has_include(<sys/consio.h>) // DragonFly, FreeBSD
+#include <sys/consio.h>
+#elif __has_include(<dev/wscons/wsdisplay_usl_io.h>) // NetBSD, OpenBSD
+#include <dev/wscons/wsdisplay_usl_io.h>
+#else
 #include <linux/vt.h>
+#endif
 
 class VTState
 {
