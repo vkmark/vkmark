@@ -42,6 +42,10 @@ build_xcb_ws = xcb_dep.found() and xcb_icccm_dep.found() and get_option('xcb') !
 build_wayland_ws = wayland_client_dep.found() and get_option('wayland') != 'false'
 build_kms_ws = libdrm_dep.found() and gbm_dep.found() and has_vulkan_intel_header and get_option('kms') != 'false'
 
+if not build_xcb_ws and not build_wayland_ws and not build_kms_ws
+    error('vkmark needs at least one winsys to work - xcb, wayland or kms')
+endif
+
 subdir('src')
 subdir('data')
 subdir('tests')
