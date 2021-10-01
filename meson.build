@@ -39,7 +39,8 @@ if get_option('kms') == 'true' and not has_vulkan_intel_header
 endif
 
 build_xcb_ws = xcb_dep.found() and xcb_icccm_dep.found() and get_option('xcb') != 'false'
-build_wayland_ws = wayland_client_dep.found() and get_option('wayland') != 'false'
+build_wayland_ws = (wayland_client_dep.found() and wayland_protocols_dep.found() and
+                    wayland_scanner_dep.found() and get_option('wayland') != 'false')
 build_kms_ws = libdrm_dep.found() and gbm_dep.found() and has_vulkan_intel_header and get_option('kms') != 'false'
 
 if not build_xcb_ws and not build_wayland_ws and not build_kms_ws
