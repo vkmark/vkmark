@@ -202,6 +202,10 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setSubpass(0);
 
     return ManagedResource<vk::Pipeline>{
+#if VK_HEADER_VERSION > 148
         vulkan.device().createGraphicsPipeline({}, pipeline_create_info).value,
+#else
+        vulkan.device().createGraphicsPipeline({}, pipeline_create_info),
+#endif
         [vptr=&vulkan] (auto const& p) { vptr->device().destroyPipeline(p); }};
 }
