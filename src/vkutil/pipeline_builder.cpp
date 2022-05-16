@@ -202,6 +202,6 @@ ManagedResource<vk::Pipeline> vkutil::PipelineBuilder::build()
         .setSubpass(0);
 
     return ManagedResource<vk::Pipeline>{
-        vulkan.device().createGraphicsPipeline({}, pipeline_create_info),
+        vulkan.device().createGraphicsPipeline({}, pipeline_create_info).value,
         [vptr=&vulkan] (auto const& p) { vptr->device().destroyPipeline(p); }};
 }
