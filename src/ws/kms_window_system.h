@@ -68,7 +68,6 @@ public:
 
 protected:
     void create_gbm_bos();
-    void create_drm_fbs();
     void create_vk_images();
     void wait_for_drm_page_flip_event();
 
