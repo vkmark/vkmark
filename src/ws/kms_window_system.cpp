@@ -29,8 +29,8 @@
 
 #include <xf86drm.h>
 #include <drm_fourcc.h>
-#include <vulkan/vulkan_intel.h>
 
+#include <algorithm>
 #include <system_error>
 #include <fcntl.h>
 #include <unistd.h>
@@ -270,6 +270,24 @@ void restore_vt(int)
         global_vt_state->restore();
 }
 
+uint32_t find_memory_type_index(vk::PhysicalDevice const& physical_device,
+                                vk::MemoryRequirements const& requirements,
+                                vk::MemoryPropertyFlags flags)
+{
+    auto const properties = physical_device.getMemoryProperties();
+
+    for (uint32_t i = 0; i < properties.memoryTypeCount; i++)
+    {
+        if ((requirements.memoryTypeBits & (1 << i)) &&
+            (properties.memoryTypes[i].propertyFlags & flags) == flags)
+        {
+            return i;
+        }
+    }
+
+    throw std::runtime_error{"Coudn't find matching memory type"};
+}
+
 }
 
 VTState::VTState()
@@ -433,14 +451,20 @@ void KMSWindowSystem::create_drm_fbs()
     for (auto const& gbm_bo : gbm_bos)
     {
         uint32_t fb = 0;
+        uint32_t handles[4] = {0};
+        uint32_t strides[4] = {0};
+        uint32_t offsets[4] = {0};
 
-        uint32_t handles[4] = {gbm_bo_get_handle(gbm_bo).u32, 0, 0, 0};
-        uint32_t strides[4] = {gbm_bo_get_stride(gbm_bo), 0, 0, 0};
-        uint32_t offsets[4] = {0, 0, 0, 0};
+        for (auto i = 0; i < gbm_bo_get_plane_count(gbm_bo); i++)
+        {
+            handles[i] = gbm_bo_get_handle_for_plane(gbm_bo, i).u32;
+            offsets[i] = gbm_bo_get_offset(gbm_bo, i);
+            strides[i] = gbm_bo_get_stride_for_plane(gbm_bo, i);
+        }
 
         auto const ret = drmModeAddFB2(
             drm_fd, vk_extent.width, vk_extent.height,
-            DRM_FORMAT_XRGB8888,
+            gbm_bo_get_format(gbm_bo),
             handles, strides, offsets, &fb, 0);
 
         if (ret < 0)
@@ -453,52 +477,86 @@ void KMSWindowSystem::create_drm_fbs()
     }
 }
 
-// TODO: Use an official extension to create the VkImages when it becomes
-// available (e.g. VK_MESAX_external_image_dma_buf)
 void KMSWindowSystem::create_vk_images()
 {
-    auto const create_dma_buf_image =
-        reinterpret_cast<PFN_vkCreateDmaBufImageINTEL>(
-            vulkan->device().getProcAddr("vkCreateDmaBufImageINTEL"));
-
-    if (!create_dma_buf_image)
-        throw std::runtime_error{"Failed to get vkCreateDmaBufImageINTEL function pointer"};
+    bool warned_mod_invalid = false;
 
     for (auto const& gbm_bo : gbm_bos)
     {
+        vk::SubresourceLayout layouts[4] = {0};
+        uint32_t num_planes = gbm_bo_get_plane_count(gbm_bo);
         auto const fd = ManagedResource<int>{gbm_bo_get_fd(gbm_bo), close};
-        auto const stride = gbm_bo_get_stride(gbm_bo);
+        uint64_t modifier = gbm_bo_get_modifier(gbm_bo);
 
-        VkDmaBufImageCreateInfo create_info{};
-        create_info.sType = static_cast<VkStructureType>(VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL);
-        create_info.fd = fd;
-        create_info.format = static_cast<VkFormat>(vk_image_format);
-        create_info.extent = {vk_extent.width, vk_extent.height, 1};
-        create_info.strideInBytes = stride;
-
-        VkImage image;
-        VkDeviceMemory device_memory;
-
-        VkResult result = create_dma_buf_image(
-            vulkan->device(),
-            &create_info,
-            nullptr,
-            &device_memory,
-            &image);
-
-        if (result != VK_SUCCESS)
+        if (modifier == DRM_FORMAT_MOD_INVALID && !warned_mod_invalid)
         {
-            vk::throwResultException(static_cast<vk::Result>(result),
-                                     "vkCreateDmbBufImageINTEL");
+            Log::warning("KMSWindowSystem: Using VK_IMAGE_TILING_OPTIMAL for "
+                         "dmabuf with invalid modifier, but this is not "
+                         "guaranteed to work.\n");
+            warned_mod_invalid = true;
         }
+
+        for (uint32_t i = 0; i < num_planes; i++)
+        {
+            layouts[i].offset = gbm_bo_get_offset(gbm_bo, i);
+            layouts[i].rowPitch = gbm_bo_get_stride_for_plane(gbm_bo, i);
+        }
+
+        auto const modifier_info = vk::ImageDrmFormatModifierExplicitCreateInfoEXT{}
+            .setDrmFormatModifier(modifier)
+            .setDrmFormatModifierPlaneCount(num_planes)
+            .setPPlaneLayouts(layouts);
+        auto const external_memory_create_info = vk::ExternalMemoryImageCreateInfoKHR{}
+            .setHandleTypes(vk::ExternalMemoryHandleTypeFlagBitsKHR::eDmaBufEXT)
+            .setPNext(modifier != DRM_FORMAT_MOD_INVALID ? &modifier_info : nullptr);
+        auto const image_create_info = vk::ImageCreateInfo{}
+            .setPNext(&external_memory_create_info)
+            .setImageType(vk::ImageType::e2D)
+            .setFormat(vk_image_format)
+            .setExtent({vk_extent.width, vk_extent.height, 1})
+            .setMipLevels(1)
+            .setArrayLayers(1)
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setTiling(modifier != DRM_FORMAT_MOD_INVALID ?
+                       vk::ImageTiling::eDrmFormatModifierEXT :
+                       vk::ImageTiling::eOptimal)
+            .setUsage(vk::ImageUsageFlagBits::eColorAttachment)
+            .setSharingMode(vk::SharingMode::eExclusive)
+            .setInitialLayout(vk::ImageLayout::eUndefined);
+
+        auto vk_image = ManagedResource<vk::Image>{
+            vulkan->device().createImage(image_create_info),
+            [vptr=vulkan] (auto const& i) { vptr->device().destroyImage(i); }};
+
+        auto const requirements = vulkan->device().getImageMemoryRequirements(vk_image);
+        uint32_t index = find_memory_type_index(vulkan->physical_device(),
+                                                requirements,
+                                                vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+        auto const import_memory_fd_info = vk::ImportMemoryFdInfoKHR{}
+            .setHandleType(vk::ExternalMemoryHandleTypeFlagBitsKHR::eDmaBufEXT)
+            .setFd(fd);
+        auto const dedicated_allocate_info = vk::MemoryDedicatedAllocateInfoKHR{}
+            .setPNext(&import_memory_fd_info)
+            .setImage(vk_image);
+        auto const memory_allocate_info = vk::MemoryAllocateInfo{}
+            .setPNext(&dedicated_allocate_info)
+            .setAllocationSize(requirements.size)
+            .setMemoryTypeIndex((uint32_t)index);
+
+        auto device_memory = ManagedResource<vk::DeviceMemory>{
+            vulkan->device().allocateMemory(memory_allocate_info),
+            [vptr=vulkan] (auto const& m) { vptr->device().freeMemory(m); }};
+
+        vulkan->device().bindImageMemory(vk_image, device_memory, 0);
 
         vk_images.push_back(
             ManagedResource<vk::Image>{
-                vk::Image{image},
-                [vptr=vulkan, device_memory] (auto& image)
+                vk_image.steal(),
+                [vptr=vulkan, mem=device_memory.steal()] (auto const& image)
                 {
                     vptr->device().destroyImage(image);
-                    vptr->device().freeMemory(device_memory);
+                    vptr->device().freeMemory(mem);
                 }});
     }
 }
@@ -535,12 +593,28 @@ void KMSWindowSystem::wait_for_drm_page_flip_event()
 
 VulkanWSI::Extensions KMSWindowSystem::required_extensions()
 {
-    return {};
+    return {{}, {VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+                 VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
+                 VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME}};
 }
 
-bool KMSWindowSystem::is_physical_device_supported(vk::PhysicalDevice const&)
+bool KMSWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& physdev)
 {
-    return true;
+    auto const props = physdev.enumerateDeviceExtensionProperties();
+    auto const exts = required_extensions();
+    auto const extension_is_supported =
+        [&props] (std::string const& ext)
+        {
+            auto const iter = std::find_if(props.begin(), props.end(),
+                [&ext](vk::ExtensionProperties prop)
+                {
+                    return ext == prop.extensionName;
+                });
+            return iter != props.end();
+        };
+
+    return std::all_of(exts.device.begin(), exts.device.end(),
+                       extension_is_supported);
 }
 
 std::vector<uint32_t> KMSWindowSystem::physical_device_queue_family_indices(
