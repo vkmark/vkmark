@@ -26,6 +26,8 @@
 #include "vulkan_wsi.h"
 #include "managed_resource.h"
 
+#include <memory>
+
 #include <vulkan/vulkan.hpp>
 
 class NativeSystem;
