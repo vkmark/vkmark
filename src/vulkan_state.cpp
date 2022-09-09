@@ -87,7 +87,7 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
     auto const app_info = vk::ApplicationInfo{}
         .setPApplicationName("vkmark");
 
-    std::vector<char const*> enabled_extensions{vulkan_wsi.vulkan_extensions()};
+    std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().instance};
     enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
     auto const create_info = vk::InstanceCreateInfo{}
@@ -159,8 +159,7 @@ void VulkanState::create_logical_device(VulkanWSI& vulkan_wsi)
     Log::debug("VulkanState: Using queue family index %d for rendering\n",
                graphics_queue_family_index());
 
-    std::array<char const*,1> enabled_extensions{
-        {VK_KHR_SWAPCHAIN_EXTENSION_NAME}};
+    std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().device};
 
     auto const device_features = vk::PhysicalDeviceFeatures{}
         .setSamplerAnisotropy(true);

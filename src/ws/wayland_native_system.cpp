@@ -145,7 +145,7 @@ WaylandNativeSystem::WaylandNativeSystem(int width, int height)
     create_native_window();
 }
 
-std::vector<char const*> WaylandNativeSystem::vulkan_extensions()
+std::vector<char const*> WaylandNativeSystem::instance_extensions()
 {
     return {VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
 }

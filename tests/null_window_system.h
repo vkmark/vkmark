@@ -39,7 +39,7 @@ public:
 
     bool should_quit() override { return false; }
 
-    std::vector<char const*> vulkan_extensions() override { return {}; }
+    Extensions required_extensions() override { return {}; }
     bool is_physical_device_supported(vk::PhysicalDevice const&) override { return true; }
     std::vector<uint32_t> physical_device_queue_family_indices(
         vk::PhysicalDevice const&) override

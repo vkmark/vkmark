@@ -51,7 +51,7 @@ public:
     bool should_quit() override;
 
     // VulkanWSI
-    std::vector<char const*> vulkan_extensions() override;
+    Extensions required_extensions() override;
     bool is_physical_device_supported(vk::PhysicalDevice const& pd) override;
     std::vector<uint32_t> physical_device_queue_family_indices(
         vk::PhysicalDevice const& pd) override;

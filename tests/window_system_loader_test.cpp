@@ -84,7 +84,7 @@ private:
 
 int window_system_id(WindowSystem& ws)
 {
-    return std::stoi(ws.vulkan_wsi().vulkan_extensions()[0]);
+    return std::stoi(ws.vulkan_wsi().required_extensions().instance[0]);
 }
 
 }

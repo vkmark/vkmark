@@ -251,9 +251,9 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
         [this] (auto& s) { vulkan->device().destroySwapchainKHR(s); }};
 }
 
-std::vector<char const*> SwapchainWindowSystem::vulkan_extensions()
+VulkanWSI::Extensions SwapchainWindowSystem::required_extensions()
 {
-    return native->vulkan_extensions();
+    return {native->instance_extensions(), {VK_KHR_SWAPCHAIN_EXTENSION_NAME}};
 }
 
 bool SwapchainWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& pd)
