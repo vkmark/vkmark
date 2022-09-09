@@ -32,7 +32,13 @@ class VulkanWSI
 public:
     virtual ~VulkanWSI() = default;
 
-    virtual std::vector<char const*> vulkan_extensions() = 0;
+    struct Extensions
+    {
+        std::vector<char const*> instance;
+        std::vector<char const*> device;
+    };
+
+    virtual Extensions required_extensions() = 0;
     virtual bool is_physical_device_supported(vk::PhysicalDevice const& pd) = 0;
     virtual std::vector<uint32_t> physical_device_queue_family_indices(
         vk::PhysicalDevice const& pd) = 0;

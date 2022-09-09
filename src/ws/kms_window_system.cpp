@@ -533,7 +533,7 @@ void KMSWindowSystem::wait_for_drm_page_flip_event()
     }
 }
 
-std::vector<char const*> KMSWindowSystem::vulkan_extensions()
+VulkanWSI::Extensions KMSWindowSystem::required_extensions()
 {
     return {};
 }

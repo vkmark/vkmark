@@ -47,7 +47,7 @@ XcbNativeSystem::~XcbNativeSystem()
     xcb_disconnect(connection);
 }
 
-std::vector<char const*> XcbNativeSystem::vulkan_extensions()
+std::vector<char const*> XcbNativeSystem::instance_extensions()
 {
     return {VK_KHR_XCB_SURFACE_EXTENSION_NAME};
 }

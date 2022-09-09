@@ -32,7 +32,7 @@ class TestWindowSystem : public NullWindowSystem
 {
 public:
     TestWindowSystem(std::string const& id) : id{id} {}
-    std::vector<char const*> vulkan_extensions() override { return {id.c_str()}; }
+    Extensions required_extensions() override { return {{id.c_str()}, {}}; }
 
 private:
     std::string const id;

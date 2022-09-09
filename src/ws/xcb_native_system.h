@@ -35,7 +35,7 @@ public:
     XcbNativeSystem(int width, int height, xcb_visualid_t visual_id);
     ~XcbNativeSystem();
 
-    std::vector<char const*> vulkan_extensions() override;
+    std::vector<char const*> instance_extensions() override;
     uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) override;
     bool should_quit() override;
     vk::Extent2D get_vk_extent() override;
