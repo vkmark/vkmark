@@ -44,7 +44,7 @@ std::vector<vk::PhysicalDevice> VulkanState::available_devices(VulkanWSI& vulkan
     {
         if (!vulkan_wsi.is_physical_device_supported(*it_device))
         {
-            Log::debug("device with uuid %s is not supported by window system integration layer",
+            Log::debug("Device with uuid %s is not supported by window system integration layer\n",
                 static_cast<DeviceUUID>(it_device->getProperties().pipelineCacheUUID).representation().data());
             it_device = available_devices.erase(it_device);
         }
@@ -193,17 +193,17 @@ void VulkanState::create_command_pool()
 
 vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
 {
-    Log::debug("Trying to use first supported device.\n");
+    Log::debug("Trying to use first supported device\n");
 
     for (auto const& physical_device : available_devices)
     {
         if (find_queue_family_index(physical_device, vk::QueueFlagBits::eGraphics).second)
         {
-            Log::debug("First supported device choosen!\n");
+            Log::debug("First supported device chosen\n");
             return physical_device;
         }
 
-        Log::debug("device with uuid %s skipped!\n",
+        Log::debug("Device with uuid %s skipped\n",
                static_cast<DeviceUUID>(physical_device.getProperties().pipelineCacheUUID).representation().data()
         );
     }
@@ -213,7 +213,7 @@ vk::PhysicalDevice ChooseFirstSupportedStrategy::operator()(const std::vector<vk
 
 vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::PhysicalDevice>& available_devices)
 {
-    Log::debug("Trying to use device with specified UUID %s.\n",
+    Log::debug("Trying to use device with specified UUID %s\n",
         m_selected_device_uuid.representation().data());
 
     for (auto const& physical_device: available_devices)
@@ -227,5 +227,5 @@ vk::PhysicalDevice ChooseByUUIDStrategy::operator()(const std::vector<vk::Physic
     }
 
     // if device is not supported by wsi it would appear in list_all_devices but is not available here
-    throw std::runtime_error(std::string("Device specified by uuid is not available!"));
+    throw std::runtime_error(std::string("Device specified by uuid is not available"));
 }
