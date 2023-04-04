@@ -78,6 +78,13 @@ void texture_setup_image(VulkanState& vulkan,
 
     vkutil::copy_buffer_to_image(vulkan, staging_buffer, texture.image, image_extent);
 
+    vkutil::transition_image_layout(
+        vulkan,
+        texture.image,
+        vk::ImageLayout::eTransferDstOptimal,
+        vk::ImageLayout::eShaderReadOnlyOptimal,
+        vk::ImageAspectFlagBits::eColor);
+
     texture.image_view = vkutil::ImageViewBuilder{vulkan}
         .set_image(texture.image)
         .set_format(texture_format)
