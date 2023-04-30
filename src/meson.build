@@ -1,7 +1,7 @@
 prog_python = find_program('python3')
 
 vulkan_hpp = join_paths([
-    vulkan_dep.get_pkgconfig_variable('includedir'),
+    vulkan_dep.get_pkgconfig_variable('includedir', define_variable: ['prefix', get_option('prefix')]),
     'vulkan',
     'vulkan.hpp'
     ])
