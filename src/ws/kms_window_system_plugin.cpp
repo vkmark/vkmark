@@ -36,6 +36,7 @@ namespace
 
 std::string const drm_device_opt{"kms-drm-device"};
 std::string const atomic_opt{"kms-atomic"};
+std::string const mod_invalid_tiling_opt{"kms-mod-invalid-tiling"};
 
 std::string get_drm_device_option(Options const& options)
 {
@@ -59,6 +60,8 @@ void vkmark_window_system_load_options(Options& options)
         "KMS window system options (pass in --winsys-options)\n"
         "  kms-drm-device=DEV          The drm device to use (default: /dev/dri/card0)\n"
         "  kms-atomic=auto|yes|no      Whether to use atomic modesetting (default: auto)\n"
+        "  kms-mod-invalid-tiling=TIL  Tiling mode (optimal|linear) to use for invalid modifier\n"
+        "                              (default: optimal)\n"
         );
 }
 
@@ -85,6 +88,7 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
     auto const& winsys_options = options.window_system_options;
     std::string drm_device{"/dev/dri/card0"};
     std::string atomic{"auto"};
+    vk::ImageTiling mod_invalid_tiling{vk::ImageTiling::eOptimal};
 
     for (auto const& opt : winsys_options)
     {
@@ -105,6 +109,23 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
                 atomic = opt.value;
             }
         }
+        else if (opt.name == mod_invalid_tiling_opt)
+        {
+            if (opt.value == "optimal")
+            {
+                mod_invalid_tiling = vk::ImageTiling::eOptimal;
+            }
+            else if (opt.value == "linear")
+            {
+                mod_invalid_tiling = vk::ImageTiling::eLinear;
+            }
+            else
+            {
+                Log::info("KMSWindowSystemPlugin: Ignoring unknown value '%s'"
+                          " for window system option '%s'\n",
+                          opt.value.c_str(), opt.name.c_str());
+            }
+        }
         else
         {
             Log::info("KMSWindowSystemPlugin: Ignoring unknown window system option '%s'\n",
@@ -116,11 +137,11 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         (atomic == "auto" && AtomicKMSWindowSystem::is_supported_on(drm_device)))
     {
         Log::debug("KMSWindowSystemPlugin: Using atomic modesetting\n");
-        return std::make_unique<AtomicKMSWindowSystem>(drm_device);
+        return std::make_unique<AtomicKMSWindowSystem>(drm_device, mod_invalid_tiling);
     }
     else
     {
         Log::debug("KMSWindowSystemPlugin: Using legacy modesetting\n");
-        return std::make_unique<KMSWindowSystem>(drm_device);
+        return std::make_unique<KMSWindowSystem>(drm_device, mod_invalid_tiling);
     }
 }

@@ -335,7 +335,8 @@ VTState::~VTState()
     global_vt_state = nullptr;
 }
 
-KMSWindowSystem::KMSWindowSystem(std::string const& drm_device)
+KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
+                                 vk::ImageTiling mod_invalid_tiling)
     : drm_fd{open_drm_device(drm_device)},
       drm_resources{get_resources_for(drm_fd)},
       drm_connector{get_connected_connector(drm_fd, drm_resources)},
@@ -346,7 +347,8 @@ KMSWindowSystem::KMSWindowSystem(std::string const& drm_device)
       vulkan{nullptr},
       vk_image_format{vk::Format::eUndefined},
       current_image_index{0},
-      has_crtc_been_set{false}
+      has_crtc_been_set{false},
+      mod_invalid_tiling{mod_invalid_tiling}
 {
 }
 
@@ -519,7 +521,7 @@ void KMSWindowSystem::create_vk_images()
             .setSamples(vk::SampleCountFlagBits::e1)
             .setTiling(modifier != DRM_FORMAT_MOD_INVALID ?
                        vk::ImageTiling::eDrmFormatModifierEXT :
-                       vk::ImageTiling::eOptimal)
+                       mod_invalid_tiling)
             .setUsage(vk::ImageUsageFlagBits::eColorAttachment)
             .setSharingMode(vk::SharingMode::eExclusive)
             .setInitialLayout(vk::ImageLayout::eUndefined);

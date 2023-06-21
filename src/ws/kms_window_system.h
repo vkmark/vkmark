@@ -47,7 +47,8 @@ private:
 class KMSWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
-    KMSWindowSystem(std::string const& drm_device);
+    KMSWindowSystem(std::string const& drm_device,
+                    vk::ImageTiling mod_invalid_tiling);
     ~KMSWindowSystem();
 
     VulkanWSI& vulkan_wsi() override;
@@ -88,4 +89,5 @@ protected:
     std::vector<ManagedResource<vk::Image>> vk_images;
     uint32_t current_image_index;
     bool has_crtc_been_set;
+    vk::ImageTiling mod_invalid_tiling;
 };
