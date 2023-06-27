@@ -41,7 +41,7 @@
 class VTState
 {
 public:
-    VTState();
+    VTState(std::string const& tty);
     ~VTState();
     void restore() const;
 
@@ -53,7 +53,8 @@ private:
 class KMSWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
-    KMSWindowSystem(std::string const& drm_device);
+    KMSWindowSystem(std::string const& drm_device,
+                    std::string const& tty);
     ~KMSWindowSystem();
 
     VulkanWSI& vulkan_wsi() override;

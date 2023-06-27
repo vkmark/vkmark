@@ -217,8 +217,9 @@ bool AtomicKMSWindowSystem::is_supported_on(std::string const& drm_device)
     return drm_fd >= 0 && drmSetClientCap(drm_fd, DRM_CLIENT_CAP_ATOMIC, 1) == 0;
 }
 
-AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device)
-    : KMSWindowSystem(drm_device),
+AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device,
+                                             std::string const& tty)
+    : KMSWindowSystem(drm_device, tty),
       supports_atomic{check_for_atomic_or_throw(drm_fd)},
       drm_plane{get_plane_for_crtc(drm_fd, drm_resources, drm_crtc)},
       property_ids{drm_fd, drm_crtc, drm_connector, drm_plane}

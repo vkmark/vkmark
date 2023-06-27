@@ -40,6 +40,7 @@ namespace
 
 std::string const drm_device_opt{"kms-drm-device"};
 std::string const atomic_opt{"kms-atomic"};
+std::string const tty_opt{"kms-tty"};
 
 std::string get_drm_device_option(Options const& options)
 {
@@ -116,6 +117,8 @@ void vkmark_window_system_load_options(Options& options)
         "KMS window system options (pass in --winsys-options)\n"
         "  kms-drm-device=DEV          The drm device to use (default: /dev/dri/card0)\n"
         "  kms-atomic=auto|yes|no      Whether to use atomic modesetting (default: auto)\n"
+        "                              (default: optimal)\n"
+        "  kms-tty=TTY                 The TTY to use (default: /dev/tty)\n"
         );
 }
 
@@ -138,6 +141,7 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
     auto const& winsys_options = options.window_system_options;
     auto [drm_device, _] = probe_drm_devices(options);
     std::string atomic{"auto"};
+    std::string tty{"/dev/tty"};
 
     for (auto const& opt : winsys_options)
     {
@@ -158,6 +162,10 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
                 atomic = opt.value;
             }
         }
+        else if (opt.name == tty_opt)
+        {
+            tty = opt.value;
+        }
         else
         {
             Log::info("KMSWindowSystemPlugin: Ignoring unknown window system option '%s'\n",
@@ -169,11 +177,11 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         (atomic == "auto" && AtomicKMSWindowSystem::is_supported_on(drm_device)))
     {
         Log::debug("KMSWindowSystemPlugin: Using atomic modesetting\n");
-        return std::make_unique<AtomicKMSWindowSystem>(drm_device);
+        return std::make_unique<AtomicKMSWindowSystem>(drm_device, tty);
     }
     else
     {
         Log::debug("KMSWindowSystemPlugin: Using legacy modesetting\n");
-        return std::make_unique<KMSWindowSystem>(drm_device);
+        return std::make_unique<KMSWindowSystem>(drm_device, tty);
     }
 }
