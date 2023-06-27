@@ -66,6 +66,7 @@ public:
     static bool is_supported_on(std::string const& drm_device);
 
     AtomicKMSWindowSystem(std::string const& drm_device,
+                          std::string const& tty,
                           vk::ImageTiling mod_invalid_tiling);
 
     void present_vulkan_image(VulkanImage const&) override;

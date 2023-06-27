@@ -218,8 +218,9 @@ bool AtomicKMSWindowSystem::is_supported_on(std::string const& drm_device)
 }
 
 AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device,
+                                             std::string const& tty,
                                              vk::ImageTiling mod_invalid_tiling)
-    : KMSWindowSystem(drm_device, mod_invalid_tiling),
+    : KMSWindowSystem(drm_device, tty, mod_invalid_tiling),
       supports_atomic{check_for_atomic_or_throw(drm_fd)},
       drm_plane{get_plane_for_crtc(drm_fd, drm_resources, drm_crtc)},
       property_ids{drm_fd, drm_crtc, drm_connector, drm_plane}

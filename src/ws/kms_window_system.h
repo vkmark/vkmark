@@ -41,7 +41,7 @@
 class VTState
 {
 public:
-    VTState();
+    VTState(std::string const& tty);
     ~VTState();
     void restore() const;
 
@@ -54,6 +54,7 @@ class KMSWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
     KMSWindowSystem(std::string const& drm_device,
+                    std::string const& tty,
                     vk::ImageTiling mod_invalid_tiling);
     ~KMSWindowSystem();
 

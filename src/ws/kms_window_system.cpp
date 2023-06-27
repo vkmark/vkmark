@@ -263,18 +263,20 @@ int open_vt(const char *path)
         return -1;
     }
 
+    Log::debug("KMSWindowSystem: Using tty %s\n", path);
+
     return fd;
 }
 
-ManagedResource<int> open_active_vt()
+ManagedResource<int> open_active_vt(std::string const& vt)
 {
-    auto fd = open_vt("/dev/tty");
+    auto fd = open_vt(vt.c_str());
     if (fd < 0)
     {
-        Log::debug("/dev/tty is not a VT, trying to use /dev/tty0\n");
+        Log::debug("%s is not an accessible VT, trying to use /dev/tty0\n", vt.c_str());
         fd = open_vt("/dev/tty0");
         if (fd < 0)
-            throw std::runtime_error{"Failed to open active VT"};
+            throw std::runtime_error{"Failed to open VT"};
     }
 
     return ManagedResource<int>{std::move(fd), close};
@@ -312,8 +314,8 @@ uint32_t find_memory_type_index(vk::PhysicalDevice const& physical_device,
 
 }
 
-VTState::VTState()
-    : vt_fd{open_active_vt()}
+VTState::VTState(std::string const& tty)
+    : vt_fd{open_active_vt(tty)}
 {
     if (ioctl(vt_fd, VT_GETMODE, &prev_vt_mode) < 0)
     {
@@ -358,6 +360,7 @@ VTState::~VTState()
 }
 
 KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
+                                 std::string const& tty,
                                  vk::ImageTiling mod_invalid_tiling)
     : drm_fd{open_drm_device(drm_device)},
       drm_resources{get_resources_for(drm_fd)},
@@ -366,6 +369,7 @@ KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
       drm_crtc{get_crtc_for_connector(drm_fd, drm_resources, drm_connector)},
       gbm{create_gbm_device(drm_fd)},
       vk_extent{drm_crtc->mode.hdisplay, drm_crtc->mode.vdisplay},
+      vt_state{tty},
       vulkan{nullptr},
       vk_image_format{vk::Format::eUndefined},
       current_image_index{0},
