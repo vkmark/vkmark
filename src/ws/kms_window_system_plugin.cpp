@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <xf86drm.h>
 
+#define VKMARK_KMS_WINDOW_SYSTEM_PRIORITY 2
+
 namespace
 {
 
@@ -40,7 +42,7 @@ std::string const atomic_opt{"kms-atomic"};
 std::string get_drm_device_option(Options const& options)
 {
     auto const& winsys_options = options.window_system_options;
-    std::string drm_device{"/dev/dri/card0"};
+    std::string drm_device;
 
     for (auto const& opt : winsys_options)
     {
@@ -64,20 +66,29 @@ void vkmark_window_system_load_options(Options& options)
 
 int vkmark_window_system_probe(Options const& options)
 {
-    bool supported = false;
+    auto drm_device = get_drm_device_option(options);
+    bool device_from_option = !drm_device.empty();
+    int score = 0;
 
-    int const drm_fd = open(get_drm_device_option(options).c_str(), O_RDWR);
+    if (!device_from_option)
+        drm_device = "/dev/dri/card0";
+
+    int const drm_fd = open(drm_device.c_str(), O_RDWR);
     if (drm_fd >= 0)
     {
         if (drmSetMaster(drm_fd) >= 0)
         {
             drmDropMaster(drm_fd);
-            supported = true;
+            score = device_from_option ? VKMARK_WINDOW_SYSTEM_PROBE_GOOD :
+                                         VKMARK_WINDOW_SYSTEM_PROBE_OK;
         }
         close(drm_fd);
     }
 
-    return supported ? 255 : 0;
+    if (score)
+        score += VKMARK_KMS_WINDOW_SYSTEM_PRIORITY;
+
+    return score;
 }
 
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
