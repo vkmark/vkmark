@@ -28,18 +28,38 @@
 
 #include <wayland-client.h>
 
+#define VKMARK_WAYLAND_WINDOW_SYSTEM_PRIORITY 1
+
 void vkmark_window_system_load_options(Options&)
 {
 }
 
 int vkmark_window_system_probe(Options const&)
 {
-    auto const display = wl_display_connect(nullptr);
-    auto const connected = display != nullptr;
+    struct wl_display* display;
+    int score = 0;
 
-    if (connected) wl_display_disconnect(display);
+    /* If we have an explicit and usable WAYLAND_DISPLAY,
+     * Wayland is a good choice. */
+    auto const display_env = getenv("WAYLAND_DISPLAY");
+    if (display_env && (display = wl_display_connect(display_env)))
+    {
+        wl_display_disconnect(display);
+        score = VKMARK_WINDOW_SYSTEM_PROBE_GOOD;
+    }
 
-    return connected ? 255 : 0;
+    /* If we have a usable default connection, Wayland is
+     * an ok choice, but there may be better ones. */
+    if (!score && (display = wl_display_connect(nullptr)))
+    {
+        wl_display_disconnect(display);
+        score = VKMARK_WINDOW_SYSTEM_PROBE_OK;
+    }
+
+    if (score)
+        score += VKMARK_WAYLAND_WINDOW_SYSTEM_PRIORITY;
+
+    return score;
 }
 
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)

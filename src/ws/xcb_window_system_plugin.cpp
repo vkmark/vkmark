@@ -29,6 +29,8 @@
 
 #include <xcb/xcb.h>
 
+#define VKMARK_XCB_WINDOW_SYSTEM_PRIORITY 0
+
 namespace
 {
 
@@ -46,11 +48,31 @@ void vkmark_window_system_load_options(Options& options)
 
 int vkmark_window_system_probe(Options const&)
 {
-    auto const connection = xcb_connect(nullptr, nullptr);
-    auto const has_error = xcb_connection_has_error(connection);
-    xcb_disconnect(connection);
+    xcb_connection_t* connection;
+    int score = 0;
 
-    return has_error ? 0 : 127;
+    /* If we have an explicit and usable DISPLAY, X11 is a good choice. */
+    auto const display_env = getenv("DISPLAY");
+    if (display_env && (connection = xcb_connect(display_env, nullptr)))
+    {
+        if (!xcb_connection_has_error(connection))
+            score = VKMARK_WINDOW_SYSTEM_PROBE_GOOD;
+        xcb_disconnect(connection);
+    }
+
+    /* If we have a usable default connection, XCB is
+     * an ok choice, but there may be better ones. */
+    if (!score && (connection = xcb_connect(nullptr, nullptr)))
+    {
+        if (!xcb_connection_has_error(connection))
+            score = VKMARK_WINDOW_SYSTEM_PROBE_OK;
+        xcb_disconnect(connection);
+    }
+
+    if (score)
+        score += VKMARK_XCB_WINDOW_SYSTEM_PRIORITY;
+
+    return score;
 }
 
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)

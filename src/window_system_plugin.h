@@ -36,6 +36,10 @@ using VkMarkWindowSystemProbeFunc = int(*)(Options const&);
 #pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 #endif
 
+#define VKMARK_WINDOW_SYSTEM_PROBE_GOOD 200
+#define VKMARK_WINDOW_SYSTEM_PROBE_OK   100
+#define VKMARK_WINDOW_SYSTEM_PROBE_BAD  0
+
 extern "C"
 {
 
