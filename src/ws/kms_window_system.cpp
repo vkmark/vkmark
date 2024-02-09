@@ -57,27 +57,50 @@ ManagedResource<int> open_drm_device(std::string const& drm_device)
 
 ManagedResource<drmModeResPtr> get_resources_for(int drm_fd)
 {
+    auto resources = drmModeGetResources(drm_fd);
+    if (!resources)
+    {
+        throw std::system_error{
+            errno, std::system_category(), "Failed to get drm resources"};
+    }
     return ManagedResource<drmModeResPtr>{
-        drmModeGetResources(drm_fd), drmModeFreeResources};
+        std::move(resources), drmModeFreeResources};
 }
 
 ManagedResource<drmModeConnectorPtr> get_connector_with_id(int drm_fd, uint32_t connector_id)
 {
+    auto connector = drmModeGetConnector(drm_fd, connector_id);
+    if (!connector)
+    {
+        throw std::system_error{
+            errno, std::system_category(), "Failed to get drm connector"};
+    }
     return ManagedResource<drmModeConnectorPtr>{
-        drmModeGetConnector(drm_fd, connector_id), drmModeFreeConnector};
+        std::move(connector), drmModeFreeConnector};
 }
 
 
 ManagedResource<drmModeEncoderPtr> get_encoder_with_id(int drm_fd, uint32_t encoder_id)
 {
+    auto encoder = drmModeGetEncoder(drm_fd, encoder_id);
+    if (!encoder)
+    {
+        throw std::system_error{
+            errno, std::system_category(), "Failed to get drm encoder"};
+    }
     return ManagedResource<drmModeEncoderPtr>{
-        drmModeGetEncoder(drm_fd, encoder_id), drmModeFreeEncoder};
+        std::move(encoder), drmModeFreeEncoder};
 }
 
 ManagedResource<drmModeCrtcPtr> get_crtc_with_id(int drm_fd, uint32_t crtc_id)
 {
-    return ManagedResource<drmModeCrtcPtr>{
-        drmModeGetCrtc(drm_fd, crtc_id), drmModeFreeCrtc};
+    auto crtc = drmModeGetCrtc(drm_fd, crtc_id);
+    if (!crtc)
+    {
+        throw std::system_error{
+            errno, std::system_category(), "Failed to get drm crtc"};
+    }
+    return ManagedResource<drmModeCrtcPtr>{std::move(crtc), drmModeFreeCrtc};
 }
 
 ManagedResource<drmModeConnectorPtr> get_connected_connector(
