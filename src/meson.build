@@ -1,7 +1,13 @@
 prog_python = find_program('python3')
 
+vulkan_inculdedir = vulkan_dep.get_variable(pkgconfig : 'includedir')
+if vulkan_inculdedir.startswith('/')
+    vulkan_inculdedir = vulkan_inculdedir.substring(1)
+endif
+
 vulkan_hpp = join_paths([
-    vulkan_dep.get_pkgconfig_variable('includedir'),
+    meson.get_external_property('sys_root', '/'),
+    vulkan_inculdedir,
     'vulkan',
     'vulkan.hpp'
     ])
@@ -87,8 +93,8 @@ if build_xcb_ws
 endif
 
 if build_wayland_ws
-    wayland_scanner = find_program(wayland_scanner_dep.get_pkgconfig_variable('wayland_scanner'))
-    wayland_protocols_dir = wayland_protocols_dep.get_pkgconfig_variable('pkgdatadir')
+    wayland_scanner = find_program(wayland_scanner_dep.get_variable(pkgconfig : 'wayland_scanner'))
+    wayland_protocols_dir = wayland_protocols_dep.get_variable(pkgconfig : 'pkgdatadir')
 
     xdg_shell_xml_path = wayland_protocols_dir + '/stable/xdg-shell/xdg-shell.xml'
     xdg_shell_client_header = custom_target(

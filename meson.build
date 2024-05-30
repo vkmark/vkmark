@@ -3,7 +3,7 @@ project(
     ['cpp', 'c'],
     default_options : ['cpp_std=c++14'],
     version : '2017.08',
-    meson_version: '>=0.45'
+    meson_version: '>=0.56'
     )
 
 root_incdir = include_directories('.')
@@ -29,7 +29,7 @@ xcb_icccm_dep = dependency('xcb-icccm', required : get_option('xcb') == 'true')
 wayland_client_dep = dependency('wayland-client', required : get_option('wayland') == 'true')
 wayland_protocols_dep = dependency('wayland-protocols', version : '>= 1.12',
                                    required : get_option('wayland') == 'true')
-wayland_scanner_dep = dependency('wayland-scanner', required : get_option('wayland') == 'true')
+wayland_scanner_dep = dependency('wayland-scanner', required : get_option('wayland') == 'true', native: true)
 libdrm_dep = dependency('libdrm', required : get_option('kms') == 'true')
 gbm_dep = dependency('gbm', required : get_option('kms') == 'true')
 
