@@ -130,3 +130,14 @@ if build_kms_ws
         install_dir : ws_dir
         )
 endif
+
+nows_ws = shared_module(
+    'nows',
+    'ws/nows_window_system.cpp',
+    'ws/nows_window_system_plugin.cpp',
+    vkutil_sources,
+    dependencies : [vulkan_dep],
+    name_prefix : '',
+    install : true,
+    install_dir : ws_dir
+    )
