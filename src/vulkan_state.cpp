@@ -28,8 +28,20 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
 
-VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
+    Log::debug("%s\n", pCallbackData->pMessage);
+
+    return VK_FALSE;
+}
+
+
+VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy, bool debug)
+    : debug_enabled(debug)
 {
     create_instance(vulkan_wsi);
     create_physical_device(vulkan_wsi, pd_strategy);
@@ -85,19 +97,64 @@ void VulkanState::log_all_devices() const
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 {
     auto const app_info = vk::ApplicationInfo{}
-        .setPApplicationName("vkmark");
+        .setPApplicationName("vkmark")
+        .setApiVersion(VK_MAKE_API_VERSION(0, 1, 0, 0));
 
     std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().instance};
     enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
+    std::vector<char const*> validation_layers;
+
+    bool have_debug_extensions = false;
+    if (debug_enabled)
+    {
+        std::vector<vk::LayerProperties> instanceLayerProps = vk::enumerateInstanceLayerProperties();
+
+        for (auto layer : instanceLayerProps)
+        {
+            if(strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0)
+            {
+                have_debug_extensions = true;
+                validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+                enabled_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+                break;
+            }
+        }
+    }
+
     auto const create_info = vk::InstanceCreateInfo{}
         .setPApplicationInfo(&app_info)
+        .setEnabledLayerCount(validation_layers.size())
+        .setPpEnabledLayerNames(validation_layers.data())
         .setEnabledExtensionCount(enabled_extensions.size())
         .setPpEnabledExtensionNames(enabled_extensions.data());
 
     vk_instance = ManagedResource<vk::Instance>{
         vk::createInstance(create_info),
         [] (auto& i) { i.destroy(); }};
+
+    if (have_debug_extensions)
+    {
+        auto const createInfo = vk::DebugUtilsMessengerCreateInfoEXT{}
+            .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+            .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+            .setPfnUserCallback(debugCallback);
+
+        dldi = vk::DispatchLoaderDynamic{instance(), vkGetInstanceProcAddr};
+
+        debug_messenger = ManagedResource<vk::DebugUtilsMessengerEXT>{
+            instance().createDebugUtilsMessengerEXT(createInfo, nullptr, dldi),
+            [this] (auto& d) {instance().destroyDebugUtilsMessengerEXT(d, nullptr, dldi);}};
+    }
+    else
+    {
+        Log::debug("VK_LAYER_KHRONOS_validation is not supported\n");
+    }
 }
 
 void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)

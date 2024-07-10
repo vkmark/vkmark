@@ -251,7 +251,7 @@ VulkanImage DesktopScene::draw(VulkanImage const& image)
         .setSignalSemaphoreCount(1)
         .setPSignalSemaphores(&submit_semaphore.raw);
 
-    vulkan->graphics_queue().submit(submit_info, {});
+    vulkan->graphics_queue().submit(submit_info, image.fence);
 
     return image.copy_with_semaphore(submit_semaphore);
 }

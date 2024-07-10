@@ -3,7 +3,7 @@ prog_python = find_program('python3')
 vulkan_hpp = join_paths([
     vulkan_dep.get_pkgconfig_variable('includedir'),
     'vulkan',
-    'vulkan.hpp'
+    'vulkan_enums.hpp'
     ])
 
 format_map_gen_h = custom_target(
@@ -130,3 +130,14 @@ if build_kms_ws
         install_dir : ws_dir
         )
 endif
+
+nows_ws = shared_module(
+    'nows',
+    'ws/nows_window_system.cpp',
+    'ws/nows_window_system_plugin.cpp',
+    vkutil_sources,
+    dependencies : [vulkan_dep],
+    name_prefix : '',
+    install : true,
+    install_dir : ws_dir
+    )

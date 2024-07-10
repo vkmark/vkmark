@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 Collabora Ltd.
+ * Copyright © 2024 Igalia S.L.
  *
  * This file is part of vkmark.
  *
@@ -17,28 +17,25 @@
  * License along with vkmark. If not, see <http://www.gnu.org/licenses/>.
  *
  * Authors:
- *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
+ *   Lucas Fryzek <lfryzek@igalia.com>
  */
 
-#pragma once
+# pragma once
 
 #include "window_system.h"
 #include "vulkan_wsi.h"
 #include "managed_resource.h"
 
-#include <memory>
-
+#include <memory.h>
 #include <vulkan/vulkan.hpp>
 
 class NativeSystem;
 
-class SwapchainWindowSystem : public WindowSystem, public VulkanWSI
+class NoWindowSystem : public WindowSystem, VulkanWSI
 {
 public:
-    SwapchainWindowSystem(
-        std::unique_ptr<NativeSystem> native,
-        vk::PresentModeKHR present_mode,
-        vk::Format pixel_format);
+    NoWindowSystem(
+            vk::Format pixel_format, uint32_t width, uint32_t height, uint32_t num_buffers);
 
     VulkanWSI& vulkan_wsi() override;
     void init_vulkan(VulkanState& vulkan) override;
@@ -55,24 +52,15 @@ public:
     bool is_physical_device_supported(vk::PhysicalDevice const& pd) override;
     std::vector<uint32_t> physical_device_queue_family_indices(
         vk::PhysicalDevice const& pd) override;
-
 private:
-    ManagedResource<vk::SwapchainKHR> create_vk_swapchain();
-
-    std::unique_ptr<NativeSystem> const native;
-    vk::PresentModeKHR const vk_present_mode;
     vk::Format const vk_pixel_format;
-
     VulkanState* vulkan;
-    uint32_t vk_present_queue_family_index;
-    vk::Queue vk_present_queue;
-    ManagedResource<vk::SurfaceKHR> vk_surface;
-    ManagedResource<vk::SwapchainKHR> vk_swapchain;
-    std::vector<ManagedResource<vk::Semaphore>> vk_acquire_semaphores;
-    std::vector<ManagedResource<vk::Fence>> vk_acquire_fences;
-    std::vector<vk::Image> vk_images;
+    uint32_t vk_queue_family_index;
+    vk::Queue vk_queue;
     uint32_t current_frame;
-    uint32_t image_index;
-    vk::Format vk_image_format;
+    vk::Semaphore vk_semaphore;
+    std::vector<ManagedResource<vk::Fence>> vk_acquire_fences;
+    std::vector<ManagedResource<vk::Image>> vk_images;
     vk::Extent2D vk_extent;
+    uint32_t num_buffers;
 };

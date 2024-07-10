@@ -139,25 +139,36 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
     Log::debug("SwapchainWindowSystem: Swapchain contains %d images\n",
                vk_images.size());
 
-    vk_acquire_semaphore = ManagedResource<vk::Semaphore>{
-        vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
-        [this] (auto& s) { vulkan->device().destroySemaphore(s); }};
+    for (size_t i = 0; i < vk_images.size(); i++) {
+
+        vk_acquire_semaphores.push_back(ManagedResource<vk::Semaphore>{
+            vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
+            [this] (auto& s) { vulkan->device().destroySemaphore(s); }});
+        vk_acquire_fences.push_back(ManagedResource<vk::Fence>{
+            vulkan->device().createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)),
+            [this] (auto& f) {vulkan->device().destroyFence(f); }});
+    }
+
+    current_frame = 0;
 }
 
 void SwapchainWindowSystem::deinit_vulkan()
 {
     vulkan->device().waitIdle();
-    vk_acquire_semaphore = {};
+    vk_acquire_semaphores.clear();
+    vk_acquire_fences.clear();
     vk_swapchain = {};
     vk_surface = {};
 }
 
 VulkanImage SwapchainWindowSystem::next_vulkan_image()
 {
-    auto const image_index = vulkan->device().acquireNextImageKHR(
-        vk_swapchain, UINT64_MAX, vk_acquire_semaphore, nullptr).value;
+    vulkan->device().waitForFences(vk_acquire_fences[current_frame].raw, true, INT64_MAX);
+    vulkan->device().resetFences(vk_acquire_fences[current_frame].raw);
+    image_index = vulkan->device().acquireNextImageKHR(
+        vk_swapchain, UINT64_MAX, vk_acquire_semaphores[current_frame], nullptr).value;
 
-    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphore};
+    return {current_frame, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphores[current_frame], vk_acquire_fences[current_frame]};
 }
 
 void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
@@ -165,11 +176,12 @@ void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image
     auto const present_info = vk::PresentInfoKHR{}
         .setSwapchainCount(1)
         .setPSwapchains(&vk_swapchain.raw)
-        .setPImageIndices(&vulkan_image.index)
+        .setPImageIndices(&image_index)
         .setWaitSemaphoreCount(vulkan_image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&vulkan_image.semaphore);
 
     vk_present_queue.presentKHR(present_info);
+    current_frame = (current_frame + 1) % vk_images.size();
 }
 
 std::vector<VulkanImage> SwapchainWindowSystem::vulkan_images()
@@ -177,7 +189,7 @@ std::vector<VulkanImage> SwapchainWindowSystem::vulkan_images()
     std::vector<VulkanImage> vulkan_images;
 
     for (uint32_t i = 0; i < vk_images.size(); ++i)
-        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk_extent, {}});
+        vulkan_images.push_back({i, vk_images[i], vk_image_format, vk_extent, {}, {}});
 
     return vulkan_images;
 }

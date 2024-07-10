@@ -61,4 +61,6 @@ if build_kms_ws
     msg += 'kms '
 endif
 
+    msg += 'nows '
+
 message(msg)
