@@ -36,7 +36,7 @@ public:
     using ChoosePhysicalDeviceStrategy =
         std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
 
-    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy);
+    VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy, bool debug);
 
     vk::Instance const& instance() const
     {
@@ -85,6 +85,10 @@ private:
     vk::Queue vk_graphics_queue;
     vk::PhysicalDevice vk_physical_device;
     uint32_t vk_graphics_queue_family_index;
+
+    bool debug_enabled;
+    ManagedResource<vk::DebugUtilsMessengerEXT> debug_messenger;
+    vk::DispatchLoaderDynamic dldi;
 };
 
 class ChooseFirstSupportedStrategy
