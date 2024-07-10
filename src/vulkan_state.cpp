@@ -28,8 +28,45 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+namespace
+{
 
-VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    VkDebugUtilsMessageTypeFlagsEXT message_type,
+    const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+    void* user_data)
+{
+    Log::debug("%s\n", callback_data->pMessage);
+    return VK_FALSE;
+}
+
+class DebugUtilsDispatcher
+{
+public:
+    DebugUtilsDispatcher(vk::Instance& instance) :
+        vkCreateDebugUtilsMessengerEXT(
+            PFN_vkCreateDebugUtilsMessengerEXT(
+                vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))),
+        vkDestroyDebugUtilsMessengerEXT(
+            PFN_vkDestroyDebugUtilsMessengerEXT(
+                vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")))
+    {
+    }
+
+    size_t getVkHeaderVersion() const
+    {
+        return VK_HEADER_VERSION;
+    }
+
+    PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
+};
+
+}
+
+VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy, bool debug)
+    : debug_enabled(debug)
 {
     create_instance(vulkan_wsi);
     create_physical_device(vulkan_wsi, pd_strategy);
@@ -90,14 +127,57 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
     std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().instance};
     enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 
+    std::vector<char const*> validation_layers;
+
+    bool have_debug_extensions = false;
+    if (debug_enabled)
+    {
+        std::vector<vk::LayerProperties> instance_layer_props = vk::enumerateInstanceLayerProperties();
+
+        for (auto layer : instance_layer_props)
+        {
+            if(strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0)
+            {
+                have_debug_extensions = true;
+                validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+                enabled_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+                break;
+            }
+        }
+    }
+
     auto const create_info = vk::InstanceCreateInfo{}
         .setPApplicationInfo(&app_info)
+        .setEnabledLayerCount(validation_layers.size())
+        .setPpEnabledLayerNames(validation_layers.data())
         .setEnabledExtensionCount(enabled_extensions.size())
         .setPpEnabledExtensionNames(enabled_extensions.data());
 
     vk_instance = ManagedResource<vk::Instance>{
         vk::createInstance(create_info),
         [] (auto& i) { i.destroy(); }};
+
+    if (have_debug_extensions)
+    {
+        auto const debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT{}
+            .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
+            .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+            .setPfnUserCallback(debug_callback);
+        auto const dud = DebugUtilsDispatcher{vk_instance};
+
+        debug_messenger = ManagedResource<vk::DebugUtilsMessengerEXT>{
+            instance().createDebugUtilsMessengerEXT(debug_create_info, nullptr, dud),
+            [this, dud] (auto& d) {instance().destroyDebugUtilsMessengerEXT(d, nullptr, dud);}};
+    }
+    else
+    {
+        Log::debug("VK_LAYER_KHRONOS_validation is not supported\n");
+    }
 }
 
 void VulkanState::create_physical_device(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy)

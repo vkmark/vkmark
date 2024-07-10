@@ -119,7 +119,7 @@ try
     auto&& device_strategy = options.use_device_with_uuid.second ?
         VulkanState::ChoosePhysicalDeviceStrategy{ChooseByUUIDStrategy{options.use_device_with_uuid.first}} :
         VulkanState::ChoosePhysicalDeviceStrategy{ChooseFirstSupportedStrategy{}};
-    VulkanState vulkan{ws.vulkan_wsi(), device_strategy};
+    VulkanState vulkan{ws.vulkan_wsi(), device_strategy, options.show_debug};
 
     if (options.list_devices)
     {
