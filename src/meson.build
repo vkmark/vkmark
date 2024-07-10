@@ -3,7 +3,7 @@ prog_python = find_program('python3')
 vulkan_hpp = join_paths([
     vulkan_dep.get_pkgconfig_variable('includedir'),
     'vulkan',
-    'vulkan.hpp'
+    'vulkan_enums.hpp'
     ])
 
 format_map_gen_h = custom_target(
