@@ -47,8 +47,6 @@ void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
         .setLevel(vk::CommandBufferLevel::ePrimary);
 
     command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
-    command_buffer_fences.resize(command_buffers.size());
-
     submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
 
     if (options_["color"].value == "cycle")
@@ -78,12 +76,6 @@ void ClearScene::teardown()
     vulkan->device().waitIdle();
 
     submit_semaphore = {};
-    for (auto const& fence : command_buffer_fences)
-    {
-        if (fence)
-            vulkan->device().destroyFence(fence);
-    }
-    command_buffer_fences.clear();
 
     vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
 
@@ -124,16 +116,6 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
 
     auto const i = image.index;
 
-    if (!command_buffer_fences[i])
-    {
-        command_buffer_fences[i] = vulkan->device().createFence(vk::FenceCreateInfo());
-    }
-    else
-    {
-        vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
-        vulkan->device().resetFences(command_buffer_fences[i]);
-    }
-
     command_buffers[i].begin(begin_info);
 
     command_buffers[i].pipelineBarrier(
@@ -171,7 +153,7 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
-    vulkan->graphics_queue().submit(submit_info, command_buffer_fences[image.index]);
+    vulkan->graphics_queue().submit(submit_info, image.fence);
 
     return image.copy_with_semaphore(submit_semaphore);
 }
