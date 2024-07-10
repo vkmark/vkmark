@@ -122,7 +122,12 @@ void VulkanState::log_all_devices() const
 void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 {
     auto const app_info = vk::ApplicationInfo{}
-        .setPApplicationName("vkmark");
+        .setPApplicationName("vkmark")
+#ifdef VK_MAKE_API_VERSION
+        .setApiVersion(VK_MAKE_API_VERSION(0, 1, 0, 0));
+#else
+        .setApiVersion(VK_MAKE_VERSION(1, 0, 0));
+#endif
 
     std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().instance};
     enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
