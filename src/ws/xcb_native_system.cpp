@@ -189,7 +189,7 @@ void XcbNativeSystem::create_native_window()
     else
     {
         // Make window non-resizable
-        xcb_size_hints_t size_hints;
+        xcb_size_hints_t size_hints = {0};
         xcb_icccm_size_hints_set_min_size(&size_hints, vk_extent.width, vk_extent.height);
         xcb_icccm_size_hints_set_max_size(&size_hints, vk_extent.width, vk_extent.height);
         xcb_icccm_set_wm_normal_hints(connection, window, &size_hints);
