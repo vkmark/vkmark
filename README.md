@@ -8,7 +8,7 @@ configurable scenes.
 To build vkmark you need:
 
  * the meson build system
- * a C++14 compiler
+ * a C++17 compiler
  * libvulkan and development files
  * libglm development files (header only library)
  * libassimp and development files
