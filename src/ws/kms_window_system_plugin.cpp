@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <xf86drm.h>
 
+#include <filesystem>
+
 #define VKMARK_KMS_WINDOW_SYSTEM_PRIORITY 2
 
 namespace
@@ -53,6 +55,59 @@ std::string get_drm_device_option(Options const& options)
     return drm_device;
 }
 
+std::pair<std::string, int> probe_drm_devices(Options const& options)
+{
+    auto device_from_option = get_drm_device_option(options);
+    std::vector<std::string> probe_devices;
+    std::pair<std::string, int> ret;
+
+    if (!device_from_option.empty())
+    {
+        probe_devices.push_back(device_from_option);
+    }
+    else
+    {
+        std::filesystem::path const dev_dri{"/dev/dri"};
+        for (auto& dir_entry : std::filesystem::directory_iterator{dev_dri})
+        {
+            if (std::filesystem::is_character_file(dir_entry.path()) &&
+                dir_entry.path().filename().string().find("card") == 0)
+            {
+                probe_devices.push_back(dir_entry.path().string());
+            }
+        }
+    }
+
+    for (auto& dev : probe_devices)
+    {
+        int const drm_fd = open(dev.c_str(), O_RDWR);
+        if (drm_fd >= 0)
+        {
+            int score = VKMARK_WINDOW_SYSTEM_PROBE_BAD;
+            if (drmSetMaster(drm_fd) >= 0)
+            {
+                auto resources = drmModeGetResources(drm_fd);
+                if (resources)
+                {
+                    drmModeFreeResources(resources);
+                    score = (dev == device_from_option) ?
+                            VKMARK_WINDOW_SYSTEM_PROBE_GOOD :
+                            VKMARK_WINDOW_SYSTEM_PROBE_OK;
+                }
+                drmDropMaster(drm_fd);
+            }
+            close(drm_fd);
+            if (score)
+            {
+                ret = {dev, score};
+                break;
+            }
+        }
+    }
+
+    return ret;
+}
+
 }
 
 void vkmark_window_system_load_options(Options& options)
@@ -66,27 +121,14 @@ void vkmark_window_system_load_options(Options& options)
 
 int vkmark_window_system_probe(Options const& options)
 {
-    auto drm_device = get_drm_device_option(options);
-    bool device_from_option = !drm_device.empty();
-    int score = 0;
-
-    if (!device_from_option)
-        drm_device = "/dev/dri/card0";
-
-    int const drm_fd = open(drm_device.c_str(), O_RDWR);
-    if (drm_fd >= 0)
-    {
-        if (drmSetMaster(drm_fd) >= 0)
-        {
-            drmDropMaster(drm_fd);
-            score = device_from_option ? VKMARK_WINDOW_SYSTEM_PROBE_GOOD :
-                                         VKMARK_WINDOW_SYSTEM_PROBE_OK;
-        }
-        close(drm_fd);
-    }
+    auto [dev, score] = probe_drm_devices(options);
 
     if (score)
+    {
+        Log::debug((Log::continuation_prefix + "device %s, ").c_str(),
+                   dev.c_str());
         score += VKMARK_KMS_WINDOW_SYSTEM_PRIORITY;
+    }
 
     return score;
 }
@@ -94,14 +136,14 @@ int vkmark_window_system_probe(Options const& options)
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
 {
     auto const& winsys_options = options.window_system_options;
-    std::string drm_device{"/dev/dri/card0"};
+    auto [drm_device, _] = probe_drm_devices(options);
     std::string atomic{"auto"};
 
     for (auto const& opt : winsys_options)
     {
         if (opt.name == drm_device_opt)
         {
-            drm_device = opt.value;
+            // Already handled by probe_drm_devices()
         }
         else if (opt.name == atomic_opt)
         {
