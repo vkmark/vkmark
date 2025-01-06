@@ -212,7 +212,7 @@ void WaylandNativeSystem::create_native_window()
 {
     display = ManagedResource<wl_display*>{
         wl_display_connect(nullptr),
-        [](auto d) { wl_display_flush(d); wl_display_disconnect(d); }};
+        [](auto d) { if (d) { wl_display_flush(d); wl_display_disconnect(d); } }};
     if (!display)
         throw std::runtime_error("Failed to connect to Wayland server");
 
