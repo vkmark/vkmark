@@ -1,15 +1,15 @@
 prog_python = find_program('python3')
 
-vulkan_hpp = join_paths([
-    vulkan_dep.get_pkgconfig_variable('includedir'),
-    'vulkan',
-    'vulkan.hpp'
+vk_xml = join_paths([
+    vulkan_dep.get_pkgconfig_variable('prefix'),
+    'share', 'vulkan', 'registry',
+    'vk.xml'
     ])
 
 format_map_gen_h = custom_target(
     'format_map_gen.h',
     output: 'format_map_gen.h',
-    input: vulkan_hpp,
+    input: vk_xml,
     command: [prog_python, files('gen_format_map.py'), '@INPUT@', '@OUTPUT@']
     )
 
