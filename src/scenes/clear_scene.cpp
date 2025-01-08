@@ -130,7 +130,7 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
     }
     else
     {
-        vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
+        (void)vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
         vulkan->device().resetFences(command_buffer_fences[i]);
     }
 

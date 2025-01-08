@@ -169,7 +169,7 @@ void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image
         .setWaitSemaphoreCount(vulkan_image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&vulkan_image.semaphore);
 
-    vk_present_queue.presentKHR(present_info);
+    (void)vk_present_queue.presentKHR(present_info);
 }
 
 std::vector<VulkanImage> SwapchainWindowSystem::vulkan_images()
