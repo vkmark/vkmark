@@ -73,6 +73,16 @@ vkmark = executable(
     install : true
     )
 
+headless_ws = shared_module(
+    'headless',
+    'ws/headless_window_system_plugin.cpp',
+    'ws/headless_native_system.cpp',
+    'ws/swapchain_window_system.cpp',
+    name_prefix : '',
+    install : true,
+    install_dir : ws_dir
+    )
+
 if build_xcb_ws
     xcb_ws = shared_module(
         'xcb',
