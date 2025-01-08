@@ -68,8 +68,10 @@ private:
     vk::Queue vk_present_queue;
     ManagedResource<vk::SurfaceKHR> vk_surface;
     ManagedResource<vk::SwapchainKHR> vk_swapchain;
-    ManagedResource<vk::Semaphore> vk_acquire_semaphore;
+    std::vector<ManagedResource<vk::Semaphore>> vk_acquire_semaphores;
+    std::vector<ManagedResource<vk::Fence>> vk_acquire_fences;
     std::vector<vk::Image> vk_images;
     vk::Format vk_image_format;
     vk::Extent2D vk_extent;
+    uint32_t current_frame;
 };
