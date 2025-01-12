@@ -98,6 +98,7 @@ ManagedResource<drmModePlanePtr> get_plane_for_crtc(
     if (!plane_resources)
         throw ErrnoError{"Failed to get plane resources"};
 
+    auto num_primaries = 0;
     for (auto i = 0u; i < plane_resources->count_planes; ++i)
     {
         auto plane = ManagedResource<drmModePlanePtr>{
@@ -107,12 +108,17 @@ ManagedResource<drmModePlanePtr> get_plane_for_crtc(
         if (!plane)
             throw ErrnoError{"Failed to get plane"};
 
+        if (!is_plane_primary(drm_fd, plane))
+            continue;
+
+        /* Nth primary plane for Nth CRTC */
+        if (num_primaries ++ != crtc_index)
+            continue;
+
         if (does_plane_support_crtc_index(plane, crtc_index))
         {
             ret_plane = std::move(plane);
 
-            if (is_plane_primary(drm_fd, ret_plane))
-                break;
         }
     }
 
