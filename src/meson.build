@@ -129,12 +129,19 @@ if build_wayland_ws
 endif
 
 if build_kms_ws
+    if cpp.has_function('gbm_bo_create_with_modifiers2', dependencies: gbm_dep)
+        gbm_mods2_dep = declare_dependency(
+            compile_args: ['-DHAVE_GBM_BO_CREATE_WITH_MODIFIERS2']
+            )
+    else
+        gbm_mods2_dep = declare_dependency()
+    endif
     kms_ws = shared_module(
         'kms',
         'ws/kms_window_system_plugin.cpp',
         'ws/kms_window_system.cpp',
         'ws/atomic_kms_window_system.cpp',
-        dependencies : [vulkan_dep, libdrm_dep, gbm_dep],
+        dependencies : [vulkan_dep, libdrm_dep, gbm_dep, gbm_mods2_dep],
         name_prefix : '',
         install : true,
         install_dir : ws_dir

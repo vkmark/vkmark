@@ -31,6 +31,7 @@
 #include <drm_fourcc.h>
 
 #include <algorithm>
+#include <optional>
 #include <system_error>
 #include <fcntl.h>
 #include <unistd.h>
@@ -335,6 +336,110 @@ uint32_t find_memory_type_index(vk::PhysicalDevice const& physical_device,
     throw std::runtime_error{"Coudn't find matching memory type"};
 }
 
+std::optional<uint64_t> drm_props_get_value(int drm_fd, drmModeObjectProperties *props,
+                                            char const* name)
+{
+    for (uint32_t i = 0; i < props->count_props; ++i)
+    {
+        auto const prop = ManagedResource<drmModePropertyPtr>{
+            drmModeGetProperty(drm_fd, props->props[i]),
+            drmModeFreeProperty};
+        if (!prop) continue;
+        if (!strcmp(prop->name, name))
+            return {props->prop_values[i]};
+    }
+
+    return std::nullopt;
+}
+
+std::vector<uint64_t> drm_get_supported_mods_for_format(int drm_fd, uint32_t format)
+{
+    std::vector<uint64_t> supported_mods;
+    auto const res = ManagedResource<drmModePlaneResPtr>{
+        drmModeGetPlaneResources(drm_fd),
+        drmModeFreePlaneResources};
+    if (!res)
+        return {};
+
+    for (uint32_t i = 0; i < res->count_planes; ++i)
+    {
+        auto const props = ManagedResource<drmModeObjectPropertiesPtr>{
+            drmModeObjectGetProperties(drm_fd, res->planes[i], DRM_MODE_OBJECT_PLANE),
+            drmModeFreeObjectProperties};
+        if (!props)
+            continue;
+        auto const type = drm_props_get_value(drm_fd, props, "type").value_or(0);
+        if (type != DRM_PLANE_TYPE_PRIMARY)
+            continue;
+        auto const blob_id = drm_props_get_value(drm_fd, props, "IN_FORMATS").value_or(0);
+        if (!blob_id)
+            continue;
+        auto const blob = ManagedResource<drmModePropertyBlobPtr>{
+            drmModeGetPropertyBlob(drm_fd, blob_id),
+            drmModeFreePropertyBlob};
+        if (!blob)
+            continue;
+
+        auto const data = static_cast<struct drm_format_modifier_blob*>(blob->data);
+        auto const fmts = reinterpret_cast<uint32_t*>(
+            reinterpret_cast<char*>(data) + data->formats_offset);
+        auto const mods = reinterpret_cast<struct drm_format_modifier*>(
+            reinterpret_cast<char*>(data) + data->modifiers_offset);
+        auto const fmt_p = std::find(fmts, fmts + data->count_formats, format);
+        if (fmt_p == fmts + data->count_formats)
+            continue;
+        auto const fmt_mask = 1 << (fmt_p - fmts);
+
+        for (uint32_t m = 0; m < data->count_modifiers; ++m)
+        {
+            if (mods[m].formats & fmt_mask)
+                supported_mods.push_back(mods[m].modifier);
+        }
+
+        break;
+    }
+
+    return supported_mods;
+}
+
+class GetFormatProperties2Dispatcher
+{
+public:
+    GetFormatProperties2Dispatcher(vk::Instance const& instance) :
+        vkGetPhysicalDeviceFormatProperties2KHR(
+            PFN_vkGetPhysicalDeviceFormatProperties2KHR(
+                vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFormatProperties2KHR")))
+    {
+    }
+
+    size_t getVkHeaderVersion() const
+    {
+        return VK_HEADER_VERSION;
+    }
+
+    PFN_vkGetPhysicalDeviceFormatProperties2KHR vkGetPhysicalDeviceFormatProperties2KHR;
+};
+
+std::vector<uint64_t> vk_get_supported_mods_for_format(VulkanState& vulkan,
+                                                       vk::Format format)
+{
+    std::vector<uint64_t> mods;
+    auto const dispatch = GetFormatProperties2Dispatcher{vulkan.instance()};
+    vk::DrmFormatModifierPropertiesEXT mod_props[256];
+
+    auto mod_props_list = vk::DrmFormatModifierPropertiesListEXT{};
+    mod_props_list.drmFormatModifierCount = 256;
+    mod_props_list.pDrmFormatModifierProperties = mod_props;
+    auto props = vk::FormatProperties2KHR{};
+    props.pNext = &mod_props_list;
+    vulkan.physical_device().getFormatProperties2KHR(format, &props, dispatch);
+
+    for (uint32_t i = 0; i < mod_props_list.drmFormatModifierCount; ++i)
+        mods.push_back(mod_props_list.pDrmFormatModifierProperties[i].drmFormatModifier);
+
+    return mods;
+}
+
 }
 
 VTState::VTState(std::string const& tty)
@@ -481,11 +586,41 @@ bool KMSWindowSystem::should_quit()
 
 void KMSWindowSystem::create_gbm_bos()
 {
+    auto const drm_format = DRM_FORMAT_XRGB8888;
+    auto drm_mods = drm_get_supported_mods_for_format(drm_fd, drm_format);
+    auto vk_mods = vk_get_supported_mods_for_format(*vulkan, vk_image_format);
+    std::vector<uint64_t> mods;
+
+    // Find the modifiers supported by both DRM and Vulkan
+    for (auto mod : drm_mods)
+    {
+        if (std::find(vk_mods.begin(), vk_mods.end(), mod) != vk_mods.end())
+            mods.push_back(mod);
+    }
+
     for (int i = 0; i < 2; ++i)
     {
-        auto bo_raw = gbm_bo_create(
-            gbm, vk_extent.width, vk_extent.height, GBM_FORMAT_XRGB8888,
+        struct gbm_bo *bo_raw;
+
+        if (mods.empty())
+        {
+            bo_raw = gbm_bo_create(
+                gbm, vk_extent.width, vk_extent.height, drm_format,
+                GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+        }
+        else
+        {
+#if HAVE_GBM_BO_CREATE_WITH_MODIFIERS2
+        bo_raw = gbm_bo_create_with_modifiers2(
+            gbm, vk_extent.width, vk_extent.height, drm_format,
+            mods.data(), mods.size(),
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+#else
+        bo_raw = gbm_bo_create_with_modifiers(
+            gbm, vk_extent.width, vk_extent.height, drm_format,
+            mods.data(), mods.size());
+#endif
+        }
 
         if (!bo_raw)
             throw std::runtime_error{"Failed to create gbm bo"};
@@ -493,6 +628,10 @@ void KMSWindowSystem::create_gbm_bos()
         gbm_bos.push_back(
             ManagedResource<gbm_bo*>{std::move(bo_raw), gbm_bo_destroy});
     }
+
+    Log::debug("KMSWindowSystem: Created buffers with format=0x%x mod=0x%lx\n",
+               gbm_bo_get_format(gbm_bos[0].raw),
+               gbm_bo_get_modifier(gbm_bos[0].raw));
 }
 
 void KMSWindowSystem::create_drm_fbs()
