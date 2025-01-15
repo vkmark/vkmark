@@ -30,7 +30,7 @@ class HeadlessNativeSystem : public NativeSystem
 public:
     HeadlessNativeSystem(vk::Extent2D vk_extent);
 
-    std::vector<char const*> instance_extensions() override;
+    VulkanWSI::Extensions required_extensions() override;
     uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) override;
     bool should_quit() override;
     vk::Extent2D get_vk_extent() override;

@@ -29,9 +29,11 @@ HeadlessNativeSystem::HeadlessNativeSystem(vk::Extent2D vk_extent)
 {
 }
 
-std::vector<char const*> HeadlessNativeSystem::instance_extensions()
+VulkanWSI::Extensions HeadlessNativeSystem::required_extensions()
 {
-    return {VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME};
+    return {{VK_KHR_SURFACE_EXTENSION_NAME,
+             VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME},
+            {}};
 }
 
 uint32_t HeadlessNativeSystem::get_presentation_queue_family_index(vk::PhysicalDevice const& pd)

@@ -267,7 +267,9 @@ ManagedResource<vk::SwapchainKHR> SwapchainWindowSystem::create_vk_swapchain()
 
 VulkanWSI::Extensions SwapchainWindowSystem::required_extensions()
 {
-    return {native->instance_extensions(), {VK_KHR_SWAPCHAIN_EXTENSION_NAME}};
+    auto extensions = native->required_extensions();
+    extensions.device.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    return extensions;
 }
 
 bool SwapchainWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& pd)

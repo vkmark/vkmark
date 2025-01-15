@@ -130,8 +130,6 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 #endif
 
     std::vector<char const*> enabled_extensions{vulkan_wsi.required_extensions().instance};
-    enabled_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-
     std::vector<char const*> validation_layers;
 
     bool have_debug_extensions = false;

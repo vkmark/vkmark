@@ -47,9 +47,11 @@ XcbNativeSystem::~XcbNativeSystem()
     xcb_disconnect(connection);
 }
 
-std::vector<char const*> XcbNativeSystem::instance_extensions()
+VulkanWSI::Extensions XcbNativeSystem::required_extensions()
 {
-    return {VK_KHR_XCB_SURFACE_EXTENSION_NAME};
+    return {{VK_KHR_SURFACE_EXTENSION_NAME,
+             VK_KHR_XCB_SURFACE_EXTENSION_NAME},
+            {}};
 }
 
 bool XcbNativeSystem::should_quit()

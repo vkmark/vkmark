@@ -145,9 +145,11 @@ WaylandNativeSystem::WaylandNativeSystem(int width, int height)
     create_native_window();
 }
 
-std::vector<char const*> WaylandNativeSystem::instance_extensions()
+VulkanWSI::Extensions WaylandNativeSystem::required_extensions()
 {
-    return {VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
+    return {{VK_KHR_SURFACE_EXTENSION_NAME,
+             VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME},
+            {}};
 }
 
 uint32_t WaylandNativeSystem::get_presentation_queue_family_index(vk::PhysicalDevice const& pd)

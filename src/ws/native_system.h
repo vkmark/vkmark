@@ -23,6 +23,7 @@
 #pragma once
 
 #include "managed_resource.h"
+#include "vulkan_wsi.h"
 
 #include <vulkan/vulkan.hpp>
 #include <cstdint>
@@ -34,7 +35,7 @@ class NativeSystem
 public:
     virtual ~NativeSystem() = default;
 
-    virtual std::vector<char const*> instance_extensions() = 0;
+    virtual VulkanWSI::Extensions required_extensions() = 0;
     virtual uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) = 0;
     virtual bool should_quit() = 0;
     virtual vk::Extent2D get_vk_extent() = 0;
