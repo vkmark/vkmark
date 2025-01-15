@@ -791,7 +791,8 @@ VulkanWSI::Extensions KMSWindowSystem::required_extensions()
              VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
              VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
              VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
-             VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME}};
+             VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
+             VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME}};
 }
 
 bool KMSWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& physdev)
