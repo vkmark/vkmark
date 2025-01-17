@@ -78,6 +78,7 @@ headless_ws = shared_module(
     'ws/headless_window_system_plugin.cpp',
     'ws/headless_native_system.cpp',
     'ws/swapchain_window_system.cpp',
+    dependencies : [vulkan_dep],
     name_prefix : '',
     install : true,
     install_dir : ws_dir
