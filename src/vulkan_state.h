@@ -36,6 +36,8 @@ public:
     using ChoosePhysicalDeviceStrategy =
         std::function<vk::PhysicalDevice (std::vector<vk::PhysicalDevice> const&)>;
 
+    static void log_all_devices();
+
     VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy, bool debug);
 
     vk::Instance const& instance() const
@@ -69,7 +71,6 @@ public:
     }
 
     void log_info() const;
-    void log_all_devices() const;
 
 private:
 

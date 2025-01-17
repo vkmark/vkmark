@@ -114,18 +114,18 @@ try
         return 0;
     }
 
+    if (options.list_devices)
+    {
+        VulkanState::log_all_devices();
+        return 0;
+    }
+
     auto& ws = ws_loader.load_window_system();
 
     auto&& device_strategy = options.use_device_with_uuid ?
         VulkanState::ChoosePhysicalDeviceStrategy{ChooseByUUIDStrategy{*options.use_device_with_uuid}} :
         VulkanState::ChoosePhysicalDeviceStrategy{ChooseFirstSupportedStrategy{}};
     VulkanState vulkan{ws.vulkan_wsi(), device_strategy, options.show_debug};
-
-    if (options.list_devices)
-    {
-        vulkan.log_all_devices();
-        return 0;
-    }
 
     auto const ws_vulkan_deinit = Util::on_scope_exit([&] { ws.deinit_vulkan(); });
     ws.init_vulkan(vulkan);

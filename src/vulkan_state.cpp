@@ -108,9 +108,24 @@ void VulkanState::log_info() const
     log_device_info(physical_device());
 }
 
-void VulkanState::log_all_devices() const
+void VulkanState::log_all_devices()
 {
-    std::vector<vk::PhysicalDevice> const& physical_devices = instance().enumeratePhysicalDevices();
+    auto const app_info = vk::ApplicationInfo{}
+        .setPApplicationName("vkmark")
+#ifdef VK_MAKE_API_VERSION
+        .setApiVersion(VK_MAKE_API_VERSION(0, 1, 0, 0));
+#else
+        .setApiVersion(VK_MAKE_VERSION(1, 0, 0));
+#endif
+
+    auto const create_info = vk::InstanceCreateInfo{}
+        .setPApplicationInfo(&app_info);
+
+    auto vk_instance = ManagedResource<vk::Instance>{
+        vk::createInstance(create_info),
+        [] (auto& i) { i.destroy(); }};
+
+    auto physical_devices = vk_instance.raw.enumeratePhysicalDevices();
 
     for (size_t i = 0; i < physical_devices.size(); ++i)
     {
