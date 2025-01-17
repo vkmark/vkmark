@@ -27,7 +27,10 @@
 class DisplayNativeSystem : public NativeSystem
 {
 public:
-    static vk::DisplaySurfaceCreateInfoKHR get_display_surface_create_info(vk::PhysicalDevice const& pd);
+    static vk::DisplaySurfaceCreateInfoKHR get_display_surface_create_info(
+        vk::PhysicalDevice const& pd, unsigned int display_index);
+
+    explicit DisplayNativeSystem(unsigned int display_index);
 
     VulkanWSI::Extensions required_extensions() override;
     uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) override;
@@ -36,5 +39,6 @@ public:
     ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) override;
 
 private:
+    unsigned int display_index;
     vk::Extent2D vk_extent;
 };

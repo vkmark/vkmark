@@ -25,10 +25,32 @@
 #include "display_native_system.h"
 #include "window_system_priority.h"
 
+#include "log.h"
 #include "options.h"
+
+namespace
+{
+
+std::string const display_index_opt{"display-index"};
+
+std::string get_display_index_option(Options const& options)
+{
+    auto iter = std::find_if(
+        options.window_system_options.begin(),
+        options.window_system_options.end(),
+        [] (auto opt) { return opt.name == display_index_opt; });
+    return iter != options.window_system_options.end() ?
+           iter->value : "";
+}
+
+}
 
 void vkmark_window_system_load_options(Options& options)
 {
+    options.add_window_system_help(
+        "Display window system options (pass in --winsys-options)\n"
+        "  display-index=INDEX         The index of the Vulkan display to use (default: 0)\n"
+        );
 }
 
 int vkmark_window_system_probe(Options const& options)
@@ -69,7 +91,10 @@ int vkmark_window_system_probe(Options const& options)
     {
         try
         {
-            DisplayNativeSystem::get_display_surface_create_info(*physical_device);
+            auto display_index = std::stoi(get_display_index_option(options));
+            if (display_index < 0)
+                throw std::runtime_error{""};
+            DisplayNativeSystem::get_display_surface_create_info(*physical_device, display_index);
             return VKMARK_WINDOW_SYSTEM_PROBE_OK + VKMARK_DISPLAY_WINDOW_SYSTEM_PRIORITY;
         }
         catch (...)
@@ -82,8 +107,33 @@ int vkmark_window_system_probe(Options const& options)
 
 std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options)
 {
+    unsigned int display_index = 0;
+
+    for (auto const& opt : options.window_system_options)
+    {
+        if (opt.name == display_index_opt)
+        {
+            try
+            {
+                auto i = std::stoi(opt.value);
+                if (i < 0)
+                    throw std::runtime_error{""};
+                display_index = i;
+            }
+            catch (...)
+            {
+                throw std::runtime_error{"Invalid value for winsys option 'display-index'"};
+            }
+        }
+        else
+        {
+            Log::info("DisplayWindowSystemPlugin: Ignoring unknown window system option '%s'\n",
+                      opt.name.c_str());
+        }
+    }
+
     return std::make_unique<SwapchainWindowSystem>(
-        std::make_unique<DisplayNativeSystem>(),
+        std::make_unique<DisplayNativeSystem>(display_index),
         options.present_mode,
         options.pixel_format);
 }

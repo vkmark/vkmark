@@ -25,13 +25,14 @@
 #include "vulkan_state.h"
 
 vk::DisplaySurfaceCreateInfoKHR DisplayNativeSystem::get_display_surface_create_info(
-    vk::PhysicalDevice const& physical_device)
+    vk::PhysicalDevice const& physical_device, unsigned int display_index)
 {
     auto const displays = physical_device.getDisplayPropertiesKHR();
     if (displays.empty())
         throw std::runtime_error{"Failed to find any Vulkan displays"};
-    // TODO: Allow the user to specify the display they want to use.
-    auto const display = displays[0].display;
+    if (display_index >= displays.size())
+        throw std::runtime_error{"Specified display-index does not correspond to a Vulkan display"};
+    auto const display = displays[display_index].display;
 
     auto const planes = physical_device.getDisplayPlanePropertiesKHR();
     if (planes.empty())
@@ -70,7 +71,7 @@ vk::DisplaySurfaceCreateInfoKHR DisplayNativeSystem::get_display_surface_create_
     vk::DisplayModePropertiesKHR mode;
     for (auto& m : modes)
     {
-        if (m.parameters.visibleRegion == displays[0].physicalResolution &&
+        if (m.parameters.visibleRegion == displays[display_index].physicalResolution &&
             (!mode.displayMode ||
              m.parameters.refreshRate > mode.parameters.refreshRate))
         {
@@ -86,6 +87,11 @@ vk::DisplaySurfaceCreateInfoKHR DisplayNativeSystem::get_display_surface_create_
         .setPlaneStackIndex(0)
         .setDisplayMode(mode.displayMode)
         .setImageExtent(displays[0].physicalResolution);
+}
+
+DisplayNativeSystem::DisplayNativeSystem(unsigned int display_index)
+    : display_index{display_index}
+{
 }
 
 VulkanWSI::Extensions DisplayNativeSystem::required_extensions()
@@ -120,7 +126,8 @@ vk::Extent2D DisplayNativeSystem::get_vk_extent()
 
 ManagedResource<vk::SurfaceKHR> DisplayNativeSystem::create_vk_surface(VulkanState& vulkan)
 {
-    auto const create_info = get_display_surface_create_info(vulkan.physical_device());
+    auto const create_info = get_display_surface_create_info(
+        vulkan.physical_device(), display_index);
     vk_extent = create_info.imageExtent;
 
     return ManagedResource<vk::SurfaceKHR>{
