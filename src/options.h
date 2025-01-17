@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 #include <utility>
@@ -58,7 +59,7 @@ struct Options
     bool show_debug;
     bool show_help;
     bool list_devices;
-    std::pair<DeviceUUID, bool> use_device_with_uuid; // pseudo-optional
+    std::optional<DeviceUUID> use_device_with_uuid;
 
 private:
     std::vector<std::string> window_system_help;
