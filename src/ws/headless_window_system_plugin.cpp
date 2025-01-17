@@ -23,11 +23,10 @@
 #include "window_system_plugin.h"
 #include "swapchain_window_system.h"
 #include "headless_native_system.h"
+#include "window_system_priority.h"
 
 #include "log.h"
 #include "options.h"
-
-#define VKMARK_HEADLESS_WINDOW_SYSTEM_PRIORITY -1
 
 void vkmark_window_system_load_options(Options&)
 {

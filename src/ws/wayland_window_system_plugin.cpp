@@ -23,12 +23,11 @@
 #include "window_system_plugin.h"
 #include "swapchain_window_system.h"
 #include "wayland_native_system.h"
+#include "window_system_priority.h"
 
 #include "options.h"
 
 #include <wayland-client.h>
-
-#define VKMARK_WAYLAND_WINDOW_SYSTEM_PRIORITY 1
 
 void vkmark_window_system_load_options(Options&)
 {

@@ -23,13 +23,12 @@
 #include "window_system_plugin.h"
 #include "swapchain_window_system.h"
 #include "xcb_native_system.h"
+#include "window_system_priority.h"
 
 #include "options.h"
 #include "log.h"
 
 #include <xcb/xcb.h>
-
-#define VKMARK_XCB_WINDOW_SYSTEM_PRIORITY 0
 
 namespace
 {

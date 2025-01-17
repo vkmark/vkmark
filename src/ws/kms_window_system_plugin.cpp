@@ -23,6 +23,8 @@
 #include "window_system_plugin.h"
 #include "kms_window_system.h"
 #include "atomic_kms_window_system.h"
+#include "window_system_priority.h"
+
 
 #include "options.h"
 #include "log.h"
@@ -32,8 +34,6 @@
 #include <xf86drm.h>
 
 #include <filesystem>
-
-#define VKMARK_KMS_WINDOW_SYSTEM_PRIORITY 2
 
 namespace
 {
