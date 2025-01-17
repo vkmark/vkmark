@@ -118,8 +118,14 @@ void VulkanState::log_all_devices()
         .setApiVersion(VK_MAKE_VERSION(1, 0, 0));
 #endif
 
+    auto const enabled_extensions = std::array<char const*, 2>{
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_KHR_DISPLAY_EXTENSION_NAME};
+
     auto const create_info = vk::InstanceCreateInfo{}
-        .setPApplicationInfo(&app_info);
+        .setPApplicationInfo(&app_info)
+        .setEnabledExtensionCount(enabled_extensions.size())
+        .setPpEnabledExtensionNames(enabled_extensions.data());
 
     auto vk_instance = ManagedResource<vk::Instance>{
         vk::createInstance(create_info),
@@ -131,6 +137,15 @@ void VulkanState::log_all_devices()
     {
         Log::info("=== Physical Device %d ===\n", i);
         log_device_info(physical_devices[i]);
+        auto const display_props = physical_devices[i].getDisplayPropertiesKHR();
+        for (unsigned i = 0; i < display_props.size(); ++i)
+        {
+            Log::info("    Display %d:      %s %ux%u\n",
+                      i,
+                      display_props[i].displayName,
+                      display_props[i].physicalResolution.width,
+                      display_props[i].physicalResolution.height);
+        }
     }
 }
 
