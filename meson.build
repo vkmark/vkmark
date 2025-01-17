@@ -43,7 +43,7 @@ subdir('data')
 subdir('tests')
 subdir('doc')
 
-msg = 'Building with support for the following window systems: headless '
+msg = 'Building with support for the following window systems: headless display '
 
 if build_wayland_ws
     msg += 'wayland '

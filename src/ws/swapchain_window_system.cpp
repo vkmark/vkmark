@@ -131,8 +131,10 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
     }
     vk_present_queue = vulkan->device().getQueue(vk_present_queue_family_index, 0);
 
-    vk_extent = native->get_vk_extent();
     vk_surface = native->create_vk_surface(vulkan_);
+    // Get the extent after creating the surface, since some window system plugins
+    // only know the extent after that point.
+    vk_extent = native->get_vk_extent();
     vk_swapchain = create_vk_swapchain();
     vk_images = vulkan->device().getSwapchainImagesKHR(vk_swapchain);
 

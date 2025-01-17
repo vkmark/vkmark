@@ -84,6 +84,17 @@ headless_ws = shared_module(
     install_dir : ws_dir
     )
 
+display_ws = shared_module(
+    'display',
+    'ws/display_window_system_plugin.cpp',
+    'ws/display_native_system.cpp',
+    'ws/swapchain_window_system.cpp',
+    dependencies : [vulkan_dep],
+    name_prefix : '',
+    install : true,
+    install_dir : ws_dir
+    )
+
 if build_xcb_ws
     xcb_ws = shared_module(
         'xcb',

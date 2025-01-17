@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 Collabora Ltd.
+ * Copyright © 2025 Collabora Ltd.
  *
  * This file is part of vkmark.
  *
@@ -20,11 +20,21 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
-
 #pragma once
 
-#define VKMARK_HEADLESS_WINDOW_SYSTEM_PRIORITY -1
-#define VKMARK_XCB_WINDOW_SYSTEM_PRIORITY 0
-#define VKMARK_WAYLAND_WINDOW_SYSTEM_PRIORITY 1
-#define VKMARK_DISPLAY_WINDOW_SYSTEM_PRIORITY 2
-#define VKMARK_KMS_WINDOW_SYSTEM_PRIORITY 3
+#include "native_system.h"
+
+class DisplayNativeSystem : public NativeSystem
+{
+public:
+    static vk::DisplaySurfaceCreateInfoKHR get_display_surface_create_info(vk::PhysicalDevice const& pd);
+
+    VulkanWSI::Extensions required_extensions() override;
+    uint32_t get_presentation_queue_family_index(vk::PhysicalDevice const& pd) override;
+    bool should_quit() override;
+    vk::Extent2D get_vk_extent() override;
+    ManagedResource<vk::SurfaceKHR> create_vk_surface(VulkanState& vulkan) override;
+
+private:
+    vk::Extent2D vk_extent;
+};
