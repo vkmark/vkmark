@@ -133,7 +133,7 @@ VulkanImage TextureScene::draw(VulkanImage const& image)
         .setWaitSemaphoreCount(image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
-        .setSignalSemaphoreCount(1)
+        .setSignalSemaphoreCount(image.semaphore ? 1 : 0)
         .setPSignalSemaphores(&submit_semaphore.raw);
 
     vulkan->graphics_queue().submit(submit_info, {});
