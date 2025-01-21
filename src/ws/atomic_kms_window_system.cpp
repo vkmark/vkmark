@@ -226,13 +226,9 @@ AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device,
 {
 }
 
-void AtomicKMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
+void AtomicKMSWindowSystem::flip(uint32_t image_index)
 {
-    static uint64_t const one_sec = 1000000000;
-    auto const& fb_id = drm_fbs[vulkan_image.index];
-
-    (void)vulkan->device().waitForFences(vulkan_image.submit_fence, true, one_sec);
-    vulkan->device().resetFences(vulkan_image.submit_fence);
+    auto const& fb_id = drm_fbs[image_index];
 
     auto const req = ManagedResource<drmModeAtomicReq*>{
         drmModeAtomicAlloc(), drmModeAtomicFree};
@@ -278,8 +274,4 @@ void AtomicKMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image
         throw std::system_error{-ret, std::system_category(),
                                 "Failed to perform atomic commit"};
     }
-
-    wait_for_drm_page_flip_event();
-
-    current_image_index = (current_image_index + 1) % vk_images.size();
 }

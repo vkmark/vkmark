@@ -544,13 +544,9 @@ VulkanImage KMSWindowSystem::next_vulkan_image()
     return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr, vk_submit_fences[current_image_index]};
 }
 
-void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
+void KMSWindowSystem::flip(uint32_t image_index)
 {
-    static uint64_t const one_sec = 1000000000;
-    auto const& fb = drm_fbs[vulkan_image.index];
-
-    (void)vulkan->device().waitForFences(vulkan_image.submit_fence, true, one_sec);
-    vulkan->device().resetFences(vulkan_image.submit_fence);
+    auto const& fb = drm_fbs[image_index];
 
     if (!has_crtc_been_set)
     {
@@ -564,6 +560,16 @@ void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
     }
 
     drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb, DRM_MODE_PAGE_FLIP_EVENT, nullptr);
+}
+
+void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
+{
+    static uint64_t const one_sec = 1000000000;
+
+    (void)vulkan->device().waitForFences(vulkan_image.submit_fence, true, one_sec);
+    vulkan->device().resetFences(vulkan_image.submit_fence);
+
+    flip(vulkan_image.index);
 
     wait_for_drm_page_flip_event();
 

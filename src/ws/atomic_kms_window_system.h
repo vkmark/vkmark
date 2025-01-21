@@ -68,9 +68,9 @@ public:
     AtomicKMSWindowSystem(std::string const& drm_device,
                           std::string const& tty);
 
-    void present_vulkan_image(VulkanImage const&) override;
-
 protected:
+    void flip(uint32_t image_index) override;
+
     bool const supports_atomic;
     ManagedResource<drmModePlanePtr> const drm_plane;
     PropertyIds const property_ids;

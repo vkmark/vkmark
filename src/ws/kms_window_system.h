@@ -79,6 +79,7 @@ protected:
     void create_vk_images();
     void create_vk_submit_fences();
     void wait_for_drm_page_flip_event();
+    virtual void flip(uint32_t image_index);
 
     ManagedResource<int> const drm_fd;
     ManagedResource<drmModeResPtr> const drm_resources;
