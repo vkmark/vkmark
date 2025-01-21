@@ -526,6 +526,7 @@ void KMSWindowSystem::init_vulkan(VulkanState& vulkan_)
     create_gbm_bos();
     create_drm_fbs();
     create_vk_images();
+    create_vk_submit_fences();
 }
 
 void KMSWindowSystem::deinit_vulkan()
@@ -535,21 +536,21 @@ void KMSWindowSystem::deinit_vulkan()
     vk_images.clear();
     drm_fbs.clear();
     gbm_bos.clear();
+    vk_submit_fences.clear();
 }
 
 VulkanImage KMSWindowSystem::next_vulkan_image()
 {
-    return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr, nullptr};
+    return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr, vk_submit_fences[current_image_index]};
 }
 
 void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
 {
+    static uint64_t const one_sec = 1000000000;
     auto const& fb = drm_fbs[vulkan_image.index];
 
-    // We can't use the VulkanImage semaphore in the KMS window system to
-    // synchronize rendering and presentation, so just wait for the graphics
-    // queue to finish before flipping.
-    vulkan->graphics_queue().waitIdle();
+    (void)vulkan->device().waitForFences(vulkan_image.submit_fence, true, one_sec);
+    vulkan->device().resetFences(vulkan_image.submit_fence);
 
     if (!has_crtc_been_set)
     {
@@ -746,6 +747,16 @@ void KMSWindowSystem::create_vk_images()
                     vptr->device().destroyImage(image);
                     vptr->device().freeMemory(mem);
                 }});
+    }
+}
+
+void KMSWindowSystem::create_vk_submit_fences()
+{
+    for (unsigned int i = 0; i < vk_images.size(); ++i)
+    {
+        vk_submit_fences.push_back(ManagedResource<vk::Fence>{
+            vulkan->device().createFence(vk::FenceCreateInfo{}),
+            [this] (auto& f) { vulkan->device().destroyFence(f); }});
     }
 }
 

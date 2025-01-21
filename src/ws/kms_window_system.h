@@ -77,6 +77,7 @@ protected:
     void create_gbm_bos();
     void create_drm_fbs();
     void create_vk_images();
+    void create_vk_submit_fences();
     void wait_for_drm_page_flip_event();
 
     ManagedResource<int> const drm_fd;
@@ -93,6 +94,7 @@ protected:
     std::vector<ManagedResource<gbm_bo*>> gbm_bos;
     std::vector<ManagedResource<uint32_t>> drm_fbs;
     std::vector<ManagedResource<vk::Image>> vk_images;
+    std::vector<ManagedResource<vk::Fence>> vk_submit_fences;
     uint32_t current_image_index;
     bool has_crtc_been_set;
 };
