@@ -252,6 +252,10 @@ void AtomicKMSWindowSystem::flip(uint32_t image_index)
         flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
         has_crtc_been_set = true;
     }
+    else if (present_mode == vk::PresentModeKHR::eImmediate)
+    {
+        flags |= DRM_MODE_PAGE_FLIP_ASYNC;
+    }
 
     auto const plane_id = drm_plane->plane_id;
     drmModeAtomicAddProperty(req, plane_id, property_ids.plane.fb_id, fb_id);

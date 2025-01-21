@@ -502,6 +502,17 @@ KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
       flipped_image_index{-1},
       presented_image_index{-1}
 {
+    if (present_mode == vk::PresentModeKHR::eImmediate)
+    {
+        uint64_t cap_async;
+        if (drmGetCap(drm_fd, DRM_CAP_ASYNC_PAGE_FLIP, &cap_async) < 0 ||
+            cap_async == 0)
+        {
+            Log::info("Warning: DRM_CAP_ASYNC_PAGE_FLIP not supported, falling"
+                      " back to 'mailbox' mode.\n");
+            present_mode = vk::PresentModeKHR::eMailbox;
+        }
+    }
 }
 
 KMSWindowSystem::~KMSWindowSystem()
@@ -577,8 +588,12 @@ void KMSWindowSystem::flip(uint32_t image_index)
         has_crtc_been_set = true;
     }
 
+    uint32_t flip_flags = DRM_MODE_PAGE_FLIP_EVENT;
+    if (present_mode == vk::PresentModeKHR::eImmediate)
+        flip_flags |= DRM_MODE_PAGE_FLIP_ASYNC;
+
     auto const ret = drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb,
-                                     DRM_MODE_PAGE_FLIP_EVENT, this);
+                                     flip_flags, this);
     if (ret < 0)
         throw std::system_error{-ret, std::system_category(), "Failed to page flip"};
 }
