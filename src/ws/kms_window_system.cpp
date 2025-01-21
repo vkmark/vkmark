@@ -559,7 +559,10 @@ void KMSWindowSystem::flip(uint32_t image_index)
         has_crtc_been_set = true;
     }
 
-    drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb, DRM_MODE_PAGE_FLIP_EVENT, nullptr);
+    auto const ret = drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb,
+                                     DRM_MODE_PAGE_FLIP_EVENT, nullptr);
+    if (ret < 0)
+        throw std::system_error{-ret, std::system_category(), "Failed to page flip"};
 }
 
 void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
