@@ -124,14 +124,17 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
 
     auto const i = image.index;
 
-    if (!command_buffer_fences[i])
+    if (!image.submit_fence)
     {
-        command_buffer_fences[i] = vulkan->device().createFence(vk::FenceCreateInfo());
-    }
-    else
-    {
-        (void)vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
-        vulkan->device().resetFences(command_buffer_fences[i]);
+        if (!command_buffer_fences[i])
+        {
+            command_buffer_fences[i] = vulkan->device().createFence(vk::FenceCreateInfo());
+        }
+        else
+        {
+            (void)vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
+            vulkan->device().resetFences(command_buffer_fences[i]);
+        }
     }
 
     command_buffers[i].begin(begin_info);
@@ -171,7 +174,9 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
-    vulkan->graphics_queue().submit(submit_info, command_buffer_fences[image.index]);
+    vulkan->graphics_queue().submit(submit_info,
+        image.submit_fence ? image.submit_fence :
+                             command_buffer_fences[image.index]);
 
     return image.copy_with_semaphore(submit_semaphore);
 }

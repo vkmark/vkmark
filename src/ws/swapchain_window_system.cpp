@@ -171,7 +171,7 @@ VulkanImage SwapchainWindowSystem::next_vulkan_image()
     auto const image_index = vulkan->device().acquireNextImageKHR(
         vk_swapchain, UINT64_MAX, vk_acquire_semaphores[current_frame], vk_acquire_fences[current_frame]).value;
 
-    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphores[current_frame]};
+    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphores[current_frame], nullptr};
 }
 
 void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)

@@ -136,7 +136,7 @@ VulkanImage TextureScene::draw(VulkanImage const& image)
         .setSignalSemaphoreCount(image.semaphore ? 1 : 0)
         .setPSignalSemaphores(&submit_semaphore.raw);
 
-    vulkan->graphics_queue().submit(submit_info, {});
+    vulkan->graphics_queue().submit(submit_info, image.submit_fence);
 
     return image.copy_with_semaphore(submit_semaphore);
 }

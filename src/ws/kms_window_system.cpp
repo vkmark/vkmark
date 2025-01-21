@@ -539,7 +539,7 @@ void KMSWindowSystem::deinit_vulkan()
 
 VulkanImage KMSWindowSystem::next_vulkan_image()
 {
-    return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr};
+    return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr, nullptr};
 }
 
 void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
