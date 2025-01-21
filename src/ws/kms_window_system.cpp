@@ -854,7 +854,6 @@ void KMSWindowSystem::wait_for_drm_page_flip_event(int timeout_ms)
 void KMSWindowSystem::page_flip_handler(int, unsigned int, unsigned int, unsigned int, void* data)
 {
     auto* ws = reinterpret_cast<KMSWindowSystem*>(data);
-    //fprintf(stderr, "presented_image %d\n", ws->flipped_image_index);
     ws->presented_image_index = ws->flipped_image_index;
     ws->flipped_image_index = -1;
 }
