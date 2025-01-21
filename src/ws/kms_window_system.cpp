@@ -861,7 +861,8 @@ void KMSWindowSystem::page_flip_handler(int, unsigned int, unsigned int, unsigne
 VulkanWSI::Extensions KMSWindowSystem::required_extensions()
 {
     return {{VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-             VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME},
+             VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+             VK_KHR_SURFACE_EXTENSION_NAME},
             {VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
              VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
              VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
@@ -871,7 +872,8 @@ VulkanWSI::Extensions KMSWindowSystem::required_extensions()
              VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
              VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
              VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
-             VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME}};
+             VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+             VK_KHR_SWAPCHAIN_EXTENSION_NAME}};
 }
 
 bool KMSWindowSystem::is_physical_device_supported(vk::PhysicalDevice const& physdev)
