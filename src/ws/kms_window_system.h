@@ -54,7 +54,8 @@ class KMSWindowSystem : public WindowSystem, public VulkanWSI
 {
 public:
     KMSWindowSystem(std::string const& drm_device,
-                    std::string const& tty);
+                    std::string const& tty,
+                    vk::PresentModeKHR present_mode);
     ~KMSWindowSystem();
 
     VulkanWSI& vulkan_wsi() override;
@@ -78,7 +79,9 @@ protected:
     void create_drm_fbs();
     void create_vk_images();
     void create_vk_submit_fences();
-    void wait_for_drm_page_flip_event();
+    void wait_for_drm_page_flip_event(int timeout_ms);
+    static void page_flip_handler(int, unsigned int, unsigned int, unsigned int, void* data);
+    int32_t get_free_image_index();
     virtual void flip(uint32_t image_index);
 
     ManagedResource<int> const drm_fd;
@@ -96,6 +99,9 @@ protected:
     std::vector<ManagedResource<uint32_t>> drm_fbs;
     std::vector<ManagedResource<vk::Image>> vk_images;
     std::vector<ManagedResource<vk::Fence>> vk_submit_fences;
-    uint32_t current_image_index;
+    int32_t current_image_index;
     bool has_crtc_been_set;
+    vk::PresentModeKHR present_mode;
+    int32_t flipped_image_index;
+    int32_t presented_image_index;
 };

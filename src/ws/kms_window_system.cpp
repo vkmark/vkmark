@@ -306,10 +306,6 @@ ManagedResource<int> open_active_vt(std::string const& vt)
     return ManagedResource<int>{std::move(fd), close};
 }
 
-void page_flip_handler(int, unsigned int, unsigned int, unsigned int, void*)
-{
-}
-
 VTState* global_vt_state = nullptr;
 
 void restore_vt(int)
@@ -488,7 +484,8 @@ VTState::~VTState()
 }
 
 KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
-                                 std::string const& tty)
+                                 std::string const& tty,
+                                 vk::PresentModeKHR present_mode)
     : drm_fd{open_drm_device(drm_device)},
       drm_resources{get_resources_for(drm_fd)},
       drm_connector{get_connected_connector(drm_fd, drm_resources)},
@@ -500,7 +497,10 @@ KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
       vulkan{nullptr},
       vk_image_format{vk::Format::eUndefined},
       current_image_index{0},
-      has_crtc_been_set{false}
+      has_crtc_been_set{false},
+      present_mode{present_mode},
+      flipped_image_index{-1},
+      presented_image_index{-1}
 {
 }
 
@@ -539,9 +539,27 @@ void KMSWindowSystem::deinit_vulkan()
     vk_submit_fences.clear();
 }
 
+int32_t KMSWindowSystem::get_free_image_index()
+{
+    for (int32_t i = 0; i < static_cast<int32_t>(vk_images.size()); ++i)
+    {
+        if (i != presented_image_index && i != flipped_image_index &&
+            i != current_image_index)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 VulkanImage KMSWindowSystem::next_vulkan_image()
 {
-    return {current_image_index, vk_images[current_image_index], vk_image_format, vk_extent, nullptr, vk_submit_fences[current_image_index]};
+    return {
+        static_cast<uint32_t>(current_image_index),
+        vk_images[current_image_index], vk_image_format, vk_extent, nullptr,
+        vk_submit_fences[current_image_index]
+    };
 }
 
 void KMSWindowSystem::flip(uint32_t image_index)
@@ -560,7 +578,7 @@ void KMSWindowSystem::flip(uint32_t image_index)
     }
 
     auto const ret = drmModePageFlip(drm_fd, drm_crtc->crtc_id, fb,
-                                     DRM_MODE_PAGE_FLIP_EVENT, nullptr);
+                                     DRM_MODE_PAGE_FLIP_EVENT, this);
     if (ret < 0)
         throw std::system_error{-ret, std::system_category(), "Failed to page flip"};
 }
@@ -572,11 +590,24 @@ void KMSWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
     (void)vulkan->device().waitForFences(vulkan_image.submit_fence, true, one_sec);
     vulkan->device().resetFences(vulkan_image.submit_fence);
 
-    flip(vulkan_image.index);
+    if (present_mode == vk::PresentModeKHR::eMailbox)
+    {
+        wait_for_drm_page_flip_event(0);
+    }
+    else
+    {
+        while (flipped_image_index >= 0)
+            wait_for_drm_page_flip_event(-1);
+    }
 
-    wait_for_drm_page_flip_event();
+    if (flipped_image_index == -1)
+    {
+        flip(vulkan_image.index);
+        flipped_image_index = vulkan_image.index;
+    }
 
-    current_image_index = (current_image_index + 1) % vk_images.size();
+    while ((current_image_index = get_free_image_index()) < 0)
+        wait_for_drm_page_flip_event(-1);
 }
 
 std::vector<VulkanImage> KMSWindowSystem::vulkan_images()
@@ -600,6 +631,7 @@ void KMSWindowSystem::create_gbm_bos()
     auto drm_mods = drm_get_supported_mods_for_format(drm_fd, drm_format);
     auto vk_mods = vk_get_supported_mods_for_format(*vulkan, vk_image_format);
     std::vector<uint64_t> mods;
+    int num_bos = (present_mode == vk::PresentModeKHR::eMailbox) ? 4 : 3;
 
     // Find the modifiers supported by both DRM and Vulkan
     for (auto mod : drm_mods)
@@ -608,7 +640,7 @@ void KMSWindowSystem::create_gbm_bos()
             mods.push_back(mod);
     }
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < num_bos; ++i)
     {
         struct gbm_bo *bo_raw;
 
@@ -769,7 +801,7 @@ void KMSWindowSystem::create_vk_submit_fences()
     }
 }
 
-void KMSWindowSystem::wait_for_drm_page_flip_event()
+void KMSWindowSystem::wait_for_drm_page_flip_event(int timeout_ms)
 {
     static int constexpr drm_event_context_version = 2;
     static drmEventContext event_context = {
@@ -781,7 +813,7 @@ void KMSWindowSystem::wait_for_drm_page_flip_event()
 
     while (true)
     {
-        auto const ret = poll(&pfd, 1, 1000);
+        auto const ret = poll(&pfd, 1, timeout_ms);
         if (ret < 0)
         {
             if (errno == EINTR)
@@ -790,13 +822,26 @@ void KMSWindowSystem::wait_for_drm_page_flip_event()
             throw std::system_error{
                 errno, std::system_category(), "Failed while polling for pages flip event"};
         }
-
-        if (pfd.revents & POLLIN)
+        else if (ret == 0) // timeout
+        {
+            break;
+        }
+        else if (pfd.revents & POLLIN)
         {
             drmHandleEvent(drm_fd, &event_context);
             break;
         }
+
+        throw std::runtime_error{"Failed while polling for pages flip event"};
     }
+}
+
+void KMSWindowSystem::page_flip_handler(int, unsigned int, unsigned int, unsigned int, void* data)
+{
+    auto* ws = reinterpret_cast<KMSWindowSystem*>(data);
+    //fprintf(stderr, "presented_image %d\n", ws->flipped_image_index);
+    ws->presented_image_index = ws->flipped_image_index;
+    ws->flipped_image_index = -1;
 }
 
 VulkanWSI::Extensions KMSWindowSystem::required_extensions()

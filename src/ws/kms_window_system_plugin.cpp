@@ -177,11 +177,13 @@ std::unique_ptr<WindowSystem> vkmark_window_system_create(Options const& options
         (atomic == "auto" && AtomicKMSWindowSystem::is_supported_on(drm_device)))
     {
         Log::debug("KMSWindowSystemPlugin: Using atomic modesetting\n");
-        return std::make_unique<AtomicKMSWindowSystem>(drm_device, tty);
+        return std::make_unique<AtomicKMSWindowSystem>(drm_device, tty,
+                                                       options.present_mode);
     }
     else
     {
         Log::debug("KMSWindowSystemPlugin: Using legacy modesetting\n");
-        return std::make_unique<KMSWindowSystem>(drm_device, tty);
+        return std::make_unique<KMSWindowSystem>(drm_device, tty,
+                                                 options.present_mode);
     }
 }

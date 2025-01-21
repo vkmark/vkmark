@@ -218,8 +218,9 @@ bool AtomicKMSWindowSystem::is_supported_on(std::string const& drm_device)
 }
 
 AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device,
-                                             std::string const& tty)
-    : KMSWindowSystem(drm_device, tty),
+                                             std::string const& tty,
+                                             vk::PresentModeKHR present_mode)
+    : KMSWindowSystem(drm_device, tty, present_mode),
       supports_atomic{check_for_atomic_or_throw(drm_fd)},
       drm_plane{get_plane_for_crtc(drm_fd, drm_resources, drm_crtc)},
       property_ids{drm_fd, drm_crtc, drm_connector, drm_plane}
@@ -268,7 +269,7 @@ void AtomicKMSWindowSystem::flip(uint32_t image_index)
     drmModeAtomicAddProperty(req, plane_id, property_ids.plane.crtc_h,
                              drm_crtc->mode.vdisplay);
 
-    auto const ret = drmModeAtomicCommit(drm_fd, req, flags, NULL);
+    auto const ret = drmModeAtomicCommit(drm_fd, req, flags, this);
     if (ret < 0)
     {
         throw std::system_error{-ret, std::system_category(),

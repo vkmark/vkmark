@@ -66,7 +66,8 @@ public:
     static bool is_supported_on(std::string const& drm_device);
 
     AtomicKMSWindowSystem(std::string const& drm_device,
-                          std::string const& tty);
+                          std::string const& tty,
+                          vk::PresentModeKHR present_mode);
 
 protected:
     void flip(uint32_t image_index) override;
