@@ -765,7 +765,8 @@ void KMSWindowSystem::create_vk_images()
             .setTiling(modifier != DRM_FORMAT_MOD_INVALID ?
                        vk::ImageTiling::eDrmFormatModifierEXT :
                        vk::ImageTiling::eOptimal)
-            .setUsage(vk::ImageUsageFlagBits::eColorAttachment)
+            .setUsage(vk::ImageUsageFlagBits::eColorAttachment |
+                      vk::ImageUsageFlagBits::eTransferDst)
             .setSharingMode(vk::SharingMode::eExclusive)
             .setInitialLayout(vk::ImageLayout::eUndefined);
 
