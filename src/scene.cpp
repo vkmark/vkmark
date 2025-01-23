@@ -124,8 +124,8 @@ std::string Scene::info_string(bool show_all_options) const
 
 unsigned int Scene::average_fps() const
 {
-    double const elapsed_time_sec = (last_update_time - start_time) / 1000000.0;
-    return current_frame / elapsed_time_sec;
+    return last_update_time > start_time ?
+           current_frame * 1000000 / (last_update_time - start_time) : 0;
 }
 
 bool Scene::is_running() const
