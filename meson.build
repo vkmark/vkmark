@@ -2,7 +2,7 @@ project(
     'vkmark',
     ['cpp', 'c'],
     default_options : ['cpp_std=c++17'],
-    version : '2017.08',
+    version : '2025.01',
     meson_version: '>=0.45'
     )
 

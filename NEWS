@@ -1,0 +1,16 @@
+vkmark 2025.01 (20250123)
+=========================
+
+* Update the KMS window system to use VK_EXT_external_memory_dmabuf.
+* Add KMS atomic support in the KMS window system.
+* Use explicit format modifiers in the KMS window system.
+* Support mailbox and immediate presentation modes in the KMS window system.
+* Update the Wayland window system to use xdg-shell.
+* Add a VK_KHR_display based window system ('display').
+* Add a VK_EXT_headless_surface based window system ('headless').
+* Add the '--list-devices' command-line option to list Vulkan physical devices.
+* Add the '--use-device' command-line option to select a Vulkan physical device.
+* Enable validation layer in debug mode.
+* Resolve various validation errors.
+* Require a C++17 compiler.
+* Add NEWS file to list changes since previous release.
