@@ -38,9 +38,18 @@
 #include <poll.h>
 #include <sys/ioctl.h>
 #include <csignal>
+#include <errno.h>
 
 namespace
 {
+
+struct ErrnoError : std::system_error
+{
+    ErrnoError(std::string const& what)
+        : std::system_error{errno, std::system_category(), what}
+    {
+    }
+};
 
 ManagedResource<int> open_drm_device(std::string const& drm_device)
 {
@@ -263,6 +272,82 @@ ManagedResource<drmModeCrtcPtr> get_crtc_for_connector(
     throw std::runtime_error{"Failed to get usable crtc"};
 }
 
+bool does_plane_support_crtc_index(drmModePlanePtr plane, uint32_t crtc_index)
+{
+    return plane->possible_crtcs & (1 << crtc_index);
+}
+
+std::optional<uint64_t> drm_props_get_value(int drm_fd, drmModeObjectProperties *props,
+                                            char const* name)
+{
+    for (uint32_t i = 0; i < props->count_props; ++i)
+    {
+        auto const prop = ManagedResource<drmModePropertyPtr>{
+            drmModeGetProperty(drm_fd, props->props[i]),
+            drmModeFreeProperty};
+        if (!prop) continue;
+        if (!strcmp(prop->name, name))
+            return {props->prop_values[i]};
+    }
+
+    return std::nullopt;
+}
+
+bool is_plane_primary(int drm_fd, drmModePlanePtr plane)
+{
+    auto const properties = ManagedResource<drmModeObjectPropertiesPtr>{
+        drmModeObjectGetProperties(drm_fd, plane->plane_id, DRM_MODE_OBJECT_PLANE),
+        drmModeFreeObjectProperties};
+
+    if (!properties)
+        throw ErrnoError{"Failed to get plane properties"};
+
+    auto const type = drm_props_get_value(drm_fd, properties, "type").value_or(0);
+
+    return type == DRM_PLANE_TYPE_PRIMARY;
+}
+
+ManagedResource<drmModePlanePtr> get_plane_for_crtc(
+    int drm_fd, drmModeResPtr resources, drmModeCrtcPtr crtc)
+{
+    ManagedResource<drmModePlanePtr> ret_plane;
+
+    auto const crtc_index =
+        std::distance(
+            resources->crtcs,
+            std::find(resources->crtcs, resources->crtcs + resources->count_crtcs,
+                crtc->crtc_id));
+
+    drmSetClientCap(drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
+
+    auto const plane_resources = ManagedResource<drmModePlaneResPtr>{
+        drmModeGetPlaneResources(drm_fd), drmModeFreePlaneResources};
+
+    if (!plane_resources)
+        throw ErrnoError{"Failed to get plane resources"};
+
+    for (auto i = 0u; i < plane_resources->count_planes; ++i)
+    {
+        auto plane = ManagedResource<drmModePlanePtr>{
+            drmModeGetPlane(drm_fd, plane_resources->planes[i]),
+            drmModeFreePlane};
+
+        if (!plane)
+            throw ErrnoError{"Failed to get plane"};
+
+        if (does_plane_support_crtc_index(plane, crtc_index))
+        {
+            ret_plane = std::move(plane);
+
+            if (is_plane_primary(drm_fd, ret_plane))
+                break;
+        }
+    }
+
+    return ret_plane;
+}
+
+
 ManagedResource<gbm_device*> create_gbm_device(int drm_fd)
 {
     auto gbm_raw = gbm_create_device(drm_fd);
@@ -332,70 +417,40 @@ uint32_t find_memory_type_index(vk::PhysicalDevice const& physical_device,
     throw std::runtime_error{"Coudn't find matching memory type"};
 }
 
-std::optional<uint64_t> drm_props_get_value(int drm_fd, drmModeObjectProperties *props,
-                                            char const* name)
-{
-    for (uint32_t i = 0; i < props->count_props; ++i)
-    {
-        auto const prop = ManagedResource<drmModePropertyPtr>{
-            drmModeGetProperty(drm_fd, props->props[i]),
-            drmModeFreeProperty};
-        if (!prop) continue;
-        if (!strcmp(prop->name, name))
-            return {props->prop_values[i]};
-    }
-
-    return std::nullopt;
-}
-
-std::vector<uint64_t> drm_get_supported_mods_for_format(int drm_fd, uint32_t format)
+std::vector<uint64_t> drm_get_supported_mods_for_format(int drm_fd, uint32_t format,
+                                                        uint32_t plane_id)
 {
     std::vector<uint64_t> supported_mods;
 
-    drmSetClientCap(drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
-
-    auto const res = ManagedResource<drmModePlaneResPtr>{
-        drmModeGetPlaneResources(drm_fd),
-        drmModeFreePlaneResources};
-    if (!res)
+    auto const props = ManagedResource<drmModeObjectPropertiesPtr>{
+        drmModeObjectGetProperties(drm_fd, plane_id, DRM_MODE_OBJECT_PLANE),
+        drmModeFreeObjectProperties};
+    if (!props)
         return {};
 
-    for (uint32_t i = 0; i < res->count_planes; ++i)
+    auto const blob_id = drm_props_get_value(drm_fd, props, "IN_FORMATS").value_or(0);
+    if (!blob_id)
+        return {};
+    auto const blob = ManagedResource<drmModePropertyBlobPtr>{
+        drmModeGetPropertyBlob(drm_fd, blob_id),
+        drmModeFreePropertyBlob};
+    if (!blob)
+        return {};
+
+    auto const data = static_cast<struct drm_format_modifier_blob*>(blob->data);
+    auto const fmts = reinterpret_cast<uint32_t*>(
+        reinterpret_cast<char*>(data) + data->formats_offset);
+    auto const mods = reinterpret_cast<struct drm_format_modifier*>(
+        reinterpret_cast<char*>(data) + data->modifiers_offset);
+    auto const fmt_p = std::find(fmts, fmts + data->count_formats, format);
+    if (fmt_p == fmts + data->count_formats)
+        return {};
+    auto const fmt_mask = 1 << (fmt_p - fmts);
+
+    for (uint32_t m = 0; m < data->count_modifiers; ++m)
     {
-        auto const props = ManagedResource<drmModeObjectPropertiesPtr>{
-            drmModeObjectGetProperties(drm_fd, res->planes[i], DRM_MODE_OBJECT_PLANE),
-            drmModeFreeObjectProperties};
-        if (!props)
-            continue;
-        auto const type = drm_props_get_value(drm_fd, props, "type").value_or(0);
-        if (type != DRM_PLANE_TYPE_PRIMARY)
-            continue;
-        auto const blob_id = drm_props_get_value(drm_fd, props, "IN_FORMATS").value_or(0);
-        if (!blob_id)
-            continue;
-        auto const blob = ManagedResource<drmModePropertyBlobPtr>{
-            drmModeGetPropertyBlob(drm_fd, blob_id),
-            drmModeFreePropertyBlob};
-        if (!blob)
-            continue;
-
-        auto const data = static_cast<struct drm_format_modifier_blob*>(blob->data);
-        auto const fmts = reinterpret_cast<uint32_t*>(
-            reinterpret_cast<char*>(data) + data->formats_offset);
-        auto const mods = reinterpret_cast<struct drm_format_modifier*>(
-            reinterpret_cast<char*>(data) + data->modifiers_offset);
-        auto const fmt_p = std::find(fmts, fmts + data->count_formats, format);
-        if (fmt_p == fmts + data->count_formats)
-            continue;
-        auto const fmt_mask = 1 << (fmt_p - fmts);
-
-        for (uint32_t m = 0; m < data->count_modifiers; ++m)
-        {
-            if (mods[m].formats & fmt_mask)
-                supported_mods.push_back(mods[m].modifier);
-        }
-
-        break;
+        if (mods[m].formats & fmt_mask)
+            supported_mods.push_back(mods[m].modifier);
     }
 
     return supported_mods;
@@ -494,6 +549,7 @@ KMSWindowSystem::KMSWindowSystem(std::string const& drm_device,
       drm_connector{get_connected_connector(drm_fd, drm_resources)},
       drm_prev_crtc{get_current_crtc_for_connector(drm_fd, drm_connector)},
       drm_crtc{get_crtc_for_connector(drm_fd, drm_resources, drm_connector)},
+      drm_plane{get_plane_for_crtc(drm_fd, drm_resources, drm_crtc)},
       gbm{create_gbm_device(drm_fd)},
       vk_extent{drm_crtc->mode.hdisplay, drm_crtc->mode.vdisplay},
       vt_state{tty},
@@ -646,7 +702,10 @@ bool KMSWindowSystem::should_quit()
 void KMSWindowSystem::create_gbm_bos()
 {
     auto const drm_format = DRM_FORMAT_XRGB8888;
-    auto drm_mods = drm_get_supported_mods_for_format(drm_fd, drm_format);
+    auto drm_mods =
+        drm_plane ?
+            drm_get_supported_mods_for_format(drm_fd, drm_format, drm_plane->plane_id) :
+            std::vector<uint64_t>{};
     auto vk_mods = vk_get_supported_mods_for_format(*vulkan, vk_image_format);
     std::vector<uint64_t> mods;
     int num_bos = (present_mode == vk::PresentModeKHR::eMailbox) ? 4 : 3;

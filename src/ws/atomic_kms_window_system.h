@@ -73,6 +73,5 @@ protected:
     void flip(uint32_t image_index) override;
 
     bool const supports_atomic;
-    ManagedResource<drmModePlanePtr> const drm_plane;
     PropertyIds const property_ids;
 };

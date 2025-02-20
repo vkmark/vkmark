@@ -89,6 +89,7 @@ protected:
     ManagedResource<drmModeConnectorPtr> const drm_connector;
     ManagedResource<drmModeCrtcPtr> const drm_prev_crtc;
     ManagedResource<drmModeCrtcPtr> const drm_crtc;
+    ManagedResource<drmModePlanePtr> const drm_plane;
     ManagedResource<gbm_device*> const gbm;
     vk::Extent2D const vk_extent;
     VTState const vt_state;

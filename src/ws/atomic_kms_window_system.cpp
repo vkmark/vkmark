@@ -36,92 +36,6 @@
 namespace
 {
 
-struct ErrnoError : std::system_error
-{
-    ErrnoError(std::string const& what)
-        : std::system_error{errno, std::system_category(), what}
-    {
-    }
-};
-
-bool does_plane_support_crtc_index(drmModePlanePtr plane, uint32_t crtc_index)
-{
-    return plane->possible_crtcs & (1 << crtc_index);
-}
-
-ManagedResource<drmModePropertyPtr> get_property_with_id(int drm_fd, int prop_id)
-{
-    return ManagedResource<drmModePropertyPtr>{
-        drmModeGetProperty(drm_fd, prop_id), drmModeFreeProperty};
-}
-
-bool is_plane_primary(int drm_fd, drmModePlanePtr plane)
-{
-    auto const properties = ManagedResource<drmModeObjectPropertiesPtr>{
-        drmModeObjectGetProperties(drm_fd, plane->plane_id, DRM_MODE_OBJECT_PLANE),
-        drmModeFreeObjectProperties};
-
-    if (!properties)
-        throw ErrnoError{"Failed to get plane properties"};
-
-    for (auto i = 0u; i < properties->count_props; ++i)
-    {
-        auto const property = get_property_with_id(drm_fd, properties->props[i]);
-
-        if (!property)
-            throw ErrnoError{"Failed to get plane property"};
-
-        if (!strcmp(property->name, "type") &&
-            properties->prop_values[i] == DRM_PLANE_TYPE_PRIMARY)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-ManagedResource<drmModePlanePtr> get_plane_for_crtc(
-    int drm_fd, drmModeResPtr resources, drmModeCrtcPtr crtc)
-{
-    ManagedResource<drmModePlanePtr> ret_plane;
-
-    auto const crtc_index =
-        std::distance(
-            resources->crtcs,
-            std::find(resources->crtcs, resources->crtcs + resources->count_crtcs,
-                crtc->crtc_id));
-
-    auto const plane_resources = ManagedResource<drmModePlaneResPtr>{
-        drmModeGetPlaneResources(drm_fd), drmModeFreePlaneResources};
-
-    if (!plane_resources)
-        throw ErrnoError{"Failed to get plane resources"};
-
-    for (auto i = 0u; i < plane_resources->count_planes; ++i)
-    {
-        auto plane = ManagedResource<drmModePlanePtr>{
-            drmModeGetPlane(drm_fd, plane_resources->planes[i]),
-            drmModeFreePlane};
-
-        if (!plane)
-            throw ErrnoError{"Failed to get plane"};
-
-        if (does_plane_support_crtc_index(plane, crtc_index))
-        {
-            ret_plane = std::move(plane);
-
-            if (is_plane_primary(drm_fd, ret_plane))
-                break;
-        }
-    }
-
-    Log::debug("AtomicKMSWindowSystem: Using plane %d\n",
-               ret_plane ? ret_plane->plane_id : -1);
-
-    return ret_plane;
-}
-
 bool check_for_atomic_or_throw(int drm_fd)
 {
     if (drmSetClientCap(drm_fd, DRM_CLIENT_CAP_ATOMIC, 1) < 0)
@@ -130,6 +44,19 @@ bool check_for_atomic_or_throw(int drm_fd)
     return true;
 }
 
+bool check_for_plane_or_throw(drmModePlanePtr plane)
+{
+    if (!plane)
+        throw std::runtime_error{"Failed to find compatible plane"};
+
+    return true;
+}
+
+ManagedResource<drmModePropertyPtr> get_property_with_id(int drm_fd, int prop_id)
+{
+    return ManagedResource<drmModePropertyPtr>{
+        drmModeGetProperty(drm_fd, prop_id), drmModeFreeProperty};
+}
 
 ManagedResource<drmModeObjectPropertiesPtr> get_object_properties(
     int drm_fd, int obj_id, int obj_type)
@@ -221,10 +148,11 @@ AtomicKMSWindowSystem::AtomicKMSWindowSystem(std::string const& drm_device,
                                              std::string const& tty,
                                              vk::PresentModeKHR present_mode)
     : KMSWindowSystem(drm_device, tty, present_mode),
-      supports_atomic{check_for_atomic_or_throw(drm_fd)},
-      drm_plane{get_plane_for_crtc(drm_fd, drm_resources, drm_crtc)},
+      supports_atomic{check_for_atomic_or_throw(drm_fd) &&
+                      check_for_plane_or_throw(drm_plane.raw)},
       property_ids{drm_fd, drm_crtc, drm_connector, drm_plane}
 {
+    Log::debug("AtomicKMSWindowSystem: Using plane %d\n", drm_plane->plane_id);
 }
 
 void AtomicKMSWindowSystem::flip(uint32_t image_index)
