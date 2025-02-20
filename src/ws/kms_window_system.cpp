@@ -351,6 +351,9 @@ std::optional<uint64_t> drm_props_get_value(int drm_fd, drmModeObjectProperties 
 std::vector<uint64_t> drm_get_supported_mods_for_format(int drm_fd, uint32_t format)
 {
     std::vector<uint64_t> supported_mods;
+
+    drmSetClientCap(drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
+
     auto const res = ManagedResource<drmModePlaneResPtr>{
         drmModeGetPlaneResources(drm_fd),
         drmModeFreePlaneResources};
