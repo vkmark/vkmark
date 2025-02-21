@@ -721,7 +721,7 @@ void KMSWindowSystem::create_gbm_bos()
     {
         struct gbm_bo *bo_raw;
 
-        if (mods.empty())
+        if (mods.empty() || (mods.size() == 1 && mods[0] == DRM_FORMAT_MOD_INVALID))
         {
             bo_raw = gbm_bo_create(
                 gbm, vk_extent.width, vk_extent.height, drm_format,
