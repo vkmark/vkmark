@@ -755,24 +755,42 @@ void KMSWindowSystem::create_gbm_bos()
 
 void KMSWindowSystem::create_drm_fbs()
 {
+    uint64_t addfb2_mods = 0;
+
+    drmGetCap(drm_fd, DRM_CAP_ADDFB2_MODIFIERS, &addfb2_mods);
+
     for (auto const& gbm_bo : gbm_bos)
     {
         uint32_t fb = 0;
         uint32_t handles[4] = {0};
         uint32_t strides[4] = {0};
         uint32_t offsets[4] = {0};
+        uint64_t modifiers[4] = {0};
+        uint64_t modifier = gbm_bo_get_modifier(gbm_bo);
+        int ret;
 
         for (auto i = 0; i < gbm_bo_get_plane_count(gbm_bo); i++)
         {
             handles[i] = gbm_bo_get_handle_for_plane(gbm_bo, i).u32;
             offsets[i] = gbm_bo_get_offset(gbm_bo, i);
             strides[i] = gbm_bo_get_stride_for_plane(gbm_bo, i);
+            modifiers[i] = modifier;
         }
 
-        auto const ret = drmModeAddFB2(
-            drm_fd, vk_extent.width, vk_extent.height,
-            gbm_bo_get_format(gbm_bo),
-            handles, strides, offsets, &fb, 0);
+        if (addfb2_mods && modifier != DRM_FORMAT_MOD_INVALID)
+        {
+            ret = drmModeAddFB2WithModifiers(
+                drm_fd, vk_extent.width, vk_extent.height,
+                gbm_bo_get_format(gbm_bo),
+                handles, strides, offsets, modifiers, &fb, DRM_MODE_FB_MODIFIERS);
+        }
+        else
+        {
+            ret = drmModeAddFB2(
+                drm_fd, vk_extent.width, vk_extent.height,
+                gbm_bo_get_format(gbm_bo),
+                handles, strides, offsets, &fb, 0);
+        }
 
         if (ret < 0)
             throw std::system_error{-ret, std::system_category(), "Failed to add drm fb"};
