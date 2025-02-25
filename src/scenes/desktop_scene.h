@@ -53,7 +53,7 @@ private:
     void setup_pipeline();
     void setup_framebuffers(std::vector<VulkanImage> const&);
     void setup_command_buffers();
-    void update_uniforms();
+    void update_uniforms(size_t index);
 
     VulkanState* vulkan;
     vk::Extent2D extent;

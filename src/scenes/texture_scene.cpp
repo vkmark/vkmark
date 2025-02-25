@@ -87,7 +87,7 @@ void TextureScene::setup(
     projection = glm::perspective(fovy, aspect, 2.0f, 2.0f + diameter);
 
     setup_vertex_buffer();
-    setup_uniform_buffer();
+    setup_uniform_buffer(vulkan_images.size());
     setup_texture();
     setup_shader_descriptor_set();
     setup_render_pass();
@@ -113,10 +113,10 @@ void TextureScene::teardown()
     pipeline = {};
     pipeline_layout = {};
     render_pass = {};
-    descriptor_set = {};
+    descriptor_sets.clear();
     texture = {};
-    uniform_buffer_map = {};
-    uniform_buffer = {};
+    uniform_buffer_maps.clear();
+    uniform_buffers.clear();
     vertex_buffer = {};
 
     Scene::teardown();
@@ -124,7 +124,7 @@ void TextureScene::teardown()
 
 VulkanImage TextureScene::draw(VulkanImage const& image)
 {
-    update_uniforms();
+    update_uniforms(image.index);
 
     vk::PipelineStageFlags const mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
@@ -183,19 +183,26 @@ void TextureScene::setup_vertex_buffer()
     vkutil::copy_buffer(*vulkan, staging_buffer, vertex_buffer, mesh->vertex_data_size());
 }
 
-void TextureScene::setup_uniform_buffer()
+void TextureScene::setup_uniform_buffer(size_t num_buffers)
 {
-    uniform_buffer = vkutil::BufferBuilder{*vulkan}
-        .set_size(sizeof(Uniforms))
-        .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
-        .set_memory_properties(
-            vk::MemoryPropertyFlagBits::eHostVisible |
-            vk::MemoryPropertyFlagBits::eHostCoherent)
-        .set_memory_out(uniform_buffer_memory)
-        .build();
+    for (auto i = 0u; i < num_buffers; ++i)
+    {
+        vk::DeviceMemory uniform_buffer_memory;
 
-    uniform_buffer_map = vkutil::map_memory(
-        *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
+        uniform_buffers.push_back(
+            vkutil::BufferBuilder{*vulkan}
+                .set_size(sizeof(Uniforms))
+                .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
+                .set_memory_properties(
+                    vk::MemoryPropertyFlagBits::eHostVisible |
+                    vk::MemoryPropertyFlagBits::eHostCoherent)
+                .set_memory_out(uniform_buffer_memory)
+                .build()
+            );
+
+        uniform_buffer_maps.push_back(vkutil::map_memory(
+            *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms)));
+    }
 }
 
 void TextureScene::setup_texture()
@@ -218,16 +225,20 @@ void TextureScene::setup_texture()
 
 void TextureScene::setup_shader_descriptor_set()
 {
-    descriptor_set = vkutil::DescriptorSetBuilder{*vulkan}
-        .set_type(vk::DescriptorType::eUniformBuffer)
-        .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
-        .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
-        .next_binding()
-        .set_type(vk::DescriptorType::eCombinedImageSampler)
-        .set_stage_flags(vk::ShaderStageFlagBits::eFragment)
-        .set_image_view(texture.image_view, texture.sampler)
-        .set_layout_out(descriptor_set_layout)
-        .build();
+    for (auto& uniform_buffer : uniform_buffers)
+    {
+        descriptor_sets.push_back(
+            vkutil::DescriptorSetBuilder{*vulkan}
+                .set_type(vk::DescriptorType::eUniformBuffer)
+                .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
+                .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
+                .next_binding()
+                .set_type(vk::DescriptorType::eCombinedImageSampler)
+                .set_stage_flags(vk::ShaderStageFlagBits::eFragment)
+                .set_image_view(texture.image_view, texture.sampler)
+                .set_layout_out(descriptor_set_layout)
+                .build());
+    }
 }
 
 void TextureScene::setup_render_pass()
@@ -339,7 +350,7 @@ void TextureScene::setup_command_buffers()
 
         command_buffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
         command_buffers[i].bindDescriptorSets(
-            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set.raw, {});
+            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_sets[i].raw, {});
         command_buffers[i].bindVertexBuffers(
             0,
             std::vector<vk::Buffer>{binding_offsets.size(), vertex_buffer.raw},
@@ -353,7 +364,7 @@ void TextureScene::setup_command_buffers()
     }
 }
 
-void TextureScene::update_uniforms()
+void TextureScene::update_uniforms(size_t index)
 {
     Uniforms ubo;
 
@@ -367,5 +378,5 @@ void TextureScene::update_uniforms()
     ubo.normal = glm::inverseTranspose(modelview);
     ubo.material_diffuse = glm::vec4{0.7f, 0.7f, 0.7f, 1.0f};
 
-    memcpy(uniform_buffer_map, &ubo, sizeof(ubo));
+    memcpy(uniform_buffer_maps[index], &ubo, sizeof(ubo));
 }

@@ -74,7 +74,7 @@ std::unique_ptr<Mesh> create_quad_mesh()
 class DesktopScene::RenderObject
 {
 public:
-    RenderObject(VulkanState& vulkan, std::string const& texture_file)
+    RenderObject(VulkanState& vulkan, std::string const& texture_file, size_t num_buffers)
         : vulkan{vulkan}
     {
         texture = vkutil::TextureBuilder{vulkan}
@@ -82,35 +82,43 @@ public:
             .set_filter(vk::Filter::eLinear)
             .build();
 
-        uniform_buffer = vkutil::BufferBuilder{vulkan}
-            .set_size(sizeof(Uniforms))
-            .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
-            .set_memory_properties(
-                vk::MemoryPropertyFlagBits::eHostVisible |
-                vk::MemoryPropertyFlagBits::eHostCoherent)
-            .set_memory_out(uniform_buffer_memory)
-            .build();
 
-        uniform_buffer_map = vkutil::map_memory(
-            vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
+        for (auto i = 0u; i < num_buffers; ++i)
+        {
+            vk::DeviceMemory uniform_buffer_memory;
 
-        descriptor_set = vkutil::DescriptorSetBuilder{vulkan}
-            .set_type(vk::DescriptorType::eUniformBuffer)
-            .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
-            .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
-            .next_binding()
-            .set_type(vk::DescriptorType::eCombinedImageSampler)
-            .set_stage_flags(vk::ShaderStageFlagBits::eFragment)
-            .set_image_view(texture.image_view, texture.sampler)
-            .set_layout_out(descriptor_set_layout)
-            .build();
+            uniform_buffers.push_back(
+                vkutil::BufferBuilder{vulkan}
+                    .set_size(sizeof(Uniforms))
+                    .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
+                    .set_memory_properties(
+                        vk::MemoryPropertyFlagBits::eHostVisible |
+                        vk::MemoryPropertyFlagBits::eHostCoherent)
+                    .set_memory_out(uniform_buffer_memory)
+                    .build());
+
+            uniform_buffer_maps.push_back(vkutil::map_memory(
+                vulkan, uniform_buffer_memory, 0, sizeof(Uniforms)));
+
+            descriptor_sets.push_back(
+                vkutil::DescriptorSetBuilder{vulkan}
+                    .set_type(vk::DescriptorType::eUniformBuffer)
+                    .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
+                    .set_buffer(uniform_buffers.back(), 0, sizeof(Uniforms))
+                    .next_binding()
+                    .set_type(vk::DescriptorType::eCombinedImageSampler)
+                    .set_stage_flags(vk::ShaderStageFlagBits::eFragment)
+                    .set_image_view(texture.image_view, texture.sampler)
+                    .set_layout_out(descriptor_set_layout)
+                    .build());
+        }
     }
 
     ~RenderObject()
     {
-        descriptor_set = {};
-        uniform_buffer_map = {};
-        uniform_buffer = {};
+        descriptor_sets.clear();
+        uniform_buffer_maps.clear();
+        uniform_buffers.clear();
         texture = {};
     }
 
@@ -135,14 +143,14 @@ public:
             position = new_pos;
     }
 
-    void update_uniforms() const
+    void update_uniforms(size_t index) const
     {
         Uniforms ubo;
 
         ubo.transform = glm::translate(glm::mat4{1.0f}, glm::vec3{position.x, position.y, 0.0f});
         ubo.transform = glm::scale(ubo.transform, glm::vec3{size.x, size.y, 1.0f});
 
-        memcpy(uniform_buffer_map, &ubo, sizeof(ubo));
+        memcpy(uniform_buffer_maps[index], &ubo, sizeof(ubo));
     }
 
     glm::vec2 position{0.0f, 0.0f};
@@ -151,11 +159,10 @@ public:
 
     VulkanState& vulkan;
     vkutil::Texture texture;
-    ManagedResource<vk::Buffer> uniform_buffer;
-    ManagedResource<void*> uniform_buffer_map;
-    ManagedResource<vk::DescriptorSet> descriptor_set;
+    std::vector<ManagedResource<vk::Buffer>> uniform_buffers;
+    std::vector<ManagedResource<void*>> uniform_buffer_maps;
+    std::vector<ManagedResource<vk::DescriptorSet>> descriptor_sets;
     vk::DescriptorSetLayout descriptor_set_layout;
-    vk::DeviceMemory uniform_buffer_memory;
 };
 
 DesktopScene::DesktopScene() : Scene{"desktop"}
@@ -189,8 +196,8 @@ void DesktopScene::setup(
         options_["background-resolution"].value +
         ".png";
 
-    background = std::make_unique<RenderObject>(*vulkan, texture_file);
-    background->update_uniforms();
+    background = std::make_unique<RenderObject>(*vulkan, texture_file, 1);
+    background->update_uniforms(0);
 
     auto const aspect = static_cast<float>(extent.width) / extent.height;
     auto const num_windows = Util::from_string<unsigned int>(options_["windows"].value);
@@ -202,7 +209,7 @@ void DesktopScene::setup(
 
     for (auto i = 0u; i < windows.size(); ++i)
     {
-        windows[i] = std::make_unique<RenderObject>(*vulkan, "textures/desktop-window.png");
+        windows[i] = std::make_unique<RenderObject>(*vulkan, "textures/desktop-window.png", vulkan_images.size());
         windows[i]->size = window_size;
         windows[i]->speed = {std::cos(0.1 + i * M_PI / 6.0) * 2.0 / 3,
                              std::sin(0.1 + i * M_PI / 6.0) * 2.0 / 3};
@@ -239,7 +246,7 @@ void DesktopScene::teardown()
 
 VulkanImage DesktopScene::draw(VulkanImage const& image)
 {
-    update_uniforms();
+    update_uniforms(image.index);
 
     vk::PipelineStageFlags const mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
@@ -388,7 +395,7 @@ void DesktopScene::setup_command_buffers()
         command_buffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_opaque);
 
         command_buffers[i].bindDescriptorSets(
-            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, background->descriptor_set.raw, {});
+            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, background->descriptor_sets[0].raw, {});
         command_buffers[i].draw(mesh->num_vertices(), 1, 0, 0);
 
         // Draw windows with blending
@@ -397,7 +404,7 @@ void DesktopScene::setup_command_buffers()
         for (auto const& window : windows)
         {
             command_buffers[i].bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, window->descriptor_set.raw, {});
+                vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, window->descriptor_sets[i].raw, {});
 
             command_buffers[i].draw(mesh->num_vertices(), 1, 0, 0);
         }
@@ -407,8 +414,8 @@ void DesktopScene::setup_command_buffers()
     }
 }
 
-void DesktopScene::update_uniforms()
+void DesktopScene::update_uniforms(size_t index)
 {
     for (auto const& window : windows)
-        window->update_uniforms();
+        window->update_uniforms(index);
 }

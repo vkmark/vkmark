@@ -87,8 +87,8 @@ void VertexScene::setup(
     projection = glm::perspective(fovy, aspect, 2.0f, 2.0f + diameter);
 
     setup_vertex_buffer();
-    setup_uniform_buffer();
-    setup_uniform_descriptor_set();
+    setup_uniform_buffers(vulkan_images.size());
+    setup_uniform_descriptor_sets();
     setup_render_pass();
     setup_pipeline();
     setup_depth_image();
@@ -112,9 +112,9 @@ void VertexScene::teardown()
     pipeline = {};
     pipeline_layout = {};
     render_pass = {};
-    descriptor_set = {};
-    uniform_buffer_map = {};
-    uniform_buffer = {};
+    descriptor_sets.clear();
+    uniform_buffer_maps.clear();
+    uniform_buffers.clear();
     vertex_buffer = {};
 
     Scene::teardown();
@@ -122,7 +122,7 @@ void VertexScene::teardown()
 
 VulkanImage VertexScene::draw(VulkanImage const& image)
 {
-    update_uniforms();
+    update_uniforms(image.index);
 
     vk::PipelineStageFlags const mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
@@ -191,30 +191,41 @@ void VertexScene::setup_vertex_buffer()
     }
 }
 
-void VertexScene::setup_uniform_buffer()
+void VertexScene::setup_uniform_buffers(size_t num_buffers)
 {
-    uniform_buffer = vkutil::BufferBuilder{*vulkan}
-        .set_size(sizeof(Uniforms))
-        .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
-        .set_memory_properties(
-            vk::MemoryPropertyFlagBits::eHostVisible |
-            vk::MemoryPropertyFlagBits::eHostCoherent)
-        .set_memory_out(uniform_buffer_memory)
-        .build();
+    for (auto i = 0u; i < num_buffers; ++i)
+    {
+        vk::DeviceMemory uniform_buffer_memory;
 
-    uniform_buffer_map = vkutil::map_memory(
-        *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms));
+        uniform_buffers.push_back(
+            vkutil::BufferBuilder{*vulkan}
+                .set_size(sizeof(Uniforms))
+                .set_usage(vk::BufferUsageFlagBits::eUniformBuffer)
+                .set_memory_properties(
+                    vk::MemoryPropertyFlagBits::eHostVisible |
+                    vk::MemoryPropertyFlagBits::eHostCoherent)
+                .set_memory_out(uniform_buffer_memory)
+                .build()
+            );
+
+        uniform_buffer_maps.push_back(vkutil::map_memory(
+            *vulkan, uniform_buffer_memory, 0, sizeof(Uniforms)));
+    }
 }
 
-
-void VertexScene::setup_uniform_descriptor_set()
+void VertexScene::setup_uniform_descriptor_sets()
 {
-    descriptor_set = vkutil::DescriptorSetBuilder{*vulkan}
-        .set_type(vk::DescriptorType::eUniformBuffer)
-        .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
-        .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
-        .set_layout_out(descriptor_set_layout)
-        .build();
+    for (auto& uniform_buffer : uniform_buffers)
+    {
+        descriptor_sets.push_back(
+            vkutil::DescriptorSetBuilder{*vulkan}
+                .set_type(vk::DescriptorType::eUniformBuffer)
+                .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
+                .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
+                .set_layout_out(descriptor_set_layout)
+                .build()
+            );
+    }
 }
 
 void VertexScene::setup_render_pass()
@@ -326,7 +337,7 @@ void VertexScene::setup_command_buffers()
 
         command_buffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
         command_buffers[i].bindDescriptorSets(
-            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set.raw, {});
+            vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_sets[i].raw, {});
         command_buffers[i].bindVertexBuffers(
             0,
             std::vector<vk::Buffer>{binding_offsets.size(), vertex_buffer.raw},
@@ -340,7 +351,7 @@ void VertexScene::setup_command_buffers()
     }
 }
 
-void VertexScene::update_uniforms()
+void VertexScene::update_uniforms(size_t index)
 {
     Uniforms ubo;
 
@@ -352,5 +363,5 @@ void VertexScene::update_uniforms()
     ubo.normal = glm::inverseTranspose(modelview);
     ubo.material_diffuse = glm::vec4{0.7f, 0.7f, 0.7f, 1.0};
 
-    memcpy(uniform_buffer_map, &ubo, sizeof(ubo));
+    memcpy(uniform_buffer_maps[index], &ubo, sizeof(ubo));
 }

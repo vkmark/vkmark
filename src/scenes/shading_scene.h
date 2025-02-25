@@ -47,14 +47,14 @@ public:
 
 private:
     void setup_vertex_buffer();
-    void setup_uniform_buffer();
-    void setup_uniform_descriptor_set();
+    void setup_uniform_buffers(size_t num_buffers);
+    void setup_uniform_descriptor_sets();
     void setup_render_pass();
     void setup_pipeline();
     void setup_depth_image();
     void setup_framebuffers(std::vector<VulkanImage> const&);
     void setup_command_buffers();
-    void update_uniforms();
+    void update_uniforms(size_t index);
 
     VulkanState* vulkan;
     vk::Extent2D extent;
@@ -68,9 +68,9 @@ private:
     std::unique_ptr<Mesh> mesh;
 
     ManagedResource<vk::Buffer> vertex_buffer;
-    ManagedResource<vk::Buffer> uniform_buffer;
-    ManagedResource<void*> uniform_buffer_map;
-    ManagedResource<vk::DescriptorSet> descriptor_set;
+    std::vector<ManagedResource<vk::Buffer>> uniform_buffers;
+    std::vector<ManagedResource<void*>> uniform_buffer_maps;
+    std::vector<ManagedResource<vk::DescriptorSet>> descriptor_sets;
     ManagedResource<vk::RenderPass> render_pass;
     ManagedResource<vk::PipelineLayout> pipeline_layout;
     ManagedResource<vk::Pipeline> pipeline;
@@ -81,7 +81,6 @@ private:
     std::vector<vk::CommandBuffer> command_buffers;
     ManagedResource<vk::Semaphore> submit_semaphore;
 
-    vk::DeviceMemory uniform_buffer_memory;
     vk::DescriptorSetLayout descriptor_set_layout;
 
     float rotation;
