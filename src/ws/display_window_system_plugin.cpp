@@ -63,9 +63,8 @@ int vkmark_window_system_probe(Options const& options)
         .setApiVersion(VK_MAKE_VERSION(1, 0, 0));
 #endif
 
-    auto const exts = std::array<char const*, 2>{
+    auto const exts = std::array<char const*, 1>{
         VK_KHR_SURFACE_EXTENSION_NAME,
-        VK_KHR_DISPLAY_EXTENSION_NAME,
         };
 
     auto const create_info = vk::InstanceCreateInfo{}
