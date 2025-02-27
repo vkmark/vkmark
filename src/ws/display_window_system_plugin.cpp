@@ -72,24 +72,22 @@ int vkmark_window_system_probe(Options const& options)
         .setPApplicationInfo(&app_info)
         .setEnabledExtensionCount(exts.size())
         .setPpEnabledExtensionNames(exts.data());
-    auto vk_instance = ManagedResource<vk::Instance>{
-        vk::createInstance(create_info),
-        [] (auto& i) { i.destroy(); }};
-    if (!vk_instance.raw)
-        return VKMARK_WINDOW_SYSTEM_PROBE_BAD;
 
-    auto physical_devices = vk_instance.raw.enumeratePhysicalDevices();
-    auto physical_device = options.use_device_with_uuid ?
-        std::find_if(
-            physical_devices.begin(), physical_devices.end(),
-            [&options] (auto pd) {
-                return static_cast<DeviceUUID>(pd.getProperties().pipelineCacheUUID) ==
-                    options.use_device_with_uuid; }) :
-        physical_devices.begin();
-
-    if (physical_device != physical_devices.end())
+    try
     {
-        try
+        auto vk_instance = ManagedResource<vk::Instance>{
+            vk::createInstance(create_info),
+            [] (auto& i) { i.destroy(); }};
+        auto physical_devices = vk_instance.raw.enumeratePhysicalDevices();
+        auto physical_device = options.use_device_with_uuid ?
+            std::find_if(
+                physical_devices.begin(), physical_devices.end(),
+                [&options] (auto pd) {
+                    return static_cast<DeviceUUID>(pd.getProperties().pipelineCacheUUID) ==
+                        options.use_device_with_uuid; }) :
+            physical_devices.begin();
+
+        if (physical_device != physical_devices.end())
         {
             auto display_index = std::stoi(get_display_index_option(options));
             if (display_index < 0)
@@ -97,10 +95,11 @@ int vkmark_window_system_probe(Options const& options)
             DisplayNativeSystem::get_display_surface_create_info(*physical_device, display_index);
             return VKMARK_WINDOW_SYSTEM_PROBE_OK + VKMARK_DISPLAY_WINDOW_SYSTEM_PRIORITY;
         }
-        catch (...)
-        {
-        }
     }
+    catch (...)
+    {
+    }
+
 
     return VKMARK_WINDOW_SYSTEM_PROBE_BAD;
 }
