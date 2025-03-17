@@ -208,7 +208,8 @@ void ShadingScene::setup_uniform_descriptor_sets()
         descriptor_sets.push_back(
             vkutil::DescriptorSetBuilder{*vulkan}
                 .set_type(vk::DescriptorType::eUniformBuffer)
-                .set_stage_flags(vk::ShaderStageFlagBits::eVertex)
+                .set_stage_flags(vk::ShaderStageFlagBits::eVertex |
+                                 vk::ShaderStageFlagBits::eFragment)
                 .set_buffer(uniform_buffer, 0, sizeof(Uniforms))
                 .set_layout_out(descriptor_set_layout)
                 .build()
