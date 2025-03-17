@@ -61,7 +61,8 @@ scene_sources = files(
 vkmark_core = static_library(
     'vkmark-core',
     core_sources,
-    dependencies : [vulkan_dep, dl_dep, assimp_dep]
+    dependencies : [vulkan_dep, dl_dep, assimp_dep],
+    cpp_pch: 'pch/cpp_pch.h'
     )
 
 vkmark = executable(
@@ -69,6 +70,7 @@ vkmark = executable(
     files('main.cpp') + vkutil_sources + scene_sources,
     link_with: vkmark_core,
     dependencies : [vulkan_dep, glm_dep, dl_dep],
+    cpp_pch: 'pch/cpp_pch.h',
     link_args: ['-Wl,--dynamic-list=' + join_paths([meson.current_source_dir(), 'dynamic.list'])],
     install : true
     )
