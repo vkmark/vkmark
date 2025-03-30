@@ -36,7 +36,7 @@ namespace
 
 void log_scene_info(Scene& scene, bool show_all_options)
 {
-    Log::info("%s", scene.info_string(show_all_options).c_str());
+    Log::info("%s\n", scene.info_string(show_all_options).c_str());
     Log::flush();
 }
 
