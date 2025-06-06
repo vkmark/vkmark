@@ -3,7 +3,7 @@ project(
     ['cpp', 'c'],
     default_options : ['cpp_std=c++17'],
     version : '2025.01',
-    meson_version: '>=0.45'
+    meson_version: '>=0.58'
     )
 
 root_incdir = include_directories('.')
