@@ -1,8 +1,9 @@
 prog_python = find_program('python3')
 
+vulkan_prefix = meson.get_external_property('sys_root', '') + vulkan_dep.get_variable('prefix')
+
 vk_xml = join_paths([
-    meson.get_external_property('sys_root', ''),
-    vulkan_dep.get_variable('prefix'),
+    vulkan_prefix,
     'share', 'vulkan', 'registry',
     'vk.xml'
     ])
