@@ -20,6 +20,7 @@
  *   Alexandros Frantzis <alexandros.frantzis@collabora.com>
  */
 
+#include <cstdlib>
 #include <cstdio>
 #include <getopt.h>
 #include <algorithm>
@@ -141,6 +142,13 @@ Options::Options()
       list_devices{false},
       use_device_with_uuid{}
 {
+    const char* var;
+    var = getenv("VKMARK_WINDOW_SYSTEM_DIR");
+    if (var)
+        window_system_dir = var;
+    var = getenv("VKMARK_DATA_DIR");
+    if (var)
+        data_dir = var;
 }
 
 std::string Options::help_string()

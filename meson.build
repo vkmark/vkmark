@@ -45,6 +45,11 @@ subdir('data')
 subdir('tests')
 subdir('doc')
 
+devenv = environment()
+devenv.set('VKMARK_WINDOW_SYSTEM_DIR', meson.current_build_dir() / 'src')
+devenv.set('VKMARK_DATA_DIR', meson.current_source_dir() / 'data')
+meson.add_devenv(devenv)
+
 msg = 'Building with support for the following window systems: headless display '
 
 if build_wayland_ws
