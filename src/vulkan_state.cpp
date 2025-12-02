@@ -192,6 +192,7 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
 
     if (have_debug_extensions)
     {
+/*
         auto const debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT{}
             .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
                                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
@@ -206,6 +207,8 @@ void VulkanState::create_instance(VulkanWSI& vulkan_wsi)
         debug_messenger = ManagedResource<vk::DebugUtilsMessengerEXT>{
             instance().createDebugUtilsMessengerEXT(debug_create_info, nullptr, dud),
             [this, dud] (auto& d) {instance().destroyDebugUtilsMessengerEXT(d, nullptr, dud);}};
+*/
+        Log::debug("VK_LAYER_KHRONOS_validation is deprecated or need to fix\n");
     }
     else
     {
