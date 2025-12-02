@@ -484,9 +484,9 @@ std::vector<uint64_t> vk_get_supported_mods_for_format(VulkanState& vulkan,
     auto mod_props_list = vk::DrmFormatModifierPropertiesListEXT{};
     mod_props_list.drmFormatModifierCount = 256;
     mod_props_list.pDrmFormatModifierProperties = mod_props;
-    auto props = vk::FormatProperties2KHR{};
+    auto props = vk::FormatProperties2{};
     props.pNext = &mod_props_list;
-    vulkan.physical_device().getFormatProperties2KHR(format, &props, dispatch);
+    vulkan.physical_device().getFormatProperties2KHR(format, &props);
 
     for (uint32_t i = 0; i < mod_props_list.drmFormatModifierCount; ++i)
         mods.push_back(mod_props_list.pDrmFormatModifierProperties[i].drmFormatModifier);
