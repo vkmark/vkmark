@@ -474,6 +474,22 @@ public:
     PFN_vkGetPhysicalDeviceFormatProperties2KHR vkGetPhysicalDeviceFormatProperties2KHR;
 };
 
+}
+
+#if VK_HEADER_VERSION >= 333 && VK_HEADER_VERSION <= 337
+namespace vk::detail {
+
+template <>
+struct isDispatchLoader<::GetFormatProperties2Dispatcher>
+{
+    static VULKAN_HPP_CONST_OR_CONSTEXPR bool value = true;
+};
+
+}
+#endif
+
+namespace {
+
 std::vector<uint64_t> vk_get_supported_mods_for_format(VulkanState& vulkan,
                                                        vk::Format format)
 {
