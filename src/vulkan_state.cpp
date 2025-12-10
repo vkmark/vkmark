@@ -65,6 +65,18 @@ public:
 
 }
 
+#if VK_HEADER_VERSION >= 333 && VK_HEADER_VERSION <= 337
+namespace vk::detail {
+
+template <>
+struct isDispatchLoader<::DebugUtilsDispatcher>
+{
+    static VULKAN_HPP_CONST_OR_CONSTEXPR bool value = true;
+};
+
+}
+#endif
+
 VulkanState::VulkanState(VulkanWSI& vulkan_wsi, ChoosePhysicalDeviceStrategy const& pd_strategy, bool debug)
     : debug_enabled(debug)
 {
