@@ -31,10 +31,10 @@
 namespace
 {
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-    VkDebugUtilsMessageTypeFlagsEXT message_type,
-    const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+VKAPI_ATTR vk::Bool32 VKAPI_CALL debug_callback(
+    vk::DebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    vk::DebugUtilsMessageTypeFlagsEXT message_type,
+    const vk::DebugUtilsMessengerCallbackDataEXT* callback_data,
     void* user_data)
 {
     Log::debug("%s\n", callback_data->pMessage);
