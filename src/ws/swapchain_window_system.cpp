@@ -39,23 +39,69 @@ bool is_format_srgb(vk::Format f)
     return to_string(f).find("Srgb") != std::string::npos;
 }
 
+bool is_format_yuv(vk::Format f)
+{
+    if(to_string(f).find("420") != std::string::npos ||
+       to_string(f).find("422") != std::string::npos ||
+       to_string(f).find("444") != std::string::npos)
+        return true;
+    else
+        return false;
+}
+
+
+int yuv_format_bits(vk::Format format)
+{
+    switch (format) {
+        // 4:2:0 formats (12 bits per pixel)
+        case vk::Format::eG8B8R82Plane420Unorm:
+        case vk::Format::eG8B8R83Plane420Unorm:
+            return 12;
+
+        // 4:2:2 formats (16 bits per pixel)
+        case vk::Format::eG8B8R82Plane422Unorm:
+        case vk::Format::eG8B8R83Plane422Unorm:
+        case vk::Format::eB8G8R8G8422Unorm:
+        case vk::Format::eG8B8G8R8422Unorm:
+            return 16;
+
+        // 4:4:4 formats (24 bits per pixel)
+        case vk::Format::eG8B8R83Plane444Unorm:
+        case vk::Format::eG16B16R162Plane420Unorm:
+        case vk::Format::eG10X6B10X6R10X62Plane420Unorm3Pack16:
+            return 24;
+
+        // Add more formats as needed...
+
+        default:
+            return -1; // Unknown or unsupported YUV format
+    }
+}
+
 int format_bits(vk::Format f)
 {
     int total = 0;
     int current = 0;
     bool process_digits = false;
 
-    for (auto const c : to_string(f))
+    if(is_format_yuv(f) != false)
     {
-        if (process_digits && std::isdigit(static_cast<unsigned char>(c)))
+        return yuv_format_bits(f);
+    }
+    else
+    {
+        for (auto const c : to_string(f))
         {
-            current = current * 10 + c - '0';
-        }
-        else
-        {
-            process_digits = (c == 'R' || c == 'G' || c == 'B' || c == 'A');
-            total += current;
-            current = 0;
+            if (process_digits && std::isdigit(static_cast<unsigned char>(c)))
+            {
+                current = current * 10 + c - '0';
+            }
+            else
+            {
+                process_digits = (c == 'R' || c == 'G' || c == 'B' || c == 'A');
+                total += current;
+                current = 0;
+            }
         }
     }
 
