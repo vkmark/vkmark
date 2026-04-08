@@ -106,8 +106,6 @@ try
     SceneCollection sc;
     populate_scene_collection(sc);
 
-    BenchmarkCollection bc{sc};
-
     if (options.list_scenes)
     {
         sc.log_scene_info();
@@ -119,6 +117,8 @@ try
         VulkanState::log_all_devices();
         return 0;
     }
+
+    BenchmarkCollection bc{sc};
 
     auto& ws = ws_loader.load_window_system();
 
