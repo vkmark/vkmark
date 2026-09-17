@@ -39,6 +39,19 @@ struct Uniforms
     glm::mat4 transform;
 };
 
+float reflected_position(float velocity, float limit, double elapsed_time)
+{
+    if (limit <= 0.0f || velocity == 0.0f)
+        return 0.0f;
+
+    auto const period = 4.0 * limit;
+    auto wrapped = std::fmod(velocity * elapsed_time + limit, period);
+    if (wrapped < 0.0)
+        wrapped += period;
+
+    return limit - std::abs(wrapped - 2.0 * limit);
+}
+
 std::unique_ptr<Mesh> create_quad_mesh()
 {
     auto mesh = std::make_unique<Mesh>(
@@ -143,6 +156,19 @@ public:
             position = new_pos;
     }
 
+    void update_at_time(double elapsed_time)
+    {
+        position = {
+            reflected_position(initial_speed.x, 1.0f - size.x, elapsed_time),
+            reflected_position(initial_speed.y, 1.0f - size.y, elapsed_time)};
+    }
+
+    void set_speed(glm::vec2 const& new_speed)
+    {
+        speed = new_speed;
+        initial_speed = new_speed;
+    }
+
     void update_uniforms(size_t index) const
     {
         Uniforms ubo;
@@ -156,6 +182,7 @@ public:
     glm::vec2 position{0.0f, 0.0f};
     glm::vec2 size{1.0f, 1.0f};
     glm::vec2 speed{0.0f, 0.0f};
+    glm::vec2 initial_speed{0.0f, 0.0f};
 
     VulkanState& vulkan;
     vkutil::Texture texture;
@@ -211,8 +238,9 @@ void DesktopScene::setup(
     {
         windows[i] = std::make_unique<RenderObject>(*vulkan, "textures/desktop-window.png", vulkan_images.size());
         windows[i]->size = window_size;
-        windows[i]->speed = {std::cos(0.1 + i * M_PI / 6.0) * 2.0 / 3,
-                             std::sin(0.1 + i * M_PI / 6.0) * 2.0 / 3};
+        windows[i]->set_speed(
+            {std::cos(0.1 + i * M_PI / 6.0) * 2.0 / 3,
+             std::sin(0.1 + i * M_PI / 6.0) * 2.0 / 3});
     }
 
     setup_vertex_buffer();
@@ -265,10 +293,18 @@ VulkanImage DesktopScene::draw(VulkanImage const& image)
 
 void DesktopScene::update()
 {
-    auto const dt = (Util::get_timestamp_us() - last_update_time) / 1000000.0f;
-
-    for (auto const& window : windows)
-        window->update(dt);
+    if (deterministic_frames)
+    {
+        auto const elapsed_time = next_frame_animation_time();
+        for (auto const& window : windows)
+            window->update_at_time(elapsed_time);
+    }
+    else
+    {
+        auto const dt = next_frame_animation_delta();
+        for (auto const& window : windows)
+            window->update(dt);
+    }
 
     Scene::update();
 }

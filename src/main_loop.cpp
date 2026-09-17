@@ -95,6 +95,7 @@ void MainLoop::run()
         auto& benchmark = *iter;
 
         auto& scene = benchmark->prepare_scene();
+        scene.set_deterministic_frames(options.deterministic_frames);
 
         if (!scene.is_valid())
         {

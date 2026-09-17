@@ -66,6 +66,7 @@ public:
     std::string info_string(bool show_all_options) const;
     unsigned int average_fps() const;
     bool is_running() const;
+    void set_deterministic_frames(bool enable);
 
     bool set_option(std::string const& opt, std::string const& val);
     void reset_options();
@@ -75,6 +76,9 @@ public:
 protected:
     Scene(std::string const& name);
 
+    double next_frame_animation_time() const;
+    double next_frame_animation_delta() const;
+
     std::string const name_;
     std::unordered_map<std::string,SceneOption> options_;
     uint64_t start_time;
@@ -82,4 +86,6 @@ protected:
     uint64_t current_frame;
     bool running;
     uint64_t duration;
+    uint64_t nframes;
+    bool deterministic_frames;
 };

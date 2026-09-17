@@ -139,7 +139,7 @@ VulkanImage ShadingScene::draw(VulkanImage const& image)
 
 void ShadingScene::update()
 {
-    auto const t = (Util::get_timestamp_us() - start_time) / 1000000.0f;
+    auto const t = next_frame_animation_time();
 
     rotation = 36.0f * t;
 

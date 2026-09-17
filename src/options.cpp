@@ -48,6 +48,7 @@ struct option long_options[] = {
     {"winsys-dir", 1, 0, 0},
     {"data-dir", 1, 0, 0},
     {"winsys", 1, 0, 0},
+    {"deterministic-frames", 0, 0, 0},
     {"winsys-options", 1, 0, 0},
     {"list-devices", 0, 0, 0},
     {"run-forever", 0, 0, 0},
@@ -136,6 +137,7 @@ Options::Options()
       show_all_options{false},
       window_system_dir{VKMARK_WINDOW_SYSTEM_DIR},
       data_dir{VKMARK_DATA_DIR},
+      deterministic_frames{false},
       run_forever{false},
       show_debug{false},
       show_help{false},
@@ -172,6 +174,7 @@ std::string Options::help_string()
         "      --data-dir DIR          Directory to search in for scene data files\n"
         "      --winsys WS             Window system plugin to use (default: choose best)\n"
         "                              [xcb, wayland, kms]\n"
+        "      --deterministic-frames  Derive animation state from the frame number\n"
         "      --winsys-options OPTS   Window system options as 'opt1=val1(:opt2=val2)*'\n"
         "      --run-forever           Run indefinitely, looping from the last benchmark\n"
         "                              back to the first\n"
@@ -227,6 +230,8 @@ bool Options::parse_args(int argc, char **argv)
             data_dir = optarg;
         else if (optname == "winsys")
             window_system = optarg;
+        else if (optname == "deterministic-frames")
+            deterministic_frames = true;
         else if (optname == "winsys-options")
             window_system_options = parse_window_system_options(optarg);
         else if (optname == "run-forever")
