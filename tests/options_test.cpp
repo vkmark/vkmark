@@ -373,6 +373,23 @@ SCENARIO("options parses command line arguments", "")
         }
     }
 
+    GIVEN("A command line with --deterministic-frames")
+    {
+        std::vector<std::string> args{"vkmark", "--deterministic-frames"};
+        auto argv = argv_from_vector(args);
+
+        WHEN("parsing the args")
+        {
+            REQUIRE_FALSE(options.deterministic_frames);
+            REQUIRE(options.parse_args(args.size(), argv.get()));
+
+            THEN("the deterministic-frames option is parsed")
+            {
+                REQUIRE(options.deterministic_frames);
+            }
+        }
+    }
+
     GIVEN("A complex command line")
     {
         std::vector<std::string> args{

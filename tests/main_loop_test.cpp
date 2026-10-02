@@ -166,6 +166,75 @@ private:
     std::vector<std::string>& log;
 };
 
+class FrameLimitedScene : public TestScene
+{
+public:
+    FrameLimitedScene(std::string const& name, std::vector<std::string>& log)
+        : TestScene{name}, log{log}
+    {
+    }
+
+    void setup(VulkanState& vulkan, std::vector<VulkanImage> const& images) override
+    {
+        log.push_back(setup_log_entry(name_));
+        TestScene::setup(vulkan, images);
+    }
+
+    void start() override
+    {
+        log.push_back(start_log_entry(name_));
+        TestScene::start();
+    }
+
+    VulkanImage draw(VulkanImage const& vi) override
+    {
+        log.push_back(draw_log_entry(name_, vi.index));
+        return TestScene::draw(vi);
+    }
+
+private:
+    std::vector<std::string>& log;
+};
+
+class DeterministicFrameScene : public FrameLimitedScene
+{
+public:
+    DeterministicFrameScene(
+        std::string const& name,
+        std::vector<std::string>& log,
+        std::vector<double>& animation_times,
+        std::vector<double>& animation_deltas,
+        unsigned int target_fps)
+        : FrameLimitedScene{name, log},
+          animation_times{animation_times},
+          animation_deltas{animation_deltas},
+          target_fps{target_fps},
+          animation_time{0.0}
+    {
+    }
+
+    VulkanImage draw(VulkanImage const& vi) override
+    {
+        animation_times.push_back(animation_time);
+        return FrameLimitedScene::draw(vi);
+    }
+
+    void update() override
+    {
+        animation_time = next_frame_animation_time();
+        animation_deltas.push_back(next_frame_animation_delta());
+        FrameLimitedScene::update();
+        last_update_time =
+            start_time + current_frame * 1000000 / target_fps;
+    }
+
+private:
+    std::vector<double>& animation_times;
+    std::vector<double>& animation_deltas;
+    unsigned int target_fps;
+    double animation_time;
+};
+
 }
 
 SCENARIO("main loop run", "")
@@ -357,6 +426,139 @@ SCENARIO("main loop stop", "")
                 if (done_future.wait_for(done_timeout) == std::future_status::ready)
                     loop_thread.join();
             }
+        }
+    }
+}
+
+SCENARIO("main loop frame limit", "")
+{
+    VulkanState* null_vulkan_state = nullptr;
+    std::vector<std::string> log;
+    TestWindowSystem ws{log};
+
+    auto const scene_name = TestScene::name(1);
+    SceneCollection sc;
+    sc.register_scene(std::make_unique<FrameLimitedScene>(scene_name, log));
+
+    BenchmarkCollection bc{sc};
+    Options options;
+    MainLoop main_loop{*null_vulkan_state, ws, bc, options};
+
+    GIVEN("A benchmark with a frame limit")
+    {
+        uint32_t const nframes = 3;
+        bc.add({scene_name + ":duration=60:nframes=" + std::to_string(nframes)});
+
+        WHEN("running the main loop")
+        {
+            main_loop.run();
+
+            THEN("exactly the requested number of frames is rendered")
+            {
+                std::vector<std::string> expected{
+                    setup_log_entry(scene_name),
+                    start_log_entry(scene_name)};
+
+                for (uint32_t i = 0; i < nframes; ++i)
+                {
+                    expected.push_back(draw_log_entry(scene_name, i));
+                    expected.push_back(present_log_entry(i));
+                }
+
+                REQUIRE_THAT(log, Equals(expected));
+            }
+        }
+    }
+
+    GIVEN("A benchmark whose duration expires before its frame limit")
+    {
+        bc.add({scene_name + ":duration=0:nframes=3"});
+
+        WHEN("running the main loop")
+        {
+            main_loop.run();
+
+            THEN("the duration still limits the benchmark")
+            {
+                auto const expected = expected_log_for_scene_run(scene_name, 0);
+                REQUIRE_THAT(log, Equals(expected));
+            }
+        }
+    }
+}
+
+SCENARIO("main loop deterministic frames", "")
+{
+    VulkanState* null_vulkan_state = nullptr;
+    std::vector<std::string> log;
+    std::vector<double> animation_times;
+    std::vector<double> animation_deltas;
+    TestWindowSystem ws{log};
+
+    unsigned int const target_fps = 50;
+    auto const scene_name = TestScene::name(1);
+    SceneCollection sc;
+    sc.register_scene(std::make_unique<DeterministicFrameScene>(
+        scene_name, log, animation_times, animation_deltas, target_fps));
+
+    BenchmarkCollection bc{sc};
+    uint32_t const nframes = 3;
+    bc.add({scene_name + ":duration=60:nframes=" + std::to_string(nframes)});
+
+    Options options;
+    options.deterministic_frames = true;
+    MainLoop main_loop{*null_vulkan_state, ws, bc, options};
+
+    WHEN("running a benchmark with deterministic frames")
+    {
+        main_loop.run();
+
+        THEN("each rendered frame uses a fixed animation step")
+        {
+            REQUIRE(animation_times.size() == nframes);
+            REQUIRE(animation_deltas.size() == nframes);
+            for (uint32_t i = 0; i < nframes; ++i)
+            {
+                REQUIRE(animation_times[i] == Catch::Detail::Approx(i / 60.0));
+                REQUIRE(animation_deltas[i] == Catch::Detail::Approx(1.0 / 60.0));
+            }
+        }
+
+        THEN("FPS measurement remains based on real elapsed time")
+        {
+            REQUIRE(main_loop.score() == target_fps);
+        }
+    }
+}
+
+SCENARIO("main loop deterministic frames respect duration", "")
+{
+    VulkanState* null_vulkan_state = nullptr;
+    std::vector<std::string> log;
+    std::vector<double> animation_times;
+    std::vector<double> animation_deltas;
+    TestWindowSystem ws{log};
+
+    auto const scene_name = TestScene::name(1);
+    SceneCollection sc;
+    sc.register_scene(std::make_unique<DeterministicFrameScene>(
+        scene_name, log, animation_times, animation_deltas, 50));
+
+    BenchmarkCollection bc{sc};
+    bc.add({scene_name + ":duration=0:nframes=3"});
+
+    Options options;
+    options.deterministic_frames = true;
+    MainLoop main_loop{*null_vulkan_state, ws, bc, options};
+
+    WHEN("the duration expires before the frame limit")
+    {
+        main_loop.run();
+
+        THEN("the duration still stops the benchmark")
+        {
+            auto const expected = expected_log_for_scene_run(scene_name, 0);
+            REQUIRE_THAT(log, Equals(expected));
         }
     }
 }

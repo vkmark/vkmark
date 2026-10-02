@@ -183,12 +183,12 @@ VulkanImage ClearScene::draw(VulkanImage const& image)
 
 void ClearScene::update()
 {
-    auto const elapsed = Util::get_timestamp_us() - start_time;
+    auto const elapsed = next_frame_animation_time();
 
     if (cycle)
     {
         // HSV to RGB conversion for S=V=1 and H completeling a cycle every 5sec
-        double const period = 5000000.0;
+        double const period = 5.0;
         float const c = 1.0;
         float const h = (360 / 60) * std::fmod(elapsed, period) / period;
         float const x = c * (1 - std::fabs(std::fmod(h, 2.0) - 1));

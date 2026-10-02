@@ -93,6 +93,18 @@ To run a benchmark using scene 'vertex' with a 'duration' of '5.0' seconds and
 
 `$ vkmark -b vertex:duration=5.0:interleave=false`
 
+To run a benchmark for an exact number of frames (the duration limit remains
+active, so set it high enough for the frame limit to be reached):
+
+`$ vkmark -b clear:nframes=1000:duration=3600`
+
+Use `--deterministic-frames` to derive scene animations from the frame number
+instead of elapsed time. This uses a fixed 1/60-second (60 Hz-equivalent)
+animation step per frame while keeping FPS measurement and duration limits based
+on real time:
+
+`$ vkmark --deterministic-frames -b clear:nframes=1000:duration=3600`
+
 To run a series of benchmarks use the `-b, --benchmark` command line option multiple times:
 
 `$ vkmark -b vertex:duration=5.0 -b clear:color=1.0,0.5,0 -b cube`

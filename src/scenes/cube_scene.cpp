@@ -122,7 +122,7 @@ VulkanImage CubeScene::draw(VulkanImage const& image)
 
 void CubeScene::update()
 {
-    auto const t = (Util::get_timestamp_us() - start_time) / 5000.0;
+    auto const t = next_frame_animation_time() * 200.0;
 
     rotation = {45.0f + (0.25f * t), 45.0f + (0.5f * t), 10.0f + (0.15f * t)};
 

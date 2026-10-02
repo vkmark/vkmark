@@ -25,6 +25,13 @@
 #include "util.h"
 #include "options.h"
 
+namespace
+{
+
+double constexpr deterministic_frame_delta = 1.0 / 60.0;
+
+}
+
 SceneOption::SceneOption(std::string const& name,
                          std::string const& value,
                          std::string const& description,
@@ -48,10 +55,12 @@ bool SceneOption::accepts_value(std::string const& val)
 Scene::Scene(std::string const& name)
     : name_{name},
       start_time{0}, last_update_time{0}, current_frame{0},
-      running{false}, duration{0}
+      running{false}, duration{0}, nframes{0}, deterministic_frames{false}
 {
     options_["duration"] = SceneOption("duration", "10.0",
                                       "The duration of each benchmark in seconds");
+    options_["nframes"] = SceneOption("nframes", "",
+                                     "The number of frames to render");
 }
 
 bool Scene::is_valid() const
@@ -62,6 +71,7 @@ bool Scene::is_valid() const
 void Scene::setup(VulkanState&, std::vector<VulkanImage> const&)
 {
     duration = 1000000.0 * Util::from_string<double>(options_["duration"].value);
+    nframes = Util::from_string<uint64_t>(options_["nframes"].value);
 }
 
 void Scene::teardown()
@@ -91,6 +101,9 @@ void Scene::update()
     last_update_time = current_time;
 
     if (elapsed_time >= duration)
+        running = false;
+
+    if (nframes > 0 && current_frame >= nframes)
         running = false;
 }
 
@@ -131,6 +144,27 @@ unsigned int Scene::average_fps() const
 bool Scene::is_running() const
 {
     return running;
+}
+
+void Scene::set_deterministic_frames(bool enable)
+{
+    deterministic_frames = enable;
+}
+
+double Scene::next_frame_animation_time() const
+{
+    if (deterministic_frames)
+        return (current_frame + 1) * deterministic_frame_delta;
+
+    return (Util::get_timestamp_us() - start_time) / 1000000.0;
+}
+
+double Scene::next_frame_animation_delta() const
+{
+    if (deterministic_frames)
+        return deterministic_frame_delta;
+
+    return (Util::get_timestamp_us() - last_update_time) / 1000000.0;
 }
 
 bool Scene::set_option(std::string const& opt, std::string const& val)
