@@ -82,7 +82,7 @@ private:
     std::vector<ManagedResource<vk::ImageView>> image_views;
     std::vector<ManagedResource<vk::Framebuffer>> framebuffers;
     std::vector<vk::CommandBuffer> command_buffers;
-    ManagedResource<vk::Semaphore> submit_semaphore;
+    std::vector<ManagedResource<vk::Semaphore>> submit_semaphores;
 
     vk::DescriptorSetLayout descriptor_set_layout;
 

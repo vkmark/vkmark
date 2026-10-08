@@ -28,7 +28,7 @@ struct VulkanImage
 {
     VulkanImage copy_with_semaphore(vk::Semaphore sem) const
     {
-        return {index, image, format, extent, sem, submit_fence};
+        return {index, image, format, extent, sem, submit_fence, resource_index};
     }
 
     uint32_t index;
@@ -37,4 +37,5 @@ struct VulkanImage
     vk::Extent2D extent;
     vk::Semaphore semaphore;
     vk::Fence submit_fence;
+    uint32_t resource_index = 0;
 };

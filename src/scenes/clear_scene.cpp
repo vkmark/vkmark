@@ -41,15 +41,8 @@ void ClearScene::setup(VulkanState& vulkan_, std::vector<VulkanImage> const& ima
 
     vulkan = &vulkan_;
 
-    auto const command_buffer_allocate_info = vk::CommandBufferAllocateInfo{}
-        .setCommandPool(vulkan->command_pool())
-        .setCommandBufferCount(images.size())
-        .setLevel(vk::CommandBufferLevel::ePrimary);
-
-    command_buffers = vulkan->device().allocateCommandBuffers(command_buffer_allocate_info);
-    command_buffer_fences.resize(command_buffers.size());
-
-    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
+    for (auto i = 0u; i < images.size(); ++i)
+        submit_semaphores.push_back(vkutil::SemaphoreBuilder{*vulkan}.build());
 
     if (options_["color"].value == "cycle")
     {
@@ -77,20 +70,17 @@ void ClearScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    submit_semaphore = {};
-    for (auto const& fence : command_buffer_fences)
-    {
-        if (fence)
-            vulkan->device().destroyFence(fence);
-    }
-    command_buffer_fences.clear();
+    submit_semaphores.clear();
 
-    vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
+    if (!command_buffers.empty())
+        vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
+    command_buffers.clear();
 
     Scene::teardown();
 }
 
-void ClearScene::prepare_command_buffer(VulkanImage const& image)
+void ClearScene::prepare_command_buffer(vk::CommandBuffer command_buffer,
+                                        VulkanImage const& image)
 {
     auto const begin_info = vk::CommandBufferBeginInfo{}
         .setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
@@ -122,63 +112,61 @@ void ClearScene::prepare_command_buffer(VulkanImage const& image)
         .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
         .setSubresourceRange(image_range);
 
-    auto const i = image.index;
+    command_buffer.begin(begin_info);
 
-    if (!image.submit_fence)
-    {
-        if (!command_buffer_fences[i])
-        {
-            command_buffer_fences[i] = vulkan->device().createFence(vk::FenceCreateInfo());
-        }
-        else
-        {
-            (void)vulkan->device().waitForFences(command_buffer_fences[i], true, INT64_MAX);
-            vulkan->device().resetFences(command_buffer_fences[i]);
-        }
-    }
-
-    command_buffers[i].begin(begin_info);
-
-    command_buffers[i].pipelineBarrier(
+    command_buffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eTransfer,
         vk::PipelineStageFlagBits::eTransfer,
         {}, {}, {},
         undef_to_transfer_barrier);
 
-    command_buffers[i].clearColorImage(
+    command_buffer.clearColorImage(
         image.image,
         vk::ImageLayout::eTransferDstOptimal,
         clear_color,
         image_range);                
 
-    command_buffers[i].pipelineBarrier(
+    command_buffer.pipelineBarrier(
         vk::PipelineStageFlagBits::eTransfer,
         vk::PipelineStageFlagBits::eBottomOfPipe,
         {}, {}, {},
         transfer_to_present_barrier);
 
-    command_buffers[i].end();
+    command_buffer.end();
 }
 
 VulkanImage ClearScene::draw(VulkanImage const& image)
 {
-    prepare_command_buffer(image);
+    if (image.resource_index >= command_buffers.size())
+    {
+        auto const allocate_info = vk::CommandBufferAllocateInfo{}
+            .setCommandPool(vulkan->command_pool())
+            .setCommandBufferCount(
+                static_cast<uint32_t>(image.resource_index + 1 - command_buffers.size()))
+            .setLevel(vk::CommandBufferLevel::ePrimary);
+        auto const new_command_buffers =
+            vulkan->device().allocateCommandBuffers(allocate_info);
+        command_buffers.insert(command_buffers.end(),
+                               new_command_buffers.begin(),
+                               new_command_buffers.end());
+    }
+
+    auto const command_buffer = command_buffers[image.resource_index];
+    prepare_command_buffer(command_buffer, image);
 
     vk::PipelineStageFlags mask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     auto const submit_info = vk::SubmitInfo{}
         .setSignalSemaphoreCount(image.semaphore ? 1 : 0)
-        .setPSignalSemaphores(&submit_semaphore.raw)
+        .setPSignalSemaphores(&submit_semaphores[image.index].raw)
         .setCommandBufferCount(1)
-        .setPCommandBuffers(&command_buffers[image.index])
+        .setPCommandBuffers(&command_buffer)
         .setWaitSemaphoreCount(image.semaphore ? 1 : 0)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask);
 
-    vulkan->graphics_queue().submit(submit_info,
-        image.submit_fence ? image.submit_fence :
-                             command_buffer_fences[image.index]);
+    vulkan->graphics_queue().submit(submit_info, image.submit_fence);
 
-    return image.copy_with_semaphore(submit_semaphore);
+    return image.copy_with_semaphore(submit_semaphores[image.index]);
 }
 
 void ClearScene::update()

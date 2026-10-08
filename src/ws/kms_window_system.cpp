@@ -628,7 +628,8 @@ VulkanImage KMSWindowSystem::next_vulkan_image()
     return {
         static_cast<uint32_t>(current_image_index),
         vk_images[current_image_index], vk_image_format, vk_extent, nullptr,
-        vk_submit_fences[current_image_index]
+        vk_submit_fences[current_image_index],
+        static_cast<uint32_t>(current_image_index)
     };
 }
 

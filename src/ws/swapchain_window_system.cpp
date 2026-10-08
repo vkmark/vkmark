@@ -140,38 +140,51 @@ void SwapchainWindowSystem::init_vulkan(VulkanState& vulkan_)
 
     Log::debug("SwapchainWindowSystem: Swapchain contains %d images\n",
                vk_images.size());
-
-    for (uint32_t i = 0; i < vk_images.size(); i++)
-    {
-        vk_acquire_semaphores.push_back(ManagedResource<vk::Semaphore>{
-            vulkan->device().createSemaphore(vk::SemaphoreCreateInfo()),
-            [this] (auto& s) { vulkan->device().destroySemaphore(s); }});
-        vk_acquire_fences.push_back(ManagedResource<vk::Fence>{
-            vulkan->device().createFence(vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled)),
-            [this] (auto& f) { vulkan->device().destroyFence(f); }});
-    }
-
-    current_frame = 0;
 }
 
 void SwapchainWindowSystem::deinit_vulkan()
 {
     vulkan->device().waitIdle();
-    vk_acquire_semaphores.clear();
-    vk_acquire_fences.clear();
+    vk_submit_resources.clear();
     vk_swapchain = {};
     vk_surface = {};
 }
 
 VulkanImage SwapchainWindowSystem::next_vulkan_image()
 {
-    (void)vulkan->device().waitForFences(vk_acquire_fences[current_frame].raw, true, INT64_MAX);
-    vulkan->device().resetFences(vk_acquire_fences[current_frame].raw);
+    size_t resource_index = vk_submit_resources.size();
+    for (size_t i = 0; i < vk_submit_resources.size(); ++i)
+    {
+        if (vulkan->device().getFenceStatus(vk_submit_resources[i].fence.raw) ==
+            vk::Result::eSuccess)
+        {
+            resource_index = i;
+            break;
+        }
+    }
+
+    if (resource_index == vk_submit_resources.size())
+    {
+        vk_submit_resources.push_back(SubmitResources{
+            ManagedResource<vk::Semaphore>{
+                vulkan->device().createSemaphore(vk::SemaphoreCreateInfo{}),
+                [this] (auto& s) { vulkan->device().destroySemaphore(s); }},
+            ManagedResource<vk::Fence>{
+                vulkan->device().createFence(
+                    vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled}),
+                [this] (auto& f) { vulkan->device().destroyFence(f); }}});
+        resource_index = vk_submit_resources.size() - 1;
+    }
+
+    auto& resources = vk_submit_resources[resource_index];
+    vulkan->device().resetFences(resources.fence.raw);
 
     auto const image_index = vulkan->device().acquireNextImageKHR(
-        vk_swapchain, UINT64_MAX, vk_acquire_semaphores[current_frame], vk_acquire_fences[current_frame]).value;
+        vk_swapchain, UINT64_MAX, resources.semaphore, nullptr).value;
 
-    return {image_index, vk_images[image_index], vk_image_format, vk_extent, vk_acquire_semaphores[current_frame], nullptr};
+    return {image_index, vk_images[image_index], vk_image_format, vk_extent,
+            resources.semaphore, resources.fence,
+            static_cast<uint32_t>(resource_index)};
 }
 
 void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image)
@@ -184,8 +197,6 @@ void SwapchainWindowSystem::present_vulkan_image(VulkanImage const& vulkan_image
         .setPWaitSemaphores(&vulkan_image.semaphore);
 
     (void)vk_present_queue.presentKHR(present_info);
-
-    current_frame = (current_frame + 1) % vk_acquire_semaphores.size();
 }
 
 std::vector<VulkanImage> SwapchainWindowSystem::vulkan_images()

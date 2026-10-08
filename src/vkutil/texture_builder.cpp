@@ -66,13 +66,13 @@ void texture_setup_image(VulkanState& vulkan,
         .set_usage(vk::ImageUsageFlagBits::eTransferDst |
                    vk::ImageUsageFlagBits::eSampled)
         .set_memory_properties(vk::MemoryPropertyFlagBits::eDeviceLocal)
-        .set_initial_layout(vk::ImageLayout::ePreinitialized)
+        .set_initial_layout(vk::ImageLayout::eUndefined)
         .build();
 
     vkutil::transition_image_layout(
         vulkan,
         texture.image,
-        vk::ImageLayout::ePreinitialized,
+        vk::ImageLayout::eUndefined,
         vk::ImageLayout::eTransferDstOptimal,
         vk::ImageAspectFlagBits::eColor);
 

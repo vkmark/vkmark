@@ -96,7 +96,8 @@ void TextureScene::setup(
     setup_framebuffers(vulkan_images);
     setup_command_buffers();
 
-    submit_semaphore = vkutil::SemaphoreBuilder{*vulkan}.build();
+    for (auto i = 0u; i < vulkan_images.size(); ++i)
+        submit_semaphores.push_back(vkutil::SemaphoreBuilder{*vulkan}.build());
     rotation = 0.0f;
 }
 
@@ -104,8 +105,9 @@ void TextureScene::teardown()
 {
     vulkan->device().waitIdle();
 
-    submit_semaphore = {};
-    vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
+    submit_semaphores.clear();
+    if (!command_buffers.empty())
+        vulkan->device().freeCommandBuffers(vulkan->command_pool(), command_buffers);
     framebuffers.clear();
     image_views.clear();
     depth_image_view = {};
@@ -134,11 +136,11 @@ VulkanImage TextureScene::draw(VulkanImage const& image)
         .setPWaitSemaphores(&image.semaphore)
         .setPWaitDstStageMask(&mask)
         .setSignalSemaphoreCount(image.semaphore ? 1 : 0)
-        .setPSignalSemaphores(&submit_semaphore.raw);
+        .setPSignalSemaphores(&submit_semaphores[image.index].raw);
 
     vulkan->graphics_queue().submit(submit_info, image.submit_fence);
 
-    return image.copy_with_semaphore(submit_semaphore);
+    return image.copy_with_semaphore(submit_semaphores[image.index]);
 }
 
 void TextureScene::update()
